@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: poste-travail-unifie
+
+  # PostgreSQL : état du poste UNIQUEMENT (suivi des workflows), jamais le
+  # transactionnel des systèmes de référence (ADR 0004).
+  datasource:
+    url: jdbc:postgresql://localhost:5432/poste
+    username: poste
+    password: poste
+
+  jpa:
+    hibernate:
+      # Dev : génération du schéma à partir des entités. En production, on passera
+      # à des migrations versionnées (Flyway) — hors périmètre de cette tranche.
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate.format_sql: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8080
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    dz.gam.poste: INFO
