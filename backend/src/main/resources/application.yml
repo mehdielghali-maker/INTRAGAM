@@ -27,6 +27,22 @@ spring:
 server:
   port: 8080
 
+# Paramètres MÉTIER du tableau de bord agence — à caler avec la DG/DFC, jamais en dur.
+poste:
+  tableau-bord:
+    # Alerte « écart à régulariser » si l'écart dépasse le montant OU le pourcentage.
+    seuil-ecart-depot:
+      montant: 1000000      # DA
+      pourcentage: 10       # %
+    sp:
+      # Périmètre du numérateur S/P : REGLES_SEULS | CHARGE_AVEC_PROVISIONS
+      perimetre-numerateur: REGLES_SEULS
+    periode-defaut: YTD
+    # En attendant un vrai login agence : identité injectée par configuration.
+    agence:
+      nom: Agence Bab Ezzouar
+      code: 16.I.Gharbi
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
