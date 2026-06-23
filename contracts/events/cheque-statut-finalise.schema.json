@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gam.dz/contracts/events/cheque-statut-finalise.schema.json",
+  "title": "ChequeStatutFinalise",
+  "description": "Événement publié par le poste lorsqu'un dossier de suivi de chèque atteint un statut terminal (ENCAISSE ou RETOURNE). Consommé par PROASSUR pour mettre à jour le règlement (boucle fermée / write-back). Routing key : cheque.statut.finalise",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "statutFinal", "dateFinalisation"],
+  "properties": {
+    "reference": {
+      "type": "string",
+      "description": "Référence du chèque dans PROASSUR (reprise telle quelle de ChequeEmis).",
+      "minLength": 1,
+      "examples": ["CHQ-2026-0001"]
+    },
+    "statutFinal": {
+      "type": "string",
+      "description": "Statut terminal atteint.",
+      "enum": ["ENCAISSE", "RETOURNE"]
+    },
+    "dateFinalisation": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Horodatage de l'atteinte du statut terminal côté poste.",
+      "examples": ["2026-06-23T14:35:00Z"]
+    }
+  }
+}

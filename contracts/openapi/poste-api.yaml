@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: Poste de travail unifié — API Suivi des chèques
+  version: 0.1.0
+  description: >
+    API REST exposée par le poste pour le suivi des chèques. Le poste orchestre un
+    workflow au-dessus de PROASSUR ; il n'expose ni ne recalcule de donnée
+    transactionnelle de l'ERP.
+servers:
+  - url: http://localhost:8080
+    description: Développement local
+tags:
+  - name: cheques
+    description: Suivi des dossiers de chèques
+  - name: mock-proassur
+    description: Adapter PROASSUR mock (simulation ERP — hors API métier réelle)
+paths:
+  /api/cheques:
+    get:
+      tags: [cheques]
+      summary: Lister les dossiers de chèques (filtrable)
+      parameters:
+        - name: statut
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/StatutCheque'
+        - name: agence
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des dossiers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DossierCheque'
+  /api/cheques/{id}:
+    get:
+      tags: [cheques]
+      summary: Obtenir un dossier de chèque
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Le dossier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierCheque'
+        '404':
+          description: Dossier introuvable
+  /api/cheques/{id}/statut:
+    post:
+      tags: [cheques]
+      summary: Faire avancer le statut d'un dossier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FaireAvancerStatutRequest'
+      responses:
+        '200':
+          description: Dossier mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierCheque'
+        '404':
+          description: Dossier introuvable
+        '409':
+          description: Transition de statut invalide
+  /api/mock/proassur/cheques:
+    post:
+      tags: [mock-proassur]
+      summary: Simuler l'émission d'un chèque par PROASSUR (publie ChequeEmis sur le bus)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChequeEmisRequest'
+      responses:
+        '202':
+          description: Événement ChequeEmis publié sur le bus
+components:
+  schemas:
+    StatutCheque:
+      type: string
+      enum: [EMIS, IMPRIME, REMIS_AGENCE, REMIS_BENEFICIAIRE, ENCAISSE, RETOURNE]
+    DossierCheque:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        montant:
+          type: number
+        devise:
+          type: string
+        beneficiaire:
+          type: string
+        agence:
+          type: string
+        dateEmission:
+          type: string
+          format: date
+        statut:
+          $ref: '#/components/schemas/StatutCheque'
+        prochainsStatuts:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatutCheque'
+        dateCreation:
+          type: string
+          format: date-time
+        dateDerniereMaj:
+          type: string
+          format: date-time
+    FaireAvancerStatutRequest:
+      type: object
+      required: [statutCible]
+      properties:
+        statutCible:
+          $ref: '#/components/schemas/StatutCheque'
+    ChequeEmisRequest:
+      type: object
+      required: [reference, montant, beneficiaire, agence, dateEmission]
+      properties:
+        reference:
+          type: string
+        montant:
+          type: number
+        devise:
+          type: string
+          default: DZD
+        beneficiaire:
+          type: string
+        agence:
+          type: string
+        dateEmission:
+          type: string
+          format: date

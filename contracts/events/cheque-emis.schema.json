@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gam.dz/contracts/events/cheque-emis.schema.json",
+  "title": "ChequeEmis",
+  "description": "Événement émis par PROASSUR (système de référence) lorsqu'un chèque de règlement est créé. Consommé par le poste pour ouvrir un dossier de suivi. Routing key : cheque.emis",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "montant", "devise", "beneficiaire", "agence", "dateEmission"],
+  "properties": {
+    "reference": {
+      "type": "string",
+      "description": "Référence du chèque dans PROASSUR. Identifie le règlement côté ERP.",
+      "minLength": 1,
+      "examples": ["CHQ-2026-0001"]
+    },
+    "montant": {
+      "type": "number",
+      "description": "Montant du chèque.",
+      "exclusiveMinimum": 0,
+      "examples": [150000.00]
+    },
+    "devise": {
+      "type": "string",
+      "description": "Code devise ISO 4217.",
+      "default": "DZD",
+      "examples": ["DZD"]
+    },
+    "beneficiaire": {
+      "type": "string",
+      "minLength": 1,
+      "examples": ["SARL BATICONSTRUCT"]
+    },
+    "agence": {
+      "type": "string",
+      "description": "Agence GAM en charge de la remise.",
+      "minLength": 1,
+      "examples": ["Alger-Centre"]
+    },
+    "dateEmission": {
+      "type": "string",
+      "format": "date",
+      "examples": ["2026-06-23"]
+    }
+  }
+}
