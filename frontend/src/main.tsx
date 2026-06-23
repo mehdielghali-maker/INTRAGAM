@@ -1,18 +1,28 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import App from './App';
+import AppShell from './app/AppShell';
+import AccueilAgencePage from './features/accueil/AccueilAgencePage';
 import ChequeListPage from './features/cheques/ChequeListPage';
 import ChequeDetailPage from './features/cheques/ChequeDetailPage';
+import PlaceholderPage from './features/placeholder/PlaceholderPage';
+import { ITEMS_SOON } from './app/navigation';
 import './index.css';
+import './theme/gam.css';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <App />,
+    element: <AppShell />,
     children: [
-      { index: true, element: <ChequeListPage /> },
+      { index: true, element: <AccueilAgencePage /> },
+      { path: 'cheques', element: <ChequeListPage /> },
       { path: 'cheques/:id', element: <ChequeDetailPage /> },
+      // Fonctions non encore implémentées : page placeholder « à venir ».
+      ...ITEMS_SOON.map((item) => ({
+        path: item.route.replace(/^\//, ''),
+        element: <PlaceholderPage />,
+      })),
     ],
   },
 ]);
