@@ -1,0 +1,199 @@
+:root {
+  --bleu: #0b4f8a;
+  --gris: #6b7280;
+  --bordure: #e5e7eb;
+  --fond: #f7f8fa;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #1f2937;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.9rem 1.5rem;
+  background: var(--bleu);
+  color: #fff;
+}
+
+.app-title {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.app-sub {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.app-org {
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
+.app-main {
+  max-width: 960px;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+}
+
+.filtres {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filtres label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: var(--gris);
+  gap: 0.25rem;
+}
+
+.filtres select,
+.filtres input {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--bordure);
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+button {
+  background: var(--bleu);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.table-cheques {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-cheques th,
+.table-cheques td {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 0.92rem;
+}
+
+.table-cheques th {
+  background: #f0f3f7;
+  color: var(--gris);
+  font-weight: 600;
+}
+
+.montant {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.badge-en-cours {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.badge-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-ko {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.detail .fiche {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  max-width: 600px;
+}
+
+.fiche dt {
+  color: var(--gris);
+  font-size: 0.9rem;
+}
+
+.fiche dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.info-terminal {
+  margin-top: 1.2rem;
+  padding: 0.8rem 1rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  max-width: 600px;
+}
+
+.erreur {
+  color: #991b1b;
+  background: #fee2e2;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+}
+
+.vide {
+  color: var(--gris);
+}
+
+code {
+  background: #eef2f7;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+}

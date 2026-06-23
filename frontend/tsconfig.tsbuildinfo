@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/api/cheques.ts","./src/features/cheques/chequedetailpage.tsx","./src/features/cheques/chequelistpage.tsx","./src/features/cheques/statutbadge.tsx"],"errors":true,"version":"5.9.3"}
