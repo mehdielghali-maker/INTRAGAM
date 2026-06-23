@@ -57,13 +57,15 @@ public class ChequeService implements EnregistrerChequeEmisUseCase, FaireAvancer
                 .orElseThrow(() -> new DossierIntrouvableException(idDossier));
 
         dossier.faireAvancerVers(statutCible, horloge.instant());
-        DossierCheque enregistre = repository.enregistrer(dossier);
+        repository.enregistrer(dossier);
 
-        // Boucle fermée : on publie les événements terminaux puis on les vide.
+        // Boucle fermée : on publie depuis l'agrégat qui a produit les événements,
+        // puis on les vide. (Ne pas publier depuis l'objet renvoyé par la persistance :
+        // l'adapter le reconstitue sans la liste d'événements.)
         // NB : pour une atomicité stricte DB + bus, on introduirait un outbox
         // transactionnel ; hors périmètre de cette tranche.
-        publierEvenements(enregistre);
-        return enregistre;
+        publierEvenements(dossier);
+        return dossier;
     }
 
     @Override
