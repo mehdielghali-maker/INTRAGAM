@@ -82,6 +82,23 @@ npm run dev
 3. Au statut terminal, le poste publie `ChequeStatutFinalise`. Le log du backend
    affiche la ligne `WRITE-BACK PROASSUR` simulant la mise à jour du règlement.
 
+## Accueil agence (tableau de bord)
+
+La page d'accueil (`/`) est le tableau de bord de pilotage de l'agence : 5 KPI
+(CA YTD vs N‑1, CA du mois vs M‑1, écart à régulariser, créances non recouvrées,
+S/P 12 mois glissants), bloc « Coup d'œil — à traiter » et bloc « Production &
+dépôts ». Une sidebar donne accès aux 9 fonctionnalités métier (2 lots) ; seules
+« Accueil » et « Suivi des chèques » sont implémentées, les autres ouvrent une page
+« à venir ».
+
+- Données lues via adapters **mock** : `IndicateursProassurPort` (PROASSUR),
+  `IndicateursSagePort` (Sage) ; le compteur « chèques en attente » est **réel**
+  (agrégé des dossiers de suivi non terminaux).
+- Le poste **dérive** la présentation (variations, écart, seuil) ; il ne recalcule
+  aucune vérité comptable. Paramètres en config (`poste.tableau-bord.*`) :
+  seuil de l'écart de dépôt, périmètre du numérateur S/P, période par défaut.
+- API : `GET /api/agence/tableau-bord?periode=YTD|MOIS_COURANT`, `GET /api/agence/navigation`.
+
 ## Tests
 
 ```bash
