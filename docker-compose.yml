@@ -1,0 +1,39 @@
+# Infrastructure de développement pour le Poste de travail unifié.
+# Démarre uniquement les dépendances (bus + base de l'état du poste).
+# Le backend et le frontend se lancent ensuite avec leurs commandes natives
+# (voir README) pour garder un cycle de dev rapide.
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: poste-rabbitmq
+    ports:
+      - "5672:5672"      # AMQP
+      - "15672:15672"    # console de gestion
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16
+    container_name: poste-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: poste
+      POSTGRES_USER: poste
+      POSTGRES_PASSWORD: poste
+    volumes:
+      - poste-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poste"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  poste-pgdata:
