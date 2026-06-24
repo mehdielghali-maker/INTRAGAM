@@ -119,6 +119,32 @@ agence = **SSO** (mock dev, remplace le bloc « Code Accès » du legacy). Pièc
 - Délais du mock, libellés de statut, branches et identité : en config
   (`poste.cotation.*`), jamais en dur.
 
+## Accords d'échéancier — paiement différé (Lot 2)
+
+Route `/accords-echeancier`, **mobile-first** (les agents l'utilisent au téléphone, notamment
+pour photographier les pièces). Trois onglets :
+
+1. **Suivi des demandes** — tableau (→ cartes sur mobile), filtrable, action contextuelle.
+2. **Nouvelle demande** — formulaire DPD : `Charger depuis PROASSUR` (prefill proposition),
+   sections lecture seule (souscription, agence/DR), info client éditable, **RC obligatoire**
+   (bloque l'envoi) + autres pièces, avec **prise de photo** (`capture="environment"`),
+   multi-pages, vignettes, suppression et **compression image** côté client.
+3. **Mise à jour DPD** — `Charger depuis PROASSUR` (getAccordByCode) → échéancier validé en
+   **lecture seule** avec état de règlement par échéance (réglée+date / échue / à échoir) +
+   récap (total · réglé · restant). `Mettre à jour le dossier` historise une **nouvelle version**.
+
+Cycle : `Brouillon → Envoyée → En validation → Accordée | Refusée`. Sources : validateur =
+**BPM/OneBase** ; échéancier validé + n° accord = **PROASSUR** ; état de règlement = rapprochement
+**PROASSUR × Sage** (établi en amont, seulement reflété). Le module n'écrit ni ne recalcule
+l'échéancier (pas de shadow ERP) ; une fois *Accordée*, l'exécution relève de « Suivi des
+échéanciers » (lien depuis la liste).
+
+- API : `GET/POST /api/dpd…`, `GET /api/dpd/prefill?proposition=`, `GET /api/dpd/accords/{code}`,
+  `POST /api/dpd/accords/{code}/synchroniser`. Mock refus : `POST /api/mock/dpd/{ref}/refuser`.
+- Bus : `DemandePaiementDiffereEmise`, `StatutDpd`, `EcheancierDpdMisAJour`.
+- Compteur nav « Accords d'échéancier » **réel** (source unique). Libellés, niveau de validation
+  et délais mock en config (`poste.dpd.*`).
+
 ## Tests
 
 ```bash
