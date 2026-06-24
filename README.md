@@ -99,6 +99,26 @@ dépôts ». Une sidebar donne accès aux 9 fonctionnalités métier (2 lots) ; 
   seuil de l'écart de dépôt, périmètre du numérateur S/P, période par défaut.
 - API : `GET /api/agence/tableau-bord?periode=YTD|MOIS_COURANT`, `GET /api/agence/navigation`.
 
+## Demande de cotation (Lot 1)
+
+Route `/cotation`, deux onglets : **Suivi des demandes** (tableau filtrable, badges de
+statut, souscripteur, action contextuelle) et **Nouvelle demande** (formulaire). La
+demande est **routée vers le central** : le module orchestre et suit le statut, il ne
+tarifie jamais et ne réplique pas le contenu du devis.
+
+Cycle de vie : `Brouillon → Envoyée → En cours → À finaliser → Affaire gagnée` (ou
+`Sans suite`). Sources : **En cours** + souscripteur = API BPM/OneBase ; **À finaliser**
+(n° proposition + réf. devis) et **Affaire gagnée** (n° police) = PROASSUR. Identité &
+agence = **SSO** (mock dev, remplace le bloc « Code Accès » du legacy). Pièces jointes =
+**GED OneBase** (référence seule, jamais le binaire).
+
+- Envoyer publie `DemandeCotationEmise` ; le mock central renvoie `CotationStatut`.
+- API : `GET/POST /api/cotation…`, `GET /api/cotation/contexte`. Mock impression
+  quittance (→ Affaire gagnée) : `POST /api/mock/cotation/{reference}/quittance`.
+- Le compteur « Cotations en cours » de l'accueil est **réel** (source unique).
+- Délais du mock, libellés de statut, branches et identité : en config
+  (`poste.cotation.*`), jamais en dur.
+
 ## Tests
 
 ```bash
