@@ -33,7 +33,7 @@ export const LOT1: NavItem[] = [
   { id: 'attestations', label: 'Attestations', route: '/attestations', icon: 'attestations', badgeKey: 'attestations', soon: true },
   { id: 'cheques', label: 'Suivi des chèques', route: '/cheques', icon: 'cheques', badgeKey: 'chequesEnAttente', urgent: true },
   { id: 'bureau', label: "Envois bureau d'ordre", route: '/bureau-ordre', icon: 'bureau', badgeKey: 'bureauOrdre', soon: true },
-  { id: 'cotation', label: 'Demande de cotation', route: '/cotation', icon: 'cotation', badgeKey: 'cotations', soon: true },
+  { id: 'cotation', label: 'Demande de cotation', route: '/cotation', icon: 'cotation', badgeKey: 'cotations' },
   { id: 'expertise', label: "Demande d'expertise", route: '/expertise', icon: 'expertise', badgeKey: 'expertises', soon: true },
 ];
 

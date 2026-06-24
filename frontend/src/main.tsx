@@ -5,6 +5,7 @@ import AppShell from './app/AppShell';
 import AccueilAgencePage from './features/accueil/AccueilAgencePage';
 import ChequeListPage from './features/cheques/ChequeListPage';
 import ChequeDetailPage from './features/cheques/ChequeDetailPage';
+import CotationPage from './features/cotation/CotationPage';
 import PlaceholderPage from './features/placeholder/PlaceholderPage';
 import { ITEMS_SOON } from './app/navigation';
 import './index.css';
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { index: true, element: <AccueilAgencePage /> },
       { path: 'cheques', element: <ChequeListPage /> },
       { path: 'cheques/:id', element: <ChequeDetailPage /> },
+      { path: 'cotation', element: <CotationPage /> },
       // Fonctions non encore implémentées : page placeholder « à venir ».
       ...ITEMS_SOON.map((item) => ({
         path: item.route.replace(/^\//, ''),
