@@ -16,4 +16,7 @@ public interface MiseAJourDpdUseCase {
      * version de l'échéancier côté poste et publie {@code EcheancierDpdMisAJour}.
      */
     AccordSuivi synchroniser(String codeAccord);
+
+    /** Variante avec le motif (commentaire) de la mise à jour, conservé sur la version. */
+    AccordSuivi synchroniser(String codeAccord, String commentaire);
 }

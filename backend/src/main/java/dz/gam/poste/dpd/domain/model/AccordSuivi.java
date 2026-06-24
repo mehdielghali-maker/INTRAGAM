@@ -34,8 +34,9 @@ public class AccordSuivi {
     }
 
     /** Crée le suivi avec sa première version d'échéancier (aucun événement). */
-    public static AccordSuivi creer(String codeAccord, ResumeAccord resume, List<Echeance> echeances, Instant maintenant) {
-        EcheancierVersion v1 = new EcheancierVersion(1, maintenant, echeances);
+    public static AccordSuivi creer(String codeAccord, ResumeAccord resume, List<Echeance> echeances,
+                                    String commentaire, Instant maintenant) {
+        EcheancierVersion v1 = new EcheancierVersion(1, maintenant, commentaire, echeances);
         return new AccordSuivi(UUID.randomUUID(), codeAccord, resume, new ArrayList<>(List.of(v1)), maintenant);
     }
 
@@ -45,9 +46,9 @@ public class AccordSuivi {
     }
 
     /** Ajoute une nouvelle version (renégociation) sans écraser les précédentes ; émet l'événement. */
-    public void mettreAJour(ResumeAccord nouveauResume, List<Echeance> echeances, Instant maintenant) {
+    public void mettreAJour(ResumeAccord nouveauResume, List<Echeance> echeances, String commentaire, Instant maintenant) {
         int prochaineVersion = versions.size() + 1;
-        versions.add(new EcheancierVersion(prochaineVersion, maintenant, echeances));
+        versions.add(new EcheancierVersion(prochaineVersion, maintenant, commentaire, echeances));
         this.resume = nouveauResume;
         this.dateMaj = maintenant;
         evenements.add(new EcheancierDpdMisAJourEvent(codeAccord, prochaineVersion, maintenant));

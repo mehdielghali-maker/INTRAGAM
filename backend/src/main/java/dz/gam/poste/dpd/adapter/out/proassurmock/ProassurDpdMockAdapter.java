@@ -45,13 +45,14 @@ public class ProassurDpdMockAdapter implements ProassurDpdPort {
 
     @Override
     public Optional<AccordProassur> getAccordByCode(String codeAccord) {
-        if (codeAccord == null || !codeAccord.trim().toUpperCase().startsWith("AC-")) {
-            return Optional.empty(); // accord inconnu
+        // Accepte les formats « AC-… » et « ACC-2026-… » de la maquette ; inconnu sinon.
+        if (codeAccord == null || !codeAccord.trim().toUpperCase().startsWith("AC")) {
+            return Optional.empty();
         }
         String code = codeAccord.trim().toUpperCase();
         ResumeAccord resume = new ResumeAccord(
-                code, "SARL Méditerranée Logistic", "Prop. PR-88231 · Auto flotte",
-                new BigDecimal("1240000"), "Accordé", Instant.parse("2026-06-23T08:00:00Z"));
+                code, "SARL Méditerranée Logistic", "PR-88231",
+                new BigDecimal("1240000"), "Accordée — actif", Instant.parse("2026-06-20T08:00:00Z"));
         return Optional.of(new AccordProassur(resume, echeancierType()));
     }
 

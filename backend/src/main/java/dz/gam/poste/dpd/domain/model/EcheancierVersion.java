@@ -8,7 +8,7 @@ import java.util.List;
  * Une VERSION de l'échéancier validé (traçabilité des renégociations : on n'écrase jamais
  * l'ancienne). Calcule les sous-totaux réglé / restant pour le récap.
  */
-public record EcheancierVersion(int version, Instant dateValidation, List<Echeance> echeances) {
+public record EcheancierVersion(int version, Instant dateValidation, String commentaire, List<Echeance> echeances) {
 
     public EcheancierVersion {
         echeances = List.copyOf(echeances);

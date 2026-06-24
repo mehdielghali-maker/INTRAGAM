@@ -28,6 +28,7 @@ function reglementCell(e: Echeance) {
 export default function MiseAJourDpdTab() {
   const [code, setCode] = useState('');
   const [accord, setAccord] = useState<AccordProassur | null>(null);
+  const [commentaire, setCommentaire] = useState('');
   const [chargement, setChargement] = useState(false);
   const [sync, setSync] = useState(false);
   const [message, setMessage] = useState<{ type: 'ok' | 'ko'; texte: string } | null>(null);
@@ -50,7 +51,7 @@ export default function MiseAJourDpdTab() {
     setSync(true);
     setMessage(null);
     try {
-      const r = await synchroniserAccord(code.trim());
+      const r = await synchroniserAccord(code.trim(), commentaire.trim() || undefined);
       setMessage({
         type: 'ok',
         texte: `Dossier mis à jour — version ${r.versionCourante} (historisée, ${r.nbVersions} version(s) au total).`,
@@ -66,12 +67,22 @@ export default function MiseAJourDpdTab() {
 
   return (
     <div className="form-card">
-      <div className="sec-head"><h3>Mise à jour d'un dossier de paiement différé</h3></div>
+      <div className="sso-strip">
+        <span className="ms" aria-hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5" />
+          </svg>
+        </span>
+        <div className="who">
+          <b>Mise à jour d'un dossier de paiement différé</b>
+          <span>À utiliser lorsqu'un nouvel échéancier a été validé dans PROASSUR</span>
+        </div>
+      </div>
 
       <div className="loader">
         <div className="field">
-          <label>Code de l'accord</label>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="ex. AC-0231" />
+          <label>Code de l'accord <span className="req">*</span></label>
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex. ACC-2026-00231" />
         </div>
         <button className="btn-primary" onClick={charger} disabled={chargement || !code.trim()}>
           {chargement ? 'Chargement…' : '↧ Charger depuis PROASSUR'}
@@ -129,20 +140,35 @@ export default function MiseAJourDpdTab() {
             <span className="ok">✓ Conforme à la prime</span>
           </div>
 
+          <div className="grid" style={{ marginTop: 18 }}>
+            <div className="field full">
+              <label>Commentaire</label>
+              <textarea
+                value={commentaire}
+                onChange={(e) => setCommentaire(e.target.value)}
+                placeholder="Motif de la mise à jour de l'échéancier…"
+              />
+            </div>
+          </div>
+
           <div className="form-actions">
             <button className="btn-primary" onClick={mettreAJour} disabled={sync}>
               {sync ? 'Mise à jour…' : '↻ Mettre à jour le dossier'}
             </button>
-            <button className="btn-ghost" onClick={() => { setAccord(null); setCode(''); setMessage(null); }}>
+            <button
+              className="btn-ghost"
+              onClick={() => { setAccord(null); setCode(''); setCommentaire(''); setMessage(null); }}
+            >
               Annuler
             </button>
           </div>
 
           <div className="note">
-            <b>Mise à jour d'un DPD.</b> Renseigne le code de l'accord pour récupérer le dernier
-            échéancier validé. L'état de règlement (réglée / échue / à échoir) provient du
-            rapprochement PROASSUR × Sage — le module le reflète, il ne l'établit pas. Chaque mise à
-            jour est historisée en version.
+            <b>Mise à jour d'un DPD.</b> Quand un nouvel échéancier est validé dans PROASSUR,
+            saisissez le <b>code de l'accord</b> : le module récupère le dossier et le nouvel
+            échéancier (lecture seule, source PROASSUR) et met à jour le suivi. L'échéancier reste
+            porté par PROASSUR — le module ne fait que le refléter ; chaque mise à jour est
+            historisée en version.
           </div>
         </>
       )}

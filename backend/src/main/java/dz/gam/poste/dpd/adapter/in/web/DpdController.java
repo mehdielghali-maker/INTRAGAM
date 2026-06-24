@@ -3,6 +3,7 @@ package dz.gam.poste.dpd.adapter.in.web;
 import dz.gam.poste.dpd.adapter.in.web.dto.AccordSuiviResponse;
 import dz.gam.poste.dpd.adapter.in.web.dto.CreerDpdRequest;
 import dz.gam.poste.dpd.adapter.in.web.dto.DemandeDpdResponse;
+import dz.gam.poste.dpd.adapter.in.web.dto.SynchroniserRequest;
 import dz.gam.poste.dpd.config.DpdProperties;
 import dz.gam.poste.dpd.domain.model.ContexteDpd;
 import dz.gam.poste.dpd.domain.model.DemandeDpd;
@@ -90,8 +91,10 @@ public class DpdController {
     }
 
     @PostMapping("/accords/{code}/synchroniser")
-    public AccordSuiviResponse synchroniser(@PathVariable String code) {
-        return AccordSuiviResponse.de(miseAJour.synchroniser(code));
+    public AccordSuiviResponse synchroniser(@PathVariable String code,
+                                            @RequestBody(required = false) SynchroniserRequest requete) {
+        String commentaire = requete == null ? null : requete.commentaire();
+        return AccordSuiviResponse.de(miseAJour.synchroniser(code, commentaire));
     }
 
     private DemandeDpdResponse reponse(DemandeDpd d) {

@@ -112,7 +112,8 @@ public class DpdService implements EnregistrerDpdUseCase, RetourValidationUseCas
         // Source PROASSUR : échéancier validé, historisé en version 1 du suivi de l'accord.
         AccordProassur accord = proassur.getAccordByCode(codeAccord)
                 .orElseThrow(() -> new DpdExceptions.AccordIntrouvable(codeAccord));
-        accords.enregistrer(AccordSuivi.creer(codeAccord, accord.resume(), accord.echeances(), horloge.instant()));
+        accords.enregistrer(AccordSuivi.creer(codeAccord, accord.resume(), accord.echeances(),
+                "Accord initial", horloge.instant()));
     }
 
     @Override
@@ -158,6 +159,11 @@ public class DpdService implements EnregistrerDpdUseCase, RetourValidationUseCas
 
     @Override
     public AccordSuivi synchroniser(String codeAccord) {
+        return synchroniser(codeAccord, null);
+    }
+
+    @Override
+    public AccordSuivi synchroniser(String codeAccord, String commentaire) {
         AccordProassur accord = proassur.getAccordByCode(codeAccord)
                 .orElseThrow(() -> new DpdExceptions.AccordIntrouvable(codeAccord));
         Optional<AccordSuivi> existant = accords.trouverParCodeAccord(codeAccord);
@@ -165,11 +171,11 @@ public class DpdService implements EnregistrerDpdUseCase, RetourValidationUseCas
         AccordSuivi suivi;
         if (existant.isPresent()) {
             suivi = existant.get();
-            suivi.mettreAJour(accord.resume(), accord.echeances(), horloge.instant());
+            suivi.mettreAJour(accord.resume(), accord.echeances(), commentaire, horloge.instant());
             publierAccord(suivi);
         } else {
             // Premier suivi créé via l'action « Mettre à jour » : on émet l'événement pour la v1.
-            suivi = AccordSuivi.creer(codeAccord, accord.resume(), accord.echeances(), horloge.instant());
+            suivi = AccordSuivi.creer(codeAccord, accord.resume(), accord.echeances(), commentaire, horloge.instant());
             publication.publier(new EcheancierDpdMisAJourEvent(codeAccord, 1, horloge.instant()));
         }
         return accords.enregistrer(suivi);

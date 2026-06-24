@@ -58,9 +58,13 @@ export async function chargerAccord(code: string): Promise<AccordProassur> {
   return lireJson(await fetch(`/api/dpd/accords/${encodeURIComponent(code)}`));
 }
 
-export async function synchroniserAccord(code: string): Promise<AccordSuiviResponse> {
+export async function synchroniserAccord(code: string, commentaire?: string): Promise<AccordSuiviResponse> {
   return lireJson(
-    await fetch(`/api/dpd/accords/${encodeURIComponent(code)}/synchroniser`, { method: 'POST' }),
+    await fetch(`/api/dpd/accords/${encodeURIComponent(code)}/synchroniser`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentaire: commentaire ?? null }),
+    }),
   );
 }
 
