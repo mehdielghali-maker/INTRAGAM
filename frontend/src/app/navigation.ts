@@ -38,7 +38,7 @@ export const LOT1: NavItem[] = [
 ];
 
 export const LOT2: NavItem[] = [
-  { id: 'accords', label: "Accords d'échéancier", route: '/accords-echeancier', icon: 'accords', badgeKey: 'accordsEcheancier', soon: true },
+  { id: 'accords', label: "Accords d'échéancier", route: '/accords-echeancier', icon: 'accords', badgeKey: 'accordsEcheancier' },
   { id: 'echeanciers', label: 'Suivi des échéanciers', route: '/echeanciers', icon: 'echeanciers', badgeKey: 'echeanciersRisque', urgent: true, soon: true },
   { id: 'contentieux', label: 'Créances & contentieux', route: '/contentieux', icon: 'contentieux', badgeKey: 'contentieux', urgent: true, soon: true },
 ];
