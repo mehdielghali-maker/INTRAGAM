@@ -43,6 +43,35 @@ poste:
       nom: Agence Bab Ezzouar
       code: 16.I.Gharbi
 
+  # Demande de cotation — libellés, branches et délais du mock central paramétrables.
+  cotation:
+    prefixe-reference: DC
+    reference-seed: 412
+    branches:
+      - Auto — particulier
+      - Auto — flotte
+      - Multirisque habitation
+      - IRD / commerce
+      - RC entreprise
+      - Transport
+    libelles:
+      BROUILLON: Brouillon
+      ENVOYEE: Envoyée
+      EN_COURS: En cours
+      A_FINALISER: À finaliser
+      AFFAIRE_GAGNEE: Affaire gagnée
+      SANS_SUITE: Sans suite
+    # Délais simulés du central (mock). Mettre 0 en test pour un retour immédiat.
+    mock:
+      delai-prise-en-charge-ms: 4000
+      delai-cotation-ms: 5000
+    # Identité SSO (Microsoft/Entra ID) — mockée en dev.
+    identite:
+      utilisateur: M. Saïdi
+      code-agence: 16.I.Gharbi
+      nom-agence: Agence Bab Ezzouar
+      direction-regionale: DR Alger-Est
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
