@@ -72,6 +72,28 @@ poste:
       nom-agence: Agence Bab Ezzouar
       direction-regionale: DR Alger-Est
 
+  # Accords d'échéancier (DPD) — libellés, niveau de validation et délais mock paramétrables.
+  dpd:
+    prefixe-reference: DE
+    reference-seed: 231
+    niveau-validation: DR
+    libelles:
+      BROUILLON: Brouillon
+      ENVOYEE: Envoyée
+      EN_VALIDATION: En validation
+      ACCORDEE: Accordée
+      REFUSEE: Refusée
+    mock:
+      delai-validation-ms: 4000
+      delai-accord-ms: 5000
+    identite:
+      utilisateur: M. Saïdi
+      code-agence: 16.I.Gharbi
+      mail-agence: babezzouar@gam.dz
+      nom-agence: Agence Bab Ezzouar
+      direction-regionale: DR Alger-Est
+      mail-direction-regionale: dr.algerest@gam.dz
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
