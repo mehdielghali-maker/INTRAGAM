@@ -17,12 +17,22 @@ function recap(echeances: Echeance[]) {
 
 function reglementCell(e: Echeance) {
   if (e.statutReglement === 'REGLEE') {
-    return <span className="stat pay-ok">✓ Réglée le {e.dateReglement ? dateLongue(e.dateReglement) : '—'}</span>;
+    return (
+      <span className="stat pay-ok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12l5 5L20 6" /></svg>
+        Réglée le {e.dateReglement ? dateLongue(e.dateReglement) : '—'}
+      </span>
+    );
   }
   if (e.statutReglement === 'ECHUE') {
-    return <span className="stat pay-echue">● Restante · échue</span>;
+    return (
+      <span className="stat pay-echue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></svg>
+        Restante · échue
+      </span>
+    );
   }
-  return <span className="stat pay-rest">○ Restante · à échoir</span>;
+  return <span className="stat pay-rest">Restante · à échoir</span>;
 }
 
 export default function MiseAJourDpdTab() {
@@ -95,19 +105,31 @@ export default function MiseAJourDpdTab() {
       {accord && r && (
         <>
           <div className="sec-head" style={{ marginTop: 18 }}>
+            <span className="tile" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="5" y="3" width="14" height="18" rx="2" />
+                <path d="M9 8h6M9 12h6" />
+              </svg>
+            </span>
             <h3>Accord chargé</h3>
             <span className="ro-tag">source PROASSUR</span>
           </div>
-          <div className="resume-card">
-            <div className="kv"><div className="k">N° Accord</div><div className="v">{accord.resume.noAccord}</div></div>
-            <div className="kv"><div className="k">Assuré</div><div className="v">{accord.resume.assure}</div></div>
-            <div className="kv"><div className="k">Police / Proposition</div><div className="v">{accord.resume.policeOuProposition}</div></div>
-            <div className="kv"><div className="k">Montant prime</div><div className="v">{formaterDa(accord.resume.montantPrime)}</div></div>
-            <div className="kv"><div className="k">Statut actuel</div><div className="v">{accord.resume.statut}</div></div>
-            <div className="kv"><div className="k">Dernière mise à jour</div><div className="v">{dateLongue(accord.resume.dateDerniereMaj)}</div></div>
+          <div className="grid cols4">
+            <Ro label="N° Accord" value={accord.resume.noAccord} />
+            <Ro label="Assuré" value={accord.resume.assure} span2 />
+            <Ro label="Police / Proposition" value={accord.resume.policeOuProposition} />
+            <Ro label="Montant prime" value={formaterDa(accord.resume.montantPrime)} />
+            <Ro label="Statut actuel" value={accord.resume.statut} />
+            <Ro label="Dernière mise à jour" value={dateLongue(accord.resume.dateDerniereMaj)} span2 />
           </div>
 
           <div className="sec-head">
+            <span className="tile" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <rect x="4" y="5" width="16" height="16" rx="2" />
+                <path d="M4 9h16M8 3v4M16 3v4" />
+              </svg>
+            </span>
             <h3>Nouvel échéancier validé</h3>
             <span className="ro-tag">renseigné dans PROASSUR · lecture seule</span>
           </div>
@@ -172,6 +194,15 @@ export default function MiseAJourDpdTab() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function Ro({ label, value, span2 }: { label: string; value?: string | null; span2?: boolean }) {
+  return (
+    <div className={`field ${span2 ? 'span2' : ''}`}>
+      <label>{label}</label>
+      <input className="ro" readOnly value={value ?? ''} placeholder="—" />
     </div>
   );
 }

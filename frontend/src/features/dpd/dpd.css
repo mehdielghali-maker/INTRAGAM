@@ -310,6 +310,21 @@
   margin: 24px 0 14px;
   flex-wrap: wrap;
 }
+.sec-head .tile {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--menthe);
+  color: var(--vert-fonce);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+}
+.sec-head .tile svg {
+  width: 16px;
+  height: 16px;
+}
 .sec-head h3 {
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
@@ -333,6 +348,7 @@
 }
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field.full { grid-column: 1 / -1; }
+.field.span2 { grid-column: span 2; }
 .field label { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 12px; color: var(--vert); }
 .field label .req { color: var(--terra); }
 .field label .opt { color: var(--gris); font-weight: 400; font-size: 11px; }
@@ -390,7 +406,8 @@
 .ech-table td { padding: 9px 12px; border-top: 1px solid #efe8d8; }
 .ech-n { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--or); }
 .ech-table tr.paid { background: #f3f8f4; }
-.stat { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 11.5px; }
+.stat { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; }
+.stat svg { width: 13px; height: 13px; }
 .pay-ok { color: var(--vert); }
 .pay-echue { color: var(--terra); }
 .pay-rest { color: var(--gris); }
