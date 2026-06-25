@@ -27,6 +27,9 @@ public class MesuresAgenceEntity {
     BigDecimal productionMois;
     BigDecimal encaisseMois;
     BigDecimal deposeMois;
+    // Cumulés (YTD) — alimentent l'écart « à régulariser » de la carte KPI (cumulé, pas du mois).
+    BigDecimal encaisseCumul;
+    BigDecimal deposeCumul;
     BigDecimal echuNonEncaisse;
     BigDecimal echuNonEncaisseM1;
     BigDecimal encaissementsLettres;

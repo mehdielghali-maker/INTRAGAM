@@ -434,9 +434,14 @@ body {
 .k-val {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 21px;
+  /* S'adapte à la largeur de la carte (grands montants à 9 chiffres) sans renvoyer « DA »
+     à la ligne : grand sur écran large, réduit si la place manque. */
+  font-size: clamp(16px, 1.35vw, 21px);
   color: var(--noir);
   line-height: 1.05;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 .k-val small {
   font-size: 13px;
@@ -493,6 +498,48 @@ body {
 .card.alert .k-val {
   color: var(--terra);
 }
+
+/* Écart à régulariser — code couleur à 4 niveaux (écart / CA annuel extrapolé). */
+.card.ec-correct .k-label {
+  color: var(--vert);
+}
+.card.ec-modere {
+  background: #fdf5e8;
+  border-color: #f0dcb4;
+}
+.card.ec-modere .k-ic {
+  background: #f6e4c2;
+  color: #b9791a;
+}
+.card.ec-modere .k-label,
+.card.ec-modere .k-val {
+  color: #b9791a;
+}
+.card.ec-critique {
+  background: #fbf1ef;
+  border-color: #e8c8c2;
+}
+.card.ec-critique .k-ic {
+  background: #f3ddd9;
+  color: var(--terra);
+}
+.card.ec-critique .k-label,
+.card.ec-critique .k-val {
+  color: var(--terra);
+}
+.card.ec-danger {
+  background: #ecebed;
+  border-color: #cfcdd2;
+}
+.card.ec-danger .k-ic {
+  background: #d7d5da;
+  color: var(--noir);
+}
+.card.ec-danger .k-label,
+.card.ec-danger .k-val {
+  color: var(--noir);
+}
+
 .pill-state {
   display: inline-flex;
   align-items: center;
@@ -506,8 +553,18 @@ body {
   border-radius: 20px;
   margin-top: 8px;
 }
-.pill-state.ok {
+.pill-state.ok,
+.pill-state.ec-correct {
   background: var(--vert);
+}
+.pill-state.ec-modere {
+  background: #d98a1f;
+}
+.pill-state.ec-critique {
+  background: var(--terra);
+}
+.pill-state.ec-danger {
+  background: var(--noir);
 }
 .dot {
   width: 7px;
@@ -761,6 +818,14 @@ table.repartition tbody td:first-child {
 }
 .ra-ecart {
   color: var(--terra);
+}
+
+/* Largeurs intermédiaires (sidebar encore visible) : 5 colonnes deviennent trop serrées
+   pour les montants à 9 chiffres → on passe à 3 colonnes, cartes plus larges. */
+@media (max-width: 1320px) {
+  .kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 1080px) {

@@ -56,6 +56,8 @@ public class IndicateursMockController {
         e.productionMois = dto.productionMois();
         e.encaisseMois = dto.encaisseMois();
         e.deposeMois = dto.deposeMois();
+        e.encaisseCumul = dto.encaisseCumul();
+        e.deposeCumul = dto.deposeCumul();
         e.echuNonEncaisse = dto.echuNonEncaisse();
         e.echuNonEncaisseM1 = dto.echuNonEncaisseM1();
         e.encaissementsLettres = dto.encaissementsLettres();

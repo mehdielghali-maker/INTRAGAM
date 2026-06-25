@@ -17,6 +17,8 @@ public record MesuresProassur(
         // KPI 3 + bloc Production & dépôts — production émise du mois
         BigDecimal productionMois,
         BigDecimal encaisseMois,
+        // Encaissé CUMULÉ (YTD) — pour l'écart « à régulariser » cumulé de la carte KPI
+        BigDecimal encaisseCumul,
         // KPI 4 — créances échues non encaissées (part PROASSUR : l'échu)
         BigDecimal echuNonEncaisse,
         BigDecimal echuNonEncaisseM1,

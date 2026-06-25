@@ -15,10 +15,13 @@ export interface CarteMontant {
   libelleReference: string;
 }
 
+export type NiveauEcart = 'CORRECT' | 'MODERE' | 'CRITIQUE' | 'DANGER';
+
 export interface CarteEcart {
   valeur: number;
+  /** écart / CA annuel extrapolé, en %. */
   pourcentage: number;
-  aRegulariser: boolean;
+  niveau: NiveauEcart;
 }
 
 export interface CarteRatio {

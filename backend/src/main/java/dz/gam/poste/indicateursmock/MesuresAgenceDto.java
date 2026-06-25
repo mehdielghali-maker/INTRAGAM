@@ -12,6 +12,8 @@ public record MesuresAgenceDto(
         BigDecimal productionMois,
         BigDecimal encaisseMois,
         BigDecimal deposeMois,
+        BigDecimal encaisseCumul,
+        BigDecimal deposeCumul,
         BigDecimal echuNonEncaisse,
         BigDecimal echuNonEncaisseM1,
         BigDecimal encaissementsLettres,
@@ -25,7 +27,8 @@ public record MesuresAgenceDto(
 
     static MesuresAgenceDto de(MesuresAgenceEntity e) {
         return new MesuresAgenceDto(e.codeAgence, e.caYtdN, e.caYtdN1, e.caMoisN, e.caMoisM1,
-                e.productionMois, e.encaisseMois, e.deposeMois, e.echuNonEncaisse, e.echuNonEncaisseM1,
+                e.productionMois, e.encaisseMois, e.deposeMois, e.encaisseCumul, e.deposeCumul,
+                e.echuNonEncaisse, e.echuNonEncaisseM1,
                 e.encaissementsLettres, e.encaissementsLettresM1, e.sinistres12m, e.primes12m,
                 e.sinistres12mN1, e.primes12mN1, e.contratsActifs, e.contratsActifsVariation);
     }

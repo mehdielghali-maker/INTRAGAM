@@ -9,6 +9,8 @@ import java.math.BigDecimal;
 public record MesuresSage(
         // KPI 3 + bloc Production & dépôts — déposé en banque sur le mois
         BigDecimal deposeMois,
+        // Déposé CUMULÉ (YTD) — pour l'écart « à régulariser » cumulé de la carte KPI
+        BigDecimal deposeCumul,
         // KPI 4 — encaissements lettrés (viennent en diminution de l'échu PROASSUR)
         BigDecimal encaissementsLettres,
         BigDecimal encaissementsLettresM1) {

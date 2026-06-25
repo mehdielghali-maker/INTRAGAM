@@ -23,7 +23,11 @@ public class SageIndicateursStoreAdapter implements IndicateursSagePort {
     @Override
     public MesuresSage mesurer(String codeAgence, Periode periode) {
         return repository.findByCodeAgence(codeAgence)
-                .map(e -> new MesuresSage(e.deposeMois, e.encaissementsLettres, e.encaissementsLettresM1))
-                .orElseGet(() -> new MesuresSage(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
+                .map(e -> new MesuresSage(
+                        e.deposeMois,
+                        // Repli si cumulé absent (anciennes lignes avant backfill) : le mensuel.
+                        e.deposeCumul != null ? e.deposeCumul : e.deposeMois,
+                        e.encaissementsLettres, e.encaissementsLettresM1))
+                .orElseGet(() -> new MesuresSage(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
     }
 }

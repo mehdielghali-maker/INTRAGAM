@@ -1,14 +1,24 @@
 import { Icon } from '../../../app/icons';
-import { CarteEcart } from '../types';
+import { CarteEcart, NiveauEcart } from '../types';
 import { montantDA, ratioPct } from '../format';
 
 /**
- * Carte d'alerte « Écart à régulariser » = Encaissé − Versé en banque. Devient terracotta
- * (classe {@code alert}) si l'écart dépasse le seuil de config, verte sinon.
+ * Carte « Écart à régulariser » = Encaissé − Versé en banque, en CUMULÉ (YTD). Le code couleur
+ * et le message dépendent du ratio écart / CA annuel extrapolé (4 niveaux) :
+ * Correct (vert), Modéré (orange), Critique (rouge), Danger (noir).
+ * (L'écart DU MOIS figure dans le bloc « Production & dépôts ».)
  */
+const NIVEAUX: Record<NiveauEcart, { cls: string; message: string }> = {
+  CORRECT: { cls: 'ec-correct', message: 'Correct' },
+  MODERE: { cls: 'ec-modere', message: 'Modéré' },
+  CRITIQUE: { cls: 'ec-critique', message: 'Critique' },
+  DANGER: { cls: 'ec-danger', message: 'Danger' },
+};
+
 export default function KpiEcartCard({ ecart }: { ecart: CarteEcart }) {
+  const n = NIVEAUX[ecart.niveau] ?? NIVEAUX.CORRECT;
   return (
-    <div className={`card ${ecart.aRegulariser ? 'alert' : ''}`}>
+    <div className={`card ${n.cls}`}>
       <div className="k-top">
         <span className="k-label">Écart à régulariser</span>
         <span className="k-ic">
@@ -16,10 +26,10 @@ export default function KpiEcartCard({ ecart }: { ecart: CarteEcart }) {
         </span>
       </div>
       <div className="k-val">{montantDA(ecart.valeur)}</div>
-      <div className="k-sub">Encaissé − versé · {ratioPct(ecart.pourcentage)}</div>
-      <span className={`pill-state ${ecart.aRegulariser ? '' : 'ok'}`}>
+      <div className="k-sub">Écart / CA annuel · {ratioPct(ecart.pourcentage)}</div>
+      <span className={`pill-state ${n.cls}`}>
         <span className="dot" />
-        {ecart.aRegulariser ? 'À régulariser' : 'Conforme'}
+        {n.message}
       </span>
     </div>
   );

@@ -2,7 +2,10 @@ package dz.gam.poste.indicateursmock;
 
 import dz.gam.poste.contexte.domain.event.AgencesDeclareesEvent;
 import dz.gam.poste.versement.config.VersementProperties;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -13,9 +16,12 @@ import java.util.List;
  * Sème des chiffres FICTIFS distincts par agence (substitut du Cube Power BI). Réagit à
  * {@link AgencesDeclareesEvent} (démarrage et ajout via l'admin) : crée les mesures et la
  * situation mensuelle manquantes de chaque agence. Idempotent (n'écrase jamais une saisie).
+ * Au démarrage, complète aussi les champs cumulés manquants sur TOUTES les lignes existantes
+ * (migration des bases antérieures à l'ajout de l'écart cumulé).
  */
 @Component
-public class IndicateursMockSeed {
+@Order(2) // après ProfilsSeeder (déclaration des agences)
+public class IndicateursMockSeed implements ApplicationRunner {
 
     private final MesuresAgenceJpaRepository mesures;
     private final SituationMensuelleJpaRepository situations;
@@ -33,12 +39,31 @@ public class IndicateursMockSeed {
         garantir(evenement.codesAgences());
     }
 
+    /** Backfill global : complète les cumulés nuls de toutes les mesures déjà en base. */
+    @Override
+    public void run(ApplicationArguments args) {
+        mesures.findAll().forEach(e -> {
+            if (e.encaisseCumul == null || e.deposeCumul == null) {
+                double f = facteur(e.codeAgence);
+                e.encaisseCumul = bd(98_000_000, f);
+                e.deposeCumul = bd(92_000_000, f);
+                mesures.save(e);
+            }
+        });
+    }
+
     public void garantir(List<String> codes) {
         List<String> mois = versementProperties.moisDisponibles();
         for (String code : codes) {
             double facteur = facteur(code);
-            if (mesures.findByCodeAgence(code).isEmpty()) {
+            MesuresAgenceEntity existant = mesures.findByCodeAgence(code).orElse(null);
+            if (existant == null) {
                 mesures.save(mesuresParDefaut(code, facteur));
+            } else if (existant.encaisseCumul == null || existant.deposeCumul == null) {
+                // Backfill des champs cumulés ajoutés après coup (ne touche pas aux autres saisies).
+                existant.encaisseCumul = bd(98_000_000, facteur);
+                existant.deposeCumul = bd(92_000_000, facteur);
+                mesures.save(existant);
             }
             for (String m : mois) {
                 if (situations.findByCodeAgenceAndMois(code, m).isEmpty()) {
@@ -63,6 +88,9 @@ public class IndicateursMockSeed {
         e.productionMois = bd(18_540_000, f);
         e.encaisseMois = bd(17_200_000, f);
         e.deposeMois = bd(15_900_000, f);
+        // Cumulés YTD (> mensuel) → écart cumulé à régulariser de la carte KPI.
+        e.encaisseCumul = bd(98_000_000, f);
+        e.deposeCumul = bd(92_000_000, f);
         e.echuNonEncaisse = bd(12_000_000, f);
         e.echuNonEncaisseM1 = bd(12_500_000, f);
         e.encaissementsLettres = bd(3_550_000, f);

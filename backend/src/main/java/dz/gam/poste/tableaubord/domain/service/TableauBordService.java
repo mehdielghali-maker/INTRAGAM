@@ -3,6 +3,7 @@ package dz.gam.poste.tableaubord.domain.service;
 import dz.gam.poste.tableaubord.config.TableauBordProperties;
 import dz.gam.poste.tableaubord.domain.model.CarteEcart;
 import dz.gam.poste.tableaubord.domain.model.CarteMontant;
+import dz.gam.poste.tableaubord.domain.model.NiveauEcart;
 import dz.gam.poste.tableaubord.domain.model.CarteRatio;
 import dz.gam.poste.tableaubord.domain.model.CompteurAction;
 import dz.gam.poste.tableaubord.domain.model.InfoAgence;
@@ -19,7 +20,6 @@ import dz.gam.poste.tableaubord.domain.port.out.IndicateursProassurPort;
 import dz.gam.poste.tableaubord.domain.port.out.IndicateursSagePort;
 import dz.gam.poste.tableaubord.domain.port.out.MesuresProassur;
 import dz.gam.poste.tableaubord.domain.port.out.MesuresSage;
-import dz.gam.poste.shared.regularisation.EcartRegularisation;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -97,9 +97,10 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 p.caMoisN(), Variation.pourcentage(p.caMoisN(), p.caMoisM1MemeQuantieme(), true),
                 p.caMoisM1MemeQuantieme(), "vs M‑1 même jour");
 
-        // Écart « à régulariser » = Encaissé (PROASSUR) − Versé en banque (Sage).
-        // Définition canonique unique, partagée avec la fonction « Versement bancaire ».
-        CarteEcart ecartDepot = calculerEcartDepot(p.encaisseMois(), s.deposeMois());
+        // Écart « à régulariser » = Encaissé (PROASSUR) − Versé en banque (Sage), en CUMULÉ (YTD).
+        // C'est l'écart cumulé à régulariser (l'écart DU MOIS figure dans le bloc Production & dépôts).
+        // Code couleur = écart / CA annuel extrapolé (cf. niveau()).
+        CarteEcart ecartDepot = calculerEcartDepot(p.encaisseCumul(), s.deposeCumul(), p.caYtdN());
 
         BigDecimal creance = p.echuNonEncaisse().subtract(s.encaissementsLettres());
         BigDecimal creanceM1 = p.echuNonEncaisseM1().subtract(s.encaissementsLettresM1());
@@ -134,6 +135,7 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 a.caYtdN().add(b.caYtdN()), a.caYtdN1().add(b.caYtdN1()),
                 a.caMoisN().add(b.caMoisN()), a.caMoisM1MemeQuantieme().add(b.caMoisM1MemeQuantieme()),
                 a.productionMois().add(b.productionMois()), a.encaisseMois().add(b.encaisseMois()),
+                a.encaisseCumul().add(b.encaisseCumul()),
                 a.echuNonEncaisse().add(b.echuNonEncaisse()), a.echuNonEncaisseM1().add(b.echuNonEncaisseM1()),
                 a.sinistres12m().add(b.sinistres12m()), a.primes12m().add(b.primes12m()),
                 a.sinistres12mN1().add(b.sinistres12mN1()), a.primes12mN1().add(b.primes12mN1()),
@@ -144,16 +146,42 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
     private static MesuresSage additionner(MesuresSage a, MesuresSage b) {
         return new MesuresSage(
                 a.deposeMois().add(b.deposeMois()),
+                a.deposeCumul().add(b.deposeCumul()),
                 a.encaissementsLettres().add(b.encaissementsLettres()),
                 a.encaissementsLettresM1().add(b.encaissementsLettresM1()));
     }
 
-    private CarteEcart calculerEcartDepot(BigDecimal encaisse, BigDecimal depose) {
-        // Calcul partagé avec la fonction « Versement bancaire » (source unique, ADR 0005).
-        TableauBordProperties.SeuilEcartDepot seuil = properties.seuilEcartDepot();
-        EcartRegularisation.Resultat r = EcartRegularisation.calculer(
-                encaisse, depose, seuil.montant(), seuil.pourcentage());
-        return new CarteEcart(r.valeur(), r.pourcentage(), r.aRegulariser());
+    private CarteEcart calculerEcartDepot(BigDecimal encaisseCumul, BigDecimal deposeCumul, BigDecimal caYtd) {
+        // Écart cumulé = Encaissé − Versé (définition unique, ADR 0005).
+        BigDecimal ecart = encaisseCumul.subtract(deposeCumul);
+        // Sévérité = écart rapporté au CA ANNUEL extrapolé (YTD annualisé au prorata des jours).
+        BigDecimal caAnnuel = extrapolerAnnuel(caYtd);
+        BigDecimal ratio = (ecart.signum() <= 0 || caAnnuel.signum() == 0)
+                ? BigDecimal.ZERO
+                : ecart.divide(caAnnuel, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+        return new CarteEcart(ecart, ratio.setScale(1, RoundingMode.HALF_UP), niveau(ratio));
+    }
+
+    /** CA annuel extrapolé = CA YTD × (jours de l'année / jours écoulés). */
+    private BigDecimal extrapolerAnnuel(BigDecimal caYtd) {
+        LocalDate jour = LocalDate.now(horloge);
+        return caYtd.multiply(BigDecimal.valueOf(jour.lengthOfYear()))
+                .divide(BigDecimal.valueOf(jour.getDayOfYear()), 0, RoundingMode.HALF_UP);
+    }
+
+    /** Code couleur selon le ratio écart / CA annuel (bornes en config). */
+    private NiveauEcart niveau(BigDecimal ratioPct) {
+        TableauBordProperties.SeuilsEcart s = properties.seuilsEcart();
+        if (ratioPct.compareTo(s.correctMax()) < 0) {
+            return NiveauEcart.CORRECT;
+        }
+        if (ratioPct.compareTo(s.modereMax()) < 0) {
+            return NiveauEcart.MODERE;
+        }
+        if (ratioPct.compareTo(s.critiqueMax()) <= 0) {
+            return NiveauEcart.CRITIQUE;
+        }
+        return NiveauEcart.DANGER;
     }
 
     private List<CompteurAction> coupDoeil(CompteursAgence c) {

@@ -48,10 +48,13 @@ server:
 # Paramètres MÉTIER du tableau de bord agence — à caler avec la DG/DFC, jamais en dur.
 poste:
   tableau-bord:
-    # Alerte « écart à régulariser » si l'écart dépasse le montant OU le pourcentage.
-    seuil-ecart-depot:
-      montant: 1000000      # DA
-      pourcentage: 10       # %
+    # Code couleur de l'« écart à régulariser » = écart / CA annuel extrapolé (YTD annualisé).
+    # < correct-max → vert (Correct) ; < modere-max → orange (Modéré) ;
+    # <= critique-max → rouge (Critique) ; au-delà → noir (Danger).
+    seuils-ecart:
+      correct-max: 2.5      # %
+      modere-max: 5         # %
+      critique-max: 10      # %
     sp:
       # Périmètre du numérateur S/P : REGLES_SEULS | CHARGE_AVEC_PROVISIONS
       perimetre-numerateur: REGLES_SEULS
