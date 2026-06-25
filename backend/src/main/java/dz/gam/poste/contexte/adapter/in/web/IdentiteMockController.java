@@ -1,5 +1,6 @@
 package dz.gam.poste.contexte.adapter.in.web;
 
+import dz.gam.poste.contexte.adapter.out.identite.ProfilsAdminStore;
 import dz.gam.poste.contexte.config.ContexteProperties;
 import dz.gam.poste.contexte.domain.model.ProfilUtilisateur;
 import dz.gam.poste.contexte.domain.port.out.ProfilActifStore;
@@ -18,37 +19,45 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * API MOCK de l'identité SSO : liste les profils simulables (AGA/agents et leurs agences) et
- * permet d'en activer un POUR LA SESSION COURANTE. Simule la connexion d'utilisateurs
- * différents sans redémarrage. Demain, le profil viendra des claims du token Entra ID :
- * ce contrôleur disparaîtra, sans impact sur le domaine ni les écrans.
+ * API MOCK de l'identité SSO : liste les profils simulables (AGA/agents et leurs agences,
+ * lus en base) et permet d'en activer un POUR LA SESSION COURANTE. Simule la connexion
+ * d'utilisateurs différents sans redémarrage. Demain, le profil viendra des claims Entra ID.
  */
 @RestController
 @RequestMapping("/api/mock/identite")
 public class IdentiteMockController {
 
+    private final ProfilsAdminStore profils;
     private final ContexteProperties properties;
     private final ProfilActifStore profilActif;
 
-    public IdentiteMockController(ContexteProperties properties, ProfilActifStore profilActif) {
+    public IdentiteMockController(ProfilsAdminStore profils, ContexteProperties properties,
+                                  ProfilActifStore profilActif) {
+        this.profils = profils;
         this.properties = properties;
         this.profilActif = profilActif;
     }
 
     @GetMapping
     public EtatIdentite etat() {
-        String actif = properties.resoudre(profilActif.profilActif().orElse(null)).identifiant();
-        return new EtatIdentite(actif, properties.profils().stream().map(ProfilDto::de).toList());
+        return new EtatIdentite(identifiantActif(), profils.lister().stream().map(ProfilDto::de).toList());
     }
 
     @PostMapping("/actif")
     public EtatIdentite activer(@Valid @RequestBody ActiverProfilRequest requete) {
-        boolean existe = properties.profils().stream().anyMatch(p -> p.identifiant().equals(requete.identifiant()));
-        if (!existe) {
+        if (profils.trouver(requete.identifiant()).isEmpty()) {
             throw new NoSuchElementException("Profil inconnu : " + requete.identifiant());
         }
         profilActif.definir(requete.identifiant());
         return etat();
+    }
+
+    /** Identifiant du profil actif : sélection de session, ou défaut, ou 1er disponible. */
+    private String identifiantActif() {
+        return profilActif.profilActif().filter(id -> profils.trouver(id).isPresent())
+                .or(() -> profils.trouver(properties.profilDefaut()).map(ContexteProperties.Profil::identifiant))
+                .or(() -> profils.lister().stream().findFirst().map(ContexteProperties.Profil::identifiant))
+                .orElse(null);
     }
 
     @ExceptionHandler(NoSuchElementException.class)
