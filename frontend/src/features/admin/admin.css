@@ -1,0 +1,248 @@
+/* Administration des profils (AGA & agences) — design GAM, mobile-first. */
+
+.page-h {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--vert-fonce);
+}
+.page-sub {
+  font-size: 13.5px;
+  color: var(--gris);
+  margin: 3px 0 18px;
+  max-width: 880px;
+}
+
+.adm-msg {
+  padding: 11px 15px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  margin-bottom: 14px;
+  max-width: 980px;
+}
+.adm-msg.ok {
+  background: #eef6f1;
+  border: 1px solid #cfe7da;
+  color: var(--vert-fonce);
+}
+.adm-msg.ko {
+  background: #fbf1ef;
+  border: 1px solid #e8c8c2;
+  color: var(--terra);
+}
+
+.adm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .adm-grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
+
+/* Liste des profils */
+.adm-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.adm-card {
+  background: var(--blanc);
+  border: 1px solid #ece4d2;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 0 rgba(10, 61, 18, 0.05);
+}
+.adm-card.actif {
+  border-color: var(--vert);
+  box-shadow: 0 0 0 1px var(--vert);
+}
+.adm-nom {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--vert-fonce);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.adm-id {
+  font-size: 12px;
+  color: var(--gris);
+  margin-top: 2px;
+}
+.adm-tag {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--sable-pale);
+  color: #6b5417;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.adm-tag.on {
+  background: var(--vert);
+  color: #fff;
+}
+.adm-agences {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.adm-agences li {
+  font-size: 13px;
+  color: var(--noir);
+}
+.adm-agences b {
+  font-weight: 600;
+}
+.adm-code {
+  font-size: 11.5px;
+  color: var(--gris);
+  margin-left: 4px;
+}
+.adm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.adm-vide {
+  color: var(--gris);
+  font-size: 13.5px;
+}
+
+/* Formulaire */
+.adm-form {
+  background: var(--blanc);
+  border: 1px solid #ece4d2;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 1px 0 rgba(10, 61, 18, 0.05);
+}
+.adm-form h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--vert);
+  margin: 0 0 14px;
+}
+.adm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--vert);
+  margin-bottom: 12px;
+}
+.adm-field input,
+.adm-field select,
+.adm-agence-row input {
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--noir);
+  border: 1px solid #d9cfb8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--blanc);
+  outline: none;
+  min-height: 44px;
+  width: 100%;
+}
+.adm-field input:disabled {
+  background: var(--sable-tres-pale);
+  color: var(--gris);
+}
+.adm-field input:focus,
+.adm-field select:focus,
+.adm-agence-row input:focus {
+  border-color: var(--or);
+}
+.adm-sub {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--vert);
+  margin: 6px 0 8px;
+}
+.adm-agence-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.adm-agence-row input:first-child {
+  flex: 0 0 40%;
+}
+.adm-x {
+  flex: 0 0 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #e8c8c2;
+  background: #fbf1ef;
+  color: var(--terra);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.adm-x:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.adm-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* Boutons (cohérents avec les autres sections) */
+.btn-primary {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  background: var(--or);
+  color: var(--vert-fonce);
+  border: none;
+  padding: 11px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn-primary:hover {
+  background: #bd9b50;
+}
+.btn-ghost {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  background: none;
+  color: var(--gris);
+  border: 1px solid #d9cfb8;
+  padding: 9px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.btn-ghost:hover {
+  background: var(--sable-tres-pale);
+}
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ghost.danger {
+  color: var(--terra);
+  border-color: #e8c8c2;
+}

@@ -74,6 +74,13 @@ avec des valeurs distinctes par feuille (depuis le périmètre du contexte) et *
 Pas d'auth réelle : identité **SSO (Entra ID) mockée** en config. Le bloc legacy « Code Accès »
 est supprimé au profit de l'identité SSO.
 
+**Profils & administration** : les profils SSO (AGA/agents + leurs agences) sont **persistés**
+(table `contexte_profil`), semés depuis `poste.contexte.profils` au 1er démarrage, et **gérables
+via une page Admin** (`/api/admin/profils` CRUD ; UI `/admin`). « Activer » un profil = mock de
+connexion (`POST /api/mock/identite/actif`). À l'enregistrement d'un profil, un événement
+`AgencesDeclareesEvent` est publié → les mocks sèment les chiffres (indicateurs) et chèques de
+démo des nouvelles agences (découplage, pas de cycle entre modules).
+
 **Contexte d'agence (brique transverse `dz.gam.poste.contexte`, ADR 0005)** : l'identité fournit
 un **périmètre d'agences** (mock `poste.contexte` : AGA M. Benzerga + 3 agences). L'**agence active**
 est portée par la **session serveur** (HttpSession via `RequestContextHolder` ; repli vide hors

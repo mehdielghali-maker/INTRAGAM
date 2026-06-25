@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Icon } from './icons';
-import { ACCUEIL, LOT1, LOT2, NavItem } from './navigation';
+import { ACCUEIL, ADMIN, LOT1, LOT2, NavItem } from './navigation';
 import { CompteursNavigation } from '../features/accueil/types';
 
 /** Sidebar de navigation : Accueil + 2 lots de fonctionnalités, avec badges compteurs. */
@@ -41,6 +41,8 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
       {LOT1.map(renderItem)}
       <div className="nav-group">Lot 2 · Recouvrement</div>
       {LOT2.map(renderItem)}
+      <div className="nav-group">Paramètres</div>
+      {renderItem(ADMIN)}
     </nav>
   );
 }

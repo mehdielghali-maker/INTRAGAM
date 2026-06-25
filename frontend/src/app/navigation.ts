@@ -44,5 +44,13 @@ export const LOT2: NavItem[] = [
   { id: 'contentieux', label: 'Créances & contentieux', route: '/contentieux', icon: 'contentieux', badgeKey: 'contentieux', urgent: true, soon: true },
 ];
 
+/** Administration (gestion des AGA et de leurs agences). */
+export const ADMIN: NavItem = {
+  id: 'admin',
+  label: 'Administration',
+  route: '/admin',
+  icon: 'admin',
+};
+
 /** Tous les items routables (pour générer les routes placeholder). */
 export const ITEMS_SOON: NavItem[] = [...LOT1, ...LOT2].filter((i) => i.soon);

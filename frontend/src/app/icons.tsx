@@ -20,7 +20,8 @@ export type IconName =
   | 'sp'
   | 'chevron'
   | 'fleche-haut'
-  | 'fleche-bas';
+  | 'fleche-bas'
+  | 'admin';
 
 const PATHS: Record<IconName, string> = {
   accueil: 'M3 11l9-8 9 8M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10',
@@ -42,6 +43,7 @@ const PATHS: Record<IconName, string> = {
   chevron: 'M9 18l6-6-6-6',
   'fleche-haut': 'M12 19V5M5 12l7-7 7 7',
   'fleche-bas': 'M12 5v14M19 12l-7 7-7-7',
+  admin: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
 };
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {

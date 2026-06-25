@@ -1,49 +1,42 @@
 package dz.gam.poste.indicateursmock;
 
-import dz.gam.poste.contexte.config.ContexteProperties;
+import dz.gam.poste.contexte.domain.event.AgencesDeclareesEvent;
 import dz.gam.poste.versement.config.VersementProperties;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Sème des chiffres FICTIFS distincts par agence au démarrage, à partir de TOUTES les agences
- * de TOUS les profils configurés (donc toute agence ajoutée en configuration est couverte,
- * quel que soit le profil simulé). N'écrase jamais une valeur déjà saisie (idempotent).
- * Substitut du Cube Power BI en attendant son branchement.
+ * Sème des chiffres FICTIFS distincts par agence (substitut du Cube Power BI). Réagit à
+ * {@link AgencesDeclareesEvent} (démarrage et ajout via l'admin) : crée les mesures et la
+ * situation mensuelle manquantes de chaque agence. Idempotent (n'écrase jamais une saisie).
  */
 @Component
-public class IndicateursMockSeeder implements ApplicationRunner {
+public class IndicateursMockSeed {
 
-    private final ContexteProperties contexte;
     private final MesuresAgenceJpaRepository mesures;
     private final SituationMensuelleJpaRepository situations;
     private final VersementProperties versementProperties;
 
-    public IndicateursMockSeeder(ContexteProperties contexte, MesuresAgenceJpaRepository mesures,
-                                 SituationMensuelleJpaRepository situations, VersementProperties versementProperties) {
-        this.contexte = contexte;
+    public IndicateursMockSeed(MesuresAgenceJpaRepository mesures, SituationMensuelleJpaRepository situations,
+                               VersementProperties versementProperties) {
         this.mesures = mesures;
         this.situations = situations;
         this.versementProperties = versementProperties;
     }
 
-    @Override
-    public void run(ApplicationArguments args) {
-        // Union des agences de tous les profils (déduplication par code, ordre conservé).
-        Map<String, String> agences = new LinkedHashMap<>();
-        contexte.profils().forEach(p -> p.agences().forEach(a -> agences.putIfAbsent(a.code(), a.nom())));
+    @EventListener
+    public void surAgencesDeclarees(AgencesDeclareesEvent evenement) {
+        garantir(evenement.codesAgences());
+    }
 
+    public void garantir(List<String> codes) {
         List<String> mois = versementProperties.moisDisponibles();
-        int i = 0;
-        for (String code : agences.keySet()) {
-            double facteur = Math.max(0.4, 1.0 - 0.12 * i++); // distinct par agence
+        for (String code : codes) {
+            double facteur = facteur(code);
             if (mesures.findByCodeAgence(code).isEmpty()) {
                 mesures.save(mesuresParDefaut(code, facteur));
             }
@@ -53,6 +46,11 @@ public class IndicateursMockSeeder implements ApplicationRunner {
                 }
             }
         }
+    }
+
+    /** Facteur déterministe par agence dans [0,40 ; 1,00] → chiffres distincts. */
+    private static double facteur(String code) {
+        return 0.40 + (Math.abs(code.hashCode()) % 61) / 100.0;
     }
 
     private MesuresAgenceEntity mesuresParDefaut(String code, double f) {
