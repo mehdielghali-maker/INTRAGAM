@@ -35,6 +35,15 @@ mockée en dev) et constitue un **périmètre de sécurité**.
    (HTTP 409), car une action (dépôt, nouvelle demande…) doit toujours viser une agence précise.
    Le mode est porté par la session (sentinelle `CONSOLIDE`), comme l'agence active.
 
+5. **Hiérarchie agences / sous-agences** (2 niveaux). Le périmètre est une liste d'agences
+   dont certaines portent des **sous-agences**. L'unité d'**action** est toujours une
+   **feuille** (sous-agence, ou agence autonome sans sous-agence). Sélectionner une **agence
+   parente** = **vue consolidée (lecture seule)** de ses sous-agences ; « Toutes mes agences »
+   = consolidé de tout le périmètre. Règle unifiée : une sélection couvrant **> 1 feuille**
+   est en lecture seule (`agencePourAction()` → 409) ; les listes/agrégats portent sur
+   `agencesActives()` (les feuilles couvertes). Le consolidé global d'origine n'est qu'un cas
+   particulier de cette règle.
+
 ## Conséquences
 
 - **+** Une seule source de vérité du périmètre ; rejet centralisé hors périmètre.

@@ -63,7 +63,7 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
     }
 
     @Override
-    public TableauBord consolider(Periode periode, List<InfoAgence> agences) {
+    public TableauBord consolider(Periode periode, List<InfoAgence> agences, InfoAgence entete) {
         Periode effective = periode != null ? periode : properties.periodeDefaut();
         MesuresProassur pTotal = null;
         MesuresSage sTotal = null;
@@ -77,8 +77,7 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
             pTotal = pTotal == null ? p : additionner(pTotal, p);
             sTotal = sTotal == null ? s : additionner(sTotal, s);
         }
-        InfoAgence consolidee = new InfoAgence("Toutes mes agences (consolidé)", "CONSOLIDE");
-        return construire(effective, consolidee, pTotal, sTotal, true, repartition);
+        return construire(effective, entete, pTotal, sTotal, true, repartition);
     }
 
     @Override

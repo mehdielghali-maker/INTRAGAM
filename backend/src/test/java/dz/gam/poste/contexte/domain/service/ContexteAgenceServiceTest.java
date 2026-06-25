@@ -4,6 +4,7 @@ import dz.gam.poste.contexte.domain.model.ActionConsolideeInterditeException;
 import dz.gam.poste.contexte.domain.model.Agence;
 import dz.gam.poste.contexte.domain.model.AgenceHorsPerimetreException;
 import dz.gam.poste.contexte.domain.model.ContexteAgence;
+import dz.gam.poste.contexte.domain.model.GroupeAgences;
 import dz.gam.poste.contexte.domain.model.Identite;
 import dz.gam.poste.contexte.domain.model.ProfilUtilisateur;
 import dz.gam.poste.contexte.domain.model.Utilisateur;
@@ -19,112 +20,112 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ContexteAgenceServiceTest {
 
-    private static final Agence SAID_HAMDINE = new Agence("02.1.S.BENZERGA", "Agence Saïd Hamdine");
-    private static final Agence AISSAT_IDIR = new Agence("02.4.Aïssat Idir", "Agence Aïssat Idir");
-    private static final Agence DRARIA = new Agence("02.7.Draria", "Agence Draria");
+    // Groupe « Agence Saïd Hamdine » avec 2 sous-agences (unités d'action).
+    private static final Agence HYDRA = new Agence("02.1.1", "Point Hydra");
+    private static final Agence BMR = new Agence("02.1.2", "Point Bir Mourad Raïs");
+    private static final GroupeAgences BENZERGA =
+            new GroupeAgences("02.1.BENZERGA", "Agence Saïd Hamdine", List.of(HYDRA, BMR));
+    // Agence autonome (sa propre unité d'action).
+    private static final GroupeAgences DRARIA =
+            new GroupeAgences("02.7.DRARIA", "Agence Draria", List.of());
+    private static final Agence DRARIA_FEUILLE = new Agence("02.7.DRARIA", "Agence Draria");
 
     private final FauxStore store = new FauxStore();
 
-    private ContexteAgenceService service(Agence... perimetre) {
+    private ContexteAgenceService service(GroupeAgences... perimetre) {
         Utilisateur aga = new Utilisateur("m.benzerga", "M. Benzerga", ProfilUtilisateur.AGA);
         IdentitePort identite = () -> new Identite(aga, List.of(perimetre));
         return new ContexteAgenceService(identite, store);
     }
 
     @Test
-    void atterrissage_direct_sans_choix_actif_la_premiere_agence_du_perimetre() {
-        ContexteAgence ctx = service(SAID_HAMDINE, AISSAT_IDIR, DRARIA).contexte();
+    void atterrissage_direct_sur_la_premiere_sous_agence() {
+        ContexteAgence ctx = service(BENZERGA, DRARIA).contexte();
 
-        assertThat(ctx.agenceActive()).isEqualTo(SAID_HAMDINE);
-        assertThat(ctx.agencesAutorisees()).containsExactly(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
-        assertThat(ctx.consolideDisponible()).isTrue();   // multi-agence → vue consolidée proposable
+        assertThat(ctx.agenceActive()).isEqualTo(HYDRA);          // 1re feuille du périmètre
+        assertThat(ctx.selectionCode()).isEqualTo("02.1.1");
+        assertThat(ctx.consolideDisponible()).isTrue();           // 3 feuilles
         assertThat(ctx.consolideActif()).isFalse();
-        assertThat(ctx.utilisateur().profil()).isEqualTo(ProfilUtilisateur.AGA);
+        assertThat(ctx.perimetre()).containsExactly(BENZERGA, DRARIA);
     }
 
     @Test
-    void changement_vers_une_agence_du_perimetre_devient_active_et_est_memorise() {
-        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
+    void selectionner_le_groupe_parent_est_une_vue_consolidee_lecture_seule() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
 
-        ContexteAgence ctx = service.changer("02.7.Draria");
-
-        assertThat(ctx.agenceActive()).isEqualTo(DRARIA);
-        assertThat(store.codeActif()).contains("02.7.Draria");
-        // La lecture suivante reflète bien le choix mémorisé en session.
-        assertThat(service.agencePourAction()).isEqualTo(DRARIA);
-    }
-
-    @Test
-    void changement_vers_une_agence_hors_perimetre_est_rejete() {
-        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR);
-
-        assertThatThrownBy(() -> service.changer("99.9.INCONNUE"))
-                .isInstanceOf(AgenceHorsPerimetreException.class)
-                .hasMessageContaining("99.9.INCONNUE");
-        // Aucun effet de bord : l'agence active n'a pas changé.
-        assertThat(store.codeActif()).isEmpty();
-    }
-
-    @Test
-    void exiger_acces_rejette_hors_perimetre_et_accepte_dans_le_perimetre() {
-        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR);
-
-        assertThatThrownBy(() -> service.exigerAcces("02.7.Draria"))
-                .isInstanceOf(AgenceHorsPerimetreException.class);
-        // Dans le périmètre : aucune exception.
-        service.exigerAcces("02.4.Aïssat Idir");
-    }
-
-    @Test
-    void agent_mono_agence_sans_friction() {
-        ContexteAgence ctx = service(SAID_HAMDINE).contexte();
-
-        assertThat(ctx.agencesAutorisees()).containsExactly(SAID_HAMDINE);
-        assertThat(ctx.agenceActive()).isEqualTo(SAID_HAMDINE);
-        assertThat(ctx.consolideDisponible()).isFalse();  // mono-agence : pas de consolidé
-    }
-
-    @Test
-    void mode_consolide_actif_vue_d_ensemble_sans_agence_active() {
-        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
-
-        ContexteAgence ctx = service.changer(ContexteAgenceService.CODE_CONSOLIDE);
+        ContexteAgence ctx = service.changer("02.1.BENZERGA");
 
         assertThat(ctx.consolideActif()).isTrue();
         assertThat(ctx.agenceActive()).isNull();
-        assertThat(service.estConsolide()).isTrue();
-        // Lecture : tout le périmètre ; action : interdite (vue d'ensemble seulement).
-        assertThat(service.agencesActives()).containsExactly(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
+        assertThat(ctx.selectionLibelle()).isEqualTo("Agence Saïd Hamdine (consolidé)");
+        // Lecture = les 2 sous-agences ; action interdite.
+        assertThat(service.agencesActives()).containsExactly(HYDRA, BMR);
         assertThatThrownBy(service::agencePourAction).isInstanceOf(ActionConsolideeInterditeException.class);
     }
 
     @Test
-    void mode_consolide_refuse_en_mono_agence() {
-        ContexteAgenceService service = service(SAID_HAMDINE);
+    void selectionner_une_sous_agence_autorise_l_action() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
 
+        ContexteAgence ctx = service.changer("02.1.2");
+
+        assertThat(ctx.consolideActif()).isFalse();
+        assertThat(ctx.agenceActive()).isEqualTo(BMR);
+        assertThat(service.agencePourAction()).isEqualTo(BMR);
+        assertThat(service.agencesActives()).containsExactly(BMR);
+    }
+
+    @Test
+    void agence_autonome_est_sa_propre_unite_d_action() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
+
+        service.changer("02.7.DRARIA");
+
+        assertThat(service.estConsolide()).isFalse();
+        assertThat(service.agencePourAction()).isEqualTo(DRARIA_FEUILLE);
+    }
+
+    @Test
+    void consolide_global_couvre_toutes_les_feuilles_et_interdit_l_action() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
+
+        ContexteAgence ctx = service.changer(ContexteAgenceService.CODE_CONSOLIDE);
+
+        assertThat(ctx.consolideActif()).isTrue();
+        assertThat(ctx.selectionLibelle()).isEqualTo("Toutes mes agences (consolidé)");
+        assertThat(service.agencesActives()).containsExactly(HYDRA, BMR, DRARIA_FEUILLE);
+        assertThatThrownBy(service::agencePourAction).isInstanceOf(ActionConsolideeInterditeException.class);
+    }
+
+    @Test
+    void selection_hors_perimetre_est_rejetee() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
+
+        assertThatThrownBy(() -> service.changer("99.9.INCONNUE"))
+                .isInstanceOf(AgenceHorsPerimetreException.class);
+        assertThat(store.codeActif()).isEmpty();
+    }
+
+    @Test
+    void mono_agence_autonome_sans_consolide() {
+        ContexteAgenceService service = service(DRARIA);
+
+        ContexteAgence ctx = service.contexte();
+        assertThat(ctx.consolideDisponible()).isFalse();
+        assertThat(ctx.agenceActive()).isEqualTo(DRARIA_FEUILLE);
         assertThatThrownBy(() -> service.changer(ContexteAgenceService.CODE_CONSOLIDE))
                 .isInstanceOf(AgenceHorsPerimetreException.class);
     }
 
     @Test
-    void hors_consolide_agence_pour_action_renvoie_l_agence_active() {
-        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR);
-        service.changer("02.4.Aïssat Idir");
+    void exiger_acces_porte_sur_les_feuilles() {
+        ContexteAgenceService service = service(BENZERGA, DRARIA);
 
-        assertThat(service.estConsolide()).isFalse();
-        assertThat(service.agencePourAction()).isEqualTo(AISSAT_IDIR);
-        assertThat(service.agencesActives()).containsExactly(AISSAT_IDIR);
+        service.exigerAcces("02.1.1"); // feuille du périmètre : OK
+        assertThatThrownBy(() -> service.exigerAcces("02.1.BENZERGA")) // un groupe n'est pas une feuille
+                .isInstanceOf(AgenceHorsPerimetreException.class);
     }
 
-    @Test
-    void un_code_actif_devenu_hors_perimetre_retombe_sur_la_premiere_agence() {
-        store.definir("02.7.Draria"); // plus dans le périmètre ci-dessous
-        ContexteAgence ctx = service(SAID_HAMDINE, AISSAT_IDIR).contexte();
-
-        assertThat(ctx.agenceActive()).isEqualTo(SAID_HAMDINE);
-    }
-
-    /** Store en mémoire (équivalent test du bean session-scoped). */
     private static final class FauxStore implements AgenceActiveStore {
         private String code;
 

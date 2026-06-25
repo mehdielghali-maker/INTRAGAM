@@ -16,8 +16,10 @@ public interface ConsulterTableauBordUseCase {
     TableauBord consulter(Periode periode, InfoAgence agence);
 
     /**
-     * Vue consolidée (« Toutes mes agences ») : agrège les indicateurs sur tout le périmètre
-     * et fournit la répartition par agence. Lecture seule (vue d'ensemble).
+     * Vue consolidée : agrège les indicateurs sur les agences données (tout le périmètre, ou
+     * les sous-agences d'un groupe) et fournit la répartition par agence. Lecture seule.
+     *
+     * @param entete identité affichée de l'ensemble consolidé (nom + code de la sélection)
      */
-    TableauBord consolider(Periode periode, List<InfoAgence> agences);
+    TableauBord consolider(Periode periode, List<InfoAgence> agences, InfoAgence entete);
 }

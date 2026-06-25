@@ -236,6 +236,34 @@ body {
   padding: 2px 7px;
   border-radius: 10px;
 }
+/* hiérarchie agences / sous-agences dans le commutateur */
+.sm-groupe .t {
+  color: var(--vert);
+}
+.sm-sous {
+  padding-left: 28px;
+}
+.sm-sous .d {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  background: var(--sable-tres-pale);
+}
+.sm-sous .d svg {
+  width: 15px;
+  height: 15px;
+}
+.sm-tag {
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--menthe);
+  color: var(--vert-fonce);
+  padding: 1px 6px;
+  border-radius: 9px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
 .uavatar {
   width: 36px;
   height: 36px;

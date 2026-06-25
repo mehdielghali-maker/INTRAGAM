@@ -127,7 +127,8 @@ class TableauBordServiceTest {
     void vue_consolidee_somme_les_agences_et_fournit_la_repartition() {
         InfoAgence draria = new InfoAgence("Agence Draria", "02.7.Draria");
         TableauBord tb = serviceAvecMocks(PerimetreSP.REGLES_SEULS)
-                .consolider(Periode.YTD, List.of(AGENCE, draria));
+                .consolider(Periode.YTD, List.of(AGENCE, draria),
+                        new InfoAgence("Toutes mes agences (consolidé)", "CONSOLIDE"));
 
         assertThat(tb.consolide()).isTrue();
         assertThat(tb.agence().code()).isEqualTo("CONSOLIDE");
