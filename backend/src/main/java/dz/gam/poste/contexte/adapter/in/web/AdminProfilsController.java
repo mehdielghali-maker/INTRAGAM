@@ -79,8 +79,9 @@ public class AdminProfilsController {
         List<ContexteProperties.Agence> agences = r.agences().stream()
                 .map(a -> new ContexteProperties.Agence(a.code(), a.nom()))
                 .toList();
+        List<String> modules = r.modules() == null ? List.of() : r.modules();
         ContexteProperties.Profil enregistre = store.enregistrer(
-                new ContexteProperties.Profil(r.identifiant(), r.nomAffiche(), r.profil(), agences));
+                new ContexteProperties.Profil(r.identifiant(), r.nomAffiche(), r.profil(), agences, modules));
         // Sème les chiffres + chèques de démo des (nouvelles) agences déclarées.
         evenements.publishEvent(new AgencesDeclareesEvent(agences.stream().map(ContexteProperties.Agence::code).toList()));
         return enregistre;
@@ -90,7 +91,8 @@ public class AdminProfilsController {
             @NotBlank String identifiant,
             @NotBlank String nomAffiche,
             @NotNull ProfilUtilisateur profil,
-            @NotEmpty List<AgenceRequest> agences) {
+            @NotEmpty List<AgenceRequest> agences,
+            List<String> modules) {
     }
 
     public record AgenceRequest(@NotBlank String code, @NotBlank String nom) {

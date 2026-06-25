@@ -37,6 +37,6 @@ public class IdentiteSsoMockAdapter implements IdentitePort {
                 .orElseThrow(() -> new IllegalStateException("Aucun profil SSO configuré"));
         Utilisateur utilisateur = new Utilisateur(p.identifiant(), p.nomAffiche(), p.profil());
         List<Agence> agences = p.agences().stream().map(a -> new Agence(a.code(), a.nom())).toList();
-        return new Identite(utilisateur, agences);
+        return new Identite(utilisateur, agences, p.modules());
     }
 }

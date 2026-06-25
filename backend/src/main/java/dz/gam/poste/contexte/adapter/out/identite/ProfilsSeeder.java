@@ -2,6 +2,7 @@ package dz.gam.poste.contexte.adapter.out.identite;
 
 import dz.gam.poste.contexte.config.ContexteProperties;
 import dz.gam.poste.contexte.domain.event.AgencesDeclareesEvent;
+import dz.gam.poste.contexte.domain.model.Modules;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,7 +34,11 @@ public class ProfilsSeeder implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         if (store.estVide()) {
-            properties.profils().forEach(store::enregistrer);
+            properties.profils().forEach(p -> {
+                List<String> modules = (p.modules() == null || p.modules().isEmpty()) ? Modules.TOUS : p.modules();
+                store.enregistrer(new ContexteProperties.Profil(
+                        p.identifiant(), p.nomAffiche(), p.profil(), p.agences(), modules));
+            });
         }
         List<String> codes = store.tousLesCodesAgences();
         if (!codes.isEmpty()) {

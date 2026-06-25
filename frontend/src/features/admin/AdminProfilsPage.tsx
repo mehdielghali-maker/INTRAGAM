@@ -6,6 +6,7 @@ import {
   getProfilActif,
   getProfils,
   modifierProfil,
+  MODULES,
   Profil,
   ProfilUtilisateur,
   supprimerProfil,
@@ -17,6 +18,7 @@ interface FormState {
   nomAffiche: string;
   profil: ProfilUtilisateur;
   agences: AgenceProfil[];
+  modules: string[];
   edition: boolean; // true = modification d'un profil existant
 }
 
@@ -25,8 +27,11 @@ const FORM_VIDE: FormState = {
   nomAffiche: '',
   profil: 'AGA',
   agences: [{ code: '', nom: '' }],
+  modules: MODULES.map((m) => m.id), // accès complet par défaut
   edition: false,
 };
+
+const LIBELLE_MODULE = new Map(MODULES.map((m) => [m.id, m.label]));
 
 export default function AdminProfilsPage() {
   const [profils, setProfils] = useState<Profil[]>([]);
@@ -57,8 +62,16 @@ export default function AdminProfilsPage() {
       nomAffiche: p.nomAffiche,
       profil: p.profil,
       agences: p.agences.length ? p.agences.map((a) => ({ ...a })) : [{ code: '', nom: '' }],
+      modules: [...p.modules],
       edition: true,
     });
+  }
+
+  function basculerModule(id: string) {
+    setForm((f) => ({
+      ...f,
+      modules: f.modules.includes(id) ? f.modules.filter((m) => m !== id) : [...f.modules, id],
+    }));
   }
 
   function reinitialiser() {
@@ -96,6 +109,7 @@ export default function AdminProfilsPage() {
       nomAffiche: form.nomAffiche.trim(),
       profil: form.profil,
       agences,
+      modules: form.modules,
     };
     try {
       if (form.edition) {
@@ -165,6 +179,12 @@ export default function AdminProfilsPage() {
                   </li>
                 ))}
               </ul>
+              <div className="adm-modules-resume">
+                <span className="adm-modules-l">Modules</span>{' '}
+                {p.modules.length === 0
+                  ? 'Accueil uniquement'
+                  : p.modules.map((id) => LIBELLE_MODULE.get(id) ?? id).join(', ')}
+              </div>
               <div className="adm-actions">
                 <button className="btn-ghost" onClick={() => activer(p.identifiant)} disabled={p.identifiant === actif}>
                   {p.identifiant === actif ? 'Connecté' : 'Activer'}
@@ -240,6 +260,21 @@ export default function AdminProfilsPage() {
           <button type="button" className="btn-ghost" onClick={ajouterAgence}>
             + Ajouter une agence
           </button>
+
+          <div className="adm-sub">Modules accessibles</div>
+          <div className="adm-modules">
+            {MODULES.map((m) => (
+              <label key={m.id} className="adm-check">
+                <input
+                  type="checkbox"
+                  checked={form.modules.includes(m.id)}
+                  onChange={() => basculerModule(m.id)}
+                />
+                {m.label}
+              </label>
+            ))}
+          </div>
+          <p className="adm-hint">L'accueil est toujours accessible.</p>
 
           <div className="adm-form-actions">
             <button type="submit" className="btn-primary">

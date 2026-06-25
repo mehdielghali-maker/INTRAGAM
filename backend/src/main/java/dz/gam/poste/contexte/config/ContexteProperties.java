@@ -17,7 +17,12 @@ import java.util.List;
 @ConfigurationProperties(prefix = "poste.contexte")
 public record ContexteProperties(String profilDefaut, List<Profil> profils) {
 
-    public record Profil(String identifiant, String nomAffiche, ProfilUtilisateur profil, List<Agence> agences) {
+    /**
+     * @param modules ids des modules autorisés (cf. {@code Modules.TOUS}). Null/vide en
+     *                config = accès complet (résolu au seeding).
+     */
+    public record Profil(String identifiant, String nomAffiche, ProfilUtilisateur profil,
+                         List<Agence> agences, List<String> modules) {
     }
 
     public record Agence(String code, String nom) {

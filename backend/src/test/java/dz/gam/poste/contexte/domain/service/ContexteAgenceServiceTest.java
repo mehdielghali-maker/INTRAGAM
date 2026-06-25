@@ -28,7 +28,7 @@ class ContexteAgenceServiceTest {
 
     private ContexteAgenceService service(Agence... perimetre) {
         Utilisateur aga = new Utilisateur("m.benzerga", "M. Benzerga", ProfilUtilisateur.AGA);
-        IdentitePort identite = () -> new Identite(aga, List.of(perimetre));
+        IdentitePort identite = () -> new Identite(aga, List.of(perimetre), List.of());
         return new ContexteAgenceService(identite, store);
     }
 

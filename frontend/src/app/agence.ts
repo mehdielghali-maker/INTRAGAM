@@ -19,6 +19,8 @@ export interface ContexteAgence {
   agenceActive: AgenceRef | null;
   /** Liste plate des agences du périmètre (une agence = un point de vente). */
   agencesAutorisees: AgenceRef[];
+  /** Ids des modules autorisés pour ce profil (l'accueil est toujours accessible). */
+  modules: string[];
   consolideDisponible: boolean;
   /** Vue consolidée active (« Toutes mes agences ») : lecture seule, aucune action. */
   consolideActif: boolean;

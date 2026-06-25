@@ -12,7 +12,23 @@ export interface Profil {
   nomAffiche: string;
   profil: ProfilUtilisateur;
   agences: AgenceProfil[];
+  /** Ids des modules autorisés (cf. MODULES). */
+  modules: string[];
 }
+
+/** Modules dont l'accès est gérable par profil (mêmes ids que la navigation). */
+export const MODULES: { id: string; label: string }[] = [
+  { id: 'depot', label: 'Dépôt Situation Financière' },
+  { id: 'versement', label: 'Versement bancaire' },
+  { id: 'attestations', label: 'Attestations' },
+  { id: 'cheques', label: 'Suivi des chèques' },
+  { id: 'bureau', label: "Envois bureau d'ordre" },
+  { id: 'cotation', label: 'Demande de cotation' },
+  { id: 'expertise', label: "Demande d'expertise" },
+  { id: 'accords', label: "Accords d'échéancier" },
+  { id: 'echeanciers', label: 'Suivi des échéanciers' },
+  { id: 'contentieux', label: 'Créances & contentieux' },
+];
 
 async function lireJson<T>(reponse: Response): Promise<T> {
   if (!reponse.ok) {

@@ -41,6 +41,10 @@ public class ProfilsAdminStore {
         e.profil = p.profil();
         e.agences.clear();
         p.agences().forEach(a -> e.agences.add(new AgenceEmbeddable(a.code(), a.nom())));
+        e.modules.clear();
+        if (p.modules() != null) {
+            e.modules.addAll(p.modules());
+        }
         return versProfil(repository.save(e));
     }
 
@@ -59,6 +63,7 @@ public class ProfilsAdminStore {
         List<ContexteProperties.Agence> agences = e.agences.stream()
                 .map(a -> new ContexteProperties.Agence(a.code, a.nom))
                 .toList();
-        return new ContexteProperties.Profil(e.identifiant, e.nomAffiche, e.profil, agences);
+        return new ContexteProperties.Profil(e.identifiant, e.nomAffiche, e.profil, agences,
+                List.copyOf(e.modules));
     }
 }

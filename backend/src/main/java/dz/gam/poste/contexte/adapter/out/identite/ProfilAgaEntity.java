@@ -37,6 +37,12 @@ public class ProfilAgaEntity {
     @OrderColumn(name = "ordre")
     List<AgenceEmbeddable> agences = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "contexte_profil_module", joinColumns = @JoinColumn(name = "profil_id"))
+    @Column(name = "module")
+    @OrderColumn(name = "ordre")
+    List<String> modules = new ArrayList<>();
+
     protected ProfilAgaEntity() {
     }
 

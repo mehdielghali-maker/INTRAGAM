@@ -80,6 +80,10 @@ via une page Admin** (`/api/admin/profils` CRUD ; UI `/admin`). « Activer » un
 connexion (`POST /api/mock/identite/actif`). À l'enregistrement d'un profil, un événement
 `AgencesDeclareesEvent` est publié → les mocks sèment les chiffres (indicateurs) et chèques de
 démo des nouvelles agences (découplage, pas de cycle entre modules).
+**Accès par module** : chaque profil porte la liste des modules autorisés (`contexte_profil_module`).
+Le menu est filtré côté front ET l'accès est appliqué côté back (`AccesModuleInterceptor` →
+HTTP 403 sur `/api/{cheques|cotation|dpd|versement}` non autorisé ; l'accueil reste toujours
+accessible). Config sans `modules` = accès complet (`Modules.TOUS`, résolu au seeding).
 
 **Contexte d'agence (brique transverse `dz.gam.poste.contexte`, ADR 0005)** : l'identité fournit
 un **périmètre d'agences** (mock `poste.contexte` : AGA M. Benzerga + 3 agences). L'**agence active**

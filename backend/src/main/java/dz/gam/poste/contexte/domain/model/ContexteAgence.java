@@ -15,6 +15,7 @@ public record ContexteAgence(
         Utilisateur utilisateur,
         Agence agenceActive,
         List<Agence> agencesAutorisees,
+        List<String> modules,
         boolean consolideDisponible,
         boolean consolideActif) {
 }

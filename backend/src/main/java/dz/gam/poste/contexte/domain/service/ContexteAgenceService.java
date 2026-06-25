@@ -42,7 +42,7 @@ public class ContexteAgenceService
         boolean consolide = estConsolide(identite);
         Agence active = consolide ? null : agenceResolue(identite);
         return new ContexteAgence(identite.utilisateur(), active, identite.agencesGerees(),
-                identite.agencesGerees().size() > 1, consolide);
+                identite.modules(), identite.agencesGerees().size() > 1, consolide);
     }
 
     @Override
