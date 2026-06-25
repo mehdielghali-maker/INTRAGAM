@@ -8,8 +8,24 @@
 - **Remote** : `origin` = `https://github.com/mehdielghali-maker/INTRAGAM.git` (compte
   `mehdielghali-maker`, authentifié via GitHub CLI `gh`). **PR ouverte : INTRAGAM#1**.
   *(Le repo client `mtirchi/INTRAGAM` était inaccessible → repo créé sous le compte connecté.)*
-- **Tests** : `mvn verify` vert = **64 unitaires + 4 boucles d'intégration** Testcontainers.
-- Tout est committé et poussé.
+- **Tests** : `mvn verify` vert = **73 unitaires + 4 boucles d'intégration** Testcontainers.
+- **Dernier ajout** : **authentification par login/mot de passe** (page `/login`, comptes AGA
+  gérés en admin, compte admin avec e-mail de récupération, bouton SSO Microsoft désactivé —
+  cf. ADR 0008). ⚠️ commits à faire (voir plus bas).
+
+## Connexion (nouveau — ADR 0008)
+- **Page `/login`** : login + mot de passe (admin ou AGA) ; bouton « Se connecter avec Microsoft »
+  **désactivé** (SSO Entra ID prévu plus tard, `poste.auth.sso-microsoft-actif: false`).
+- **Compte admin** : login `admin`, **mot de passe initial `admin`** (semé au 1er démarrage,
+  table `contexte_compte_admin`). Modifiable + e-mail de récupération dans `/admin` (panneau
+  « Compte administrateur »). L'admin ne voit QUE l'administration.
+- **Comptes AGA de démo** (logins/mots de passe semés depuis `application.yml`, hashés BCrypt) :
+  `benzerga` / `gam2026` (AGA, 5 agences) · `saidi` / `gam2026` (agent, 1) ·
+  `cherif` / `gam2026` (AGA, 2). Login + mot de passe gérés dans `/admin` (création/édition).
+- **Aperçu admin** : « Activer » un profil dans `/admin` = impersonation (l'admin voit l'espace
+  de l'AGA) ; pour revenir, se déconnecter et se reconnecter en `admin`.
+- ⚠️ Si la base contient déjà d'anciens profils (sans login), ils ne peuvent pas se connecter :
+  leur définir login + mot de passe dans `/admin`, ou recréer la base docker.
 
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
@@ -51,10 +67,17 @@ cd frontend && npm run dev                           # UI  :5173
 ADR ajoutés : 0005 (contexte d'agence), 0006 (versement), 0007 (indicateurs/Power BI).
 
 ## API utiles pour piloter la démo (cookie de session = `curl -c/-b`)
-- **Profils / connexion** : `GET /api/mock/identite` (liste + actif) ·
-  `POST /api/mock/identite/actif {"identifiant":"…"}` (activer un AGA pour la session).
-- **Admin profils** : `GET/POST /api/admin/profils`, `PUT/DELETE /api/admin/profils/{id}`
-  (corps : `{identifiant, nomAffiche, profil:"AGA|AGENT", agences:[{code,nom}], modules:[ids]}`).
+- **Authentification** : `POST /api/auth/login {"login":"…","motDePasse":"…"}` (ouvre la session) ·
+  `POST /api/auth/logout` · `GET /api/auth/etat` (401 si non connecté) ·
+  `GET /api/auth/config` (`ssoMicrosoftActif`) · `POST /api/auth/mot-de-passe-oublie` (indice).
+  ⚠️ TOUTES les autres API exigent une session (401 sinon) ; `/api/admin/**` exige le rôle ADMIN (403).
+- **Compte admin** (ADMIN) : `GET /api/admin/compte` · `PUT /api/admin/compte/mot-de-passe
+  {ancien,nouveau}` · `PUT /api/admin/compte/email-recuperation {email}`.
+- **Aperçu profils** (ADMIN, impersonation) : `GET /api/admin/identite` (liste + actif) ·
+  `POST /api/admin/identite/actif {"identifiant":"…"}`.
+- **Admin profils** (ADMIN) : `GET/POST /api/admin/profils`, `PUT/DELETE /api/admin/profils/{id}`
+  (corps : `{identifiant, login, motDePasse, nomAffiche, profil:"AGA|AGENT", agences:[{code,nom}], modules:[ids]}` ;
+  `motDePasse` requis à la création, vide en édition = inchangé).
 - **Contexte / agence active** : `GET /api/contexte` · `POST /api/contexte/agence-active {"code":"…"|"CONSOLIDE"}`.
 - **Chiffres** : `GET/PUT /api/mock/indicateurs/{code}` et `…/{code}/situation/{mois}`.
 - **Workflows mock** : `POST /api/mock/proassur/cheques` ; `POST /api/cotation/envoyer` +

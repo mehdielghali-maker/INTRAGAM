@@ -85,6 +85,34 @@ body {
   gap: 18px;
   align-items: center;
 }
+/* Bouton de déconnexion (barre supérieure, sur fond vert). */
+.logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: #f3efe2;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(243, 239, 226, 0.25);
+  border-radius: 9px;
+  padding: 9px 13px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.logout-btn svg {
+  width: 17px;
+  height: 17px;
+}
+@media (max-width: 560px) {
+  .logout-btn span {
+    display: none;
+  }
+}
 /* commutateur « Agence active » (remplace l'ancien sélecteur Période/YTD) */
 .switcher {
   position: relative;

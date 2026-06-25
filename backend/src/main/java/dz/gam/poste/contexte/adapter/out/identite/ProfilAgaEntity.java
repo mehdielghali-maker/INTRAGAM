@@ -25,6 +25,15 @@ public class ProfilAgaEntity {
     @Id
     String identifiant;
 
+    /** Login de connexion saisi par l'AGA (distinct de l'identifiant technique). Unique ;
+     *  null tant qu'aucun login n'a été défini en admin (ce profil ne peut alors pas se connecter). */
+    @Column(unique = true)
+    String login;
+
+    /** Empreinte BCrypt du mot de passe ; null = pas de mot de passe (connexion impossible). */
+    @Column
+    String motDePasseHash;
+
     @Column(nullable = false)
     String nomAffiche;
 

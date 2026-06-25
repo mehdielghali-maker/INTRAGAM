@@ -50,6 +50,13 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
+        <!-- Hachage des mots de passe (BCrypt). Crypto seule : pas de filter chain Spring
+             Security, l'authentification reste mockée par session (cf. ADR 0008). -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- Documentation OpenAPI / Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>

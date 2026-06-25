@@ -9,11 +9,21 @@ export interface AgenceProfil {
 
 export interface Profil {
   identifiant: string;
+  /** Login de connexion (saisi par l'AGA, distinct de l'identifiant technique). */
+  login: string;
   nomAffiche: string;
   profil: ProfilUtilisateur;
   agences: AgenceProfil[];
   /** Ids des modules autorisés (cf. MODULES). */
   modules: string[];
+  /** Mot de passe en clair — uniquement en écriture (création/changement). Jamais relu. */
+  motDePasse?: string;
+}
+
+/** Compte d'administration : login fixe + adresse e-mail de récupération. */
+export interface CompteAdmin {
+  login: string;
+  emailRecuperation: string | null;
 }
 
 /** Modules dont l'accès est gérable par profil (mêmes ids que la navigation). */
@@ -71,15 +81,44 @@ export async function supprimerProfil(identifiant: string): Promise<void> {
   await verifier(await fetch(`/api/admin/profils/${encodeURIComponent(identifiant)}`, { ...J, method: 'DELETE' }));
 }
 
-/** Profil actif de la session (mock SSO). */
-export async function getProfilActif(): Promise<string> {
-  const etat = await lireJson<{ profilActif: string }>(await fetch('/api/mock/identite', J));
+/** Profil actuellement « activé » en aperçu admin (impersonation), ou null. */
+export async function getProfilActif(): Promise<string | null> {
+  const etat = await lireJson<{ profilActif: string | null }>(await fetch('/api/admin/identite', J));
   return etat.profilActif;
 }
 
-/** Active un profil (simule la connexion de cet utilisateur) pour la session. */
+/** Aperçu admin : « active » un profil AGA (impersonation) pour la session. */
 export async function activerProfil(identifiant: string): Promise<void> {
   await verifier(
-    await fetch('/api/mock/identite/actif', { ...J, method: 'POST', headers: H, body: JSON.stringify({ identifiant }) }),
+    await fetch('/api/admin/identite/actif', { ...J, method: 'POST', headers: H, body: JSON.stringify({ identifiant }) }),
+  );
+}
+
+/** Compte d'administration (login + e-mail de récupération). */
+export async function getCompteAdmin(): Promise<CompteAdmin> {
+  return lireJson(await fetch('/api/admin/compte', J));
+}
+
+/** Change le mot de passe admin (vérifie l'ancien côté back). */
+export async function changerMotDePasseAdmin(ancien: string, nouveau: string): Promise<void> {
+  await verifier(
+    await fetch('/api/admin/compte/mot-de-passe', {
+      ...J,
+      method: 'PUT',
+      headers: H,
+      body: JSON.stringify({ ancien, nouveau }),
+    }),
+  );
+}
+
+/** Définit (ou efface) l'adresse e-mail de récupération du compte admin. */
+export async function definirEmailRecuperation(email: string): Promise<void> {
+  await verifier(
+    await fetch('/api/admin/compte/email-recuperation', {
+      ...J,
+      method: 'PUT',
+      headers: H,
+      body: JSON.stringify({ email }),
+    }),
   );
 }

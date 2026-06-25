@@ -1,9 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { CODE_CONSOLIDE, ContexteAgence } from './agence';
+import { deconnexion, Principal } from '../features/auth/api';
 
 const PIN = 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5';
 const CHECK = 'M5 12l5 5L20 6';
 const CHEVRON = 'M6 9l6 6 6-6';
+const LOGOUT = 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9';
+
+async function seDeconnecter() {
+  try {
+    await deconnexion();
+  } finally {
+    window.location.assign('/login');
+  }
+}
+
+function LogoutButton() {
+  return (
+    <button type="button" className="logout-btn" onClick={seDeconnecter} title="Se déconnecter">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
+        <path d={LOGOUT} />
+      </svg>
+      <span>Déconnexion</span>
+    </button>
+  );
+}
 
 function PinIcon() {
   return (
@@ -41,9 +62,11 @@ function CheckIcon() {
  */
 export default function Topbar({
   contexte,
+  principal,
   onChanger,
 }: {
   contexte: ContexteAgence | null;
+  principal: Principal;
   onChanger: (code: string) => void;
 }) {
   const [ouvert, setOuvert] = useState(false);
@@ -56,6 +79,29 @@ export default function Topbar({
     document.addEventListener('click', surClicExterne);
     return () => document.removeEventListener('click', surClicExterne);
   }, []);
+
+  // Espace d'administration : pas de commutateur d'agence, juste l'identité admin + déconnexion.
+  if (principal.role === 'ADMIN') {
+    return (
+      <header className="topbar">
+        <div className="brandblock">
+          <span className="logo-tile">
+            <img src="/logo-gam.webp" alt="GAM Assurances" />
+          </span>
+          <div>
+            <div className="agence-nom">
+              {principal.nomAffiche}
+              <span className="maquette-tag">Administration</span>
+            </div>
+            <div className="agence-meta">Gestion des AGA, des accès et du compte admin</div>
+          </div>
+        </div>
+        <div className="ca-zone">
+          <LogoutButton />
+        </div>
+      </header>
+    );
+  }
 
   const utilisateur = contexte?.utilisateur;
   const active = contexte?.agenceActive;
@@ -161,6 +207,7 @@ export default function Topbar({
             )}
           </div>
         </div>
+        <LogoutButton />
       </div>
     </header>
   );

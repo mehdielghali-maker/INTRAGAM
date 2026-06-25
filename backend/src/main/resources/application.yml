@@ -62,11 +62,15 @@ poste:
   # En prod, utilisateur + périmètre proviendront des claims du token Entra ID.
   contexte:
     # Plusieurs profils SSO simulables (AGA/agents). Chaque profil a SON périmètre d'agences
-    # (liste plate ; une agence = un point de vente). Le profil actif se choisit par session
-    # via POST /api/mock/identite/actif {identifiant} ; à défaut, profil-defaut.
+    # (liste plate ; une agence = un point de vente). Le profil actif est fixé à la connexion
+    # (login) ; l'admin peut aussi l'imposer via POST /api/admin/identite/actif (aperçu).
+    # login / mot-de-passe : identifiants de connexion de démo (semés au 1er démarrage,
+    # hashés en base). Modifiables ensuite dans l'admin. Le mot de passe n'est jamais relu.
     profil-defaut: m.benzerga
     profils:
       - identifiant: m.benzerga
+        login: benzerga
+        mot-de-passe: gam2026
         nom-affiche: M. Benzerga
         profil: AGA          # AGA (multi-agences) | AGENT (mono-agence)
         agences:
@@ -76,16 +80,25 @@ poste:
           - { code: 02.4.AISSAT, nom: Agence Aïssat Idir }
           - { code: 02.7.DRARIA, nom: Agence Draria }
       - identifiant: m.saidi
+        login: saidi
+        mot-de-passe: gam2026
         nom-affiche: M. Saïdi
         profil: AGENT
         agences:
           - { code: 16.I.GHARBI, nom: Agence Bab Ezzouar }
       - identifiant: k.cherif
+        login: cherif
+        mot-de-passe: gam2026
         nom-affiche: K. Cherif
         profil: AGA
         agences:
           - { code: 31.O.CENTRE, nom: Agence Oran Centre }
           - { code: 31.O.SENIA, nom: Agence Es Sénia }
+
+  # Authentification (mock par login/mot de passe ; compte admin admin/admin au 1er démarrage,
+  # cf. ADR 0008). SSO Microsoft (Entra ID) prévu mais désactivé pour l'instant.
+  auth:
+    sso-microsoft-actif: false
 
   # Demande de cotation — libellés, branches et délais du mock central paramétrables.
   cotation:

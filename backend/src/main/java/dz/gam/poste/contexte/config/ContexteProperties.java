@@ -18,11 +18,15 @@ import java.util.List;
 public record ContexteProperties(String profilDefaut, List<Profil> profils) {
 
     /**
-     * @param modules ids des modules autorisés (cf. {@code Modules.TOUS}). Null/vide en
-     *                config = accès complet (résolu au seeding).
+     * @param login     login de connexion (saisi par l'AGA, distinct de l'identifiant technique)
+     * @param modules   ids des modules autorisés (cf. {@code Modules.TOUS}). Null/vide en
+     *                  config = accès complet (résolu au seeding).
+     * @param motDePasse mot de passe EN CLAIR — uniquement en entrée (config de démo, création
+     *                  / modification admin) ; hashé puis oublié par le store. Jamais retourné
+     *                  en lecture (toujours null à la sortie).
      */
-    public record Profil(String identifiant, String nomAffiche, ProfilUtilisateur profil,
-                         List<Agence> agences, List<String> modules) {
+    public record Profil(String identifiant, String login, String nomAffiche, ProfilUtilisateur profil,
+                         List<Agence> agences, List<String> modules, String motDePasse) {
     }
 
     public record Agence(String code, String nom) {

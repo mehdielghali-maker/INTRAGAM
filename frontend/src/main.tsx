@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import AppShell from './app/AppShell';
+import RequireAuth from './app/RequireAuth';
+import LoginPage from './features/auth/LoginPage';
 import AccueilAgencePage from './features/accueil/AccueilAgencePage';
 import ChequeListPage from './features/cheques/ChequeListPage';
 import ChequeDetailPage from './features/cheques/ChequeDetailPage';
@@ -15,9 +17,17 @@ import './index.css';
 import './theme/gam.css';
 
 const router = createBrowserRouter([
+  // Page de connexion, hors espace protégé.
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppShell />,
+    // Tout l'espace applicatif est protégé : RequireAuth redirige vers /login si non connecté
+    // et applique la séparation des rôles (admin ↔ AGA).
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <AccueilAgencePage /> },
       { path: 'cheques', element: <ChequeListPage /> },

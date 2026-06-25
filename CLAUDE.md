@@ -71,13 +71,19 @@ avec des valeurs distinctes par feuille (depuis le périmètre du contexte) et *
 **Power BI** (mêmes ports) → suppression du store + de l'API mock, sans impact domaine.
 
 ## Identité / auth & contexte d'agence
-Pas d'auth réelle : identité **SSO (Entra ID) mockée** en config. Le bloc legacy « Code Accès »
-est supprimé au profit de l'identité SSO.
+**Authentification par login/mot de passe** (mock, ADR 0008) : page `/login` ; l'AGA se connecte
+avec un **login + mot de passe** (gérés en admin), l'admin avec `admin`/`admin` au 1er démarrage
+(modifiable + e-mail de récupération dans `/admin`). BCrypt (`spring-security-crypto`), session
+serveur (HttpSession). Garde back : `AuthentificationInterceptor` → **401** hors `/api/auth/**`,
+**403** sur `/api/admin/**` hors rôle ADMIN. Bouton **SSO Microsoft désactivé**
+(`poste.auth.sso-microsoft-actif`) — Entra ID réel prévu plus tard. **Admin = espace d'admin
+uniquement** (pas de modules métier).
 
-**Profils & administration** : les profils SSO (AGA/agents + leurs agences) sont **persistés**
-(table `contexte_profil`), semés depuis `poste.contexte.profils` au 1er démarrage, et **gérables
-via une page Admin** (`/api/admin/profils` CRUD ; UI `/admin`). « Activer » un profil = mock de
-connexion (`POST /api/mock/identite/actif`). À l'enregistrement d'un profil, un événement
+**Profils & administration** : les profils SSO (AGA/agents + leurs agences + login/mdp) sont
+**persistés** (table `contexte_profil`), semés depuis `poste.contexte.profils` au 1er démarrage,
+et **gérables via une page Admin** (`/api/admin/profils` CRUD ; UI `/admin`). « Activer » un
+profil = **aperçu admin / impersonation** (`POST /api/admin/identite/actif`, ADMIN seul). À
+l'enregistrement d'un profil, un événement
 `AgencesDeclareesEvent` est publié → les mocks sèment les chiffres (indicateurs) et chèques de
 démo des nouvelles agences (découplage, pas de cycle entre modules).
 **Accès par module** : chaque profil porte la liste des modules autorisés (`contexte_profil_module`).

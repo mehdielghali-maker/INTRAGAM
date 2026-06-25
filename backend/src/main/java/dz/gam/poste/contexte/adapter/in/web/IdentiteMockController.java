@@ -2,8 +2,11 @@ package dz.gam.poste.contexte.adapter.in.web;
 
 import dz.gam.poste.contexte.adapter.out.identite.ProfilsAdminStore;
 import dz.gam.poste.contexte.config.ContexteProperties;
+import dz.gam.poste.contexte.domain.model.Principal;
 import dz.gam.poste.contexte.domain.model.ProfilUtilisateur;
+import dz.gam.poste.contexte.domain.model.TypePrincipal;
 import dz.gam.poste.contexte.domain.port.out.ProfilActifStore;
+import dz.gam.poste.contexte.domain.port.out.SessionAuthStore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -19,45 +22,41 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * API MOCK de l'identité SSO : liste les profils simulables (AGA/agents et leurs agences,
- * lus en base) et permet d'en activer un POUR LA SESSION COURANTE. Simule la connexion
- * d'utilisateurs différents sans redémarrage. Demain, le profil viendra des claims Entra ID.
+ * Aperçu/impersonation d'un profil AGA depuis l'administration (réservé ADMIN, cf. interceptor).
+ * Liste les profils et permet d'« activer » l'un d'eux POUR LA SESSION COURANTE : l'admin voit
+ * alors l'espace de cet AGA (le contexte d'agence dérive du profil actif). Pour revenir à
+ * l'administration, l'admin se déconnecte et se reconnecte. Demain, le profil viendra d'Entra ID.
  */
 @RestController
-@RequestMapping("/api/mock/identite")
+@RequestMapping("/api/admin/identite")
 public class IdentiteMockController {
 
     private final ProfilsAdminStore profils;
-    private final ContexteProperties properties;
     private final ProfilActifStore profilActif;
+    private final SessionAuthStore sessionAuth;
 
-    public IdentiteMockController(ProfilsAdminStore profils, ContexteProperties properties,
-                                  ProfilActifStore profilActif) {
+    public IdentiteMockController(ProfilsAdminStore profils, ProfilActifStore profilActif,
+                                  SessionAuthStore sessionAuth) {
         this.profils = profils;
-        this.properties = properties;
         this.profilActif = profilActif;
+        this.sessionAuth = sessionAuth;
     }
 
     @GetMapping
     public EtatIdentite etat() {
-        return new EtatIdentite(identifiantActif(), profils.lister().stream().map(ProfilDto::de).toList());
+        return new EtatIdentite(profilActif.profilActif().orElse(null),
+                profils.lister().stream().map(ProfilDto::de).toList());
     }
 
     @PostMapping("/actif")
     public EtatIdentite activer(@Valid @RequestBody ActiverProfilRequest requete) {
-        if (profils.trouver(requete.identifiant()).isEmpty()) {
-            throw new NoSuchElementException("Profil inconnu : " + requete.identifiant());
-        }
-        profilActif.definir(requete.identifiant());
+        ContexteProperties.Profil p = profils.trouver(requete.identifiant())
+                .orElseThrow(() -> new NoSuchElementException("Profil inconnu : " + requete.identifiant()));
+        profilActif.definir(p.identifiant());
+        // Impersonation : l'admin devient cet AGA le temps de l'aperçu (login fallback = identifiant).
+        String login = (p.login() == null || p.login().isBlank()) ? p.identifiant() : p.login();
+        sessionAuth.definir(new Principal(TypePrincipal.AGA, login, p.nomAffiche()));
         return etat();
-    }
-
-    /** Identifiant du profil actif : sélection de session, ou défaut, ou 1er disponible. */
-    private String identifiantActif() {
-        return profilActif.profilActif().filter(id -> profils.trouver(id).isPresent())
-                .or(() -> profils.trouver(properties.profilDefaut()).map(ContexteProperties.Profil::identifiant))
-                .or(() -> profils.lister().stream().findFirst().map(ContexteProperties.Profil::identifiant))
-                .orElse(null);
     }
 
     @ExceptionHandler(NoSuchElementException.class)

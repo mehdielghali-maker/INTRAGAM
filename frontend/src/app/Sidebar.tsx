@@ -1,12 +1,18 @@
 import { NavLink } from 'react-router-dom';
 import { Icon } from './icons';
 import { useAgence } from './AgencyContext';
+import { useAuth } from './AuthContext';
 import { ACCUEIL, ADMIN, LOT1, LOT2, NavItem } from './navigation';
 import { CompteursNavigation } from '../features/accueil/types';
 
-/** Sidebar de navigation : Accueil + lots filtrés selon les modules autorisés du profil. */
+/**
+ * Sidebar de navigation selon le rôle : l'ADMIN ne voit que l'administration ; l'AGA voit
+ * l'accueil + les lots filtrés selon les modules autorisés de son profil (pas d'administration).
+ */
 export default function Sidebar({ badges }: { badges: CompteursNavigation | null }) {
   const { contexte } = useAgence();
+  const principal = useAuth();
+  const estAdmin = principal.role === 'ADMIN';
   const modules = contexte?.modules ?? [];
   // Accès accordé si le module est dans la liste autorisée du profil.
   const autorise = (item: NavItem) => modules.includes(item.id);
@@ -43,6 +49,15 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
     );
   }
 
+  if (estAdmin) {
+    return (
+      <nav className="side">
+        <div className="nav-group">Administration</div>
+        {renderItem(ADMIN)}
+      </nav>
+    );
+  }
+
   return (
     <nav className="side">
       {renderItem(ACCUEIL)}
@@ -58,8 +73,6 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
           {lot2.map(renderItem)}
         </>
       )}
-      <div className="nav-group">Paramètres</div>
-      {renderItem(ADMIN)}
     </nav>
   );
 }

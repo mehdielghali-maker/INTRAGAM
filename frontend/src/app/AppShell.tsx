@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 import { AgencyProvider, useAgence } from './AgencyContext';
+import { useAuth } from './AuthContext';
 import { getNavigation, getTableauBord } from '../features/accueil/api';
 import { CompteursNavigation, TableauBord } from '../features/accueil/types';
 
@@ -26,6 +27,8 @@ export default function AppShell() {
 
 function CoquilleApp() {
   const { contexte, changer } = useAgence();
+  const principal = useAuth();
+  const estAdmin = principal.role === 'ADMIN';
   const [tableauBord, setTableauBord] = useState<TableauBord | null>(null);
   const [badges, setBadges] = useState<CompteursNavigation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -39,19 +42,20 @@ function CoquilleApp() {
 
   // Recharge accueil + badges quand la sélection change (et au premier chargement,
   // une fois le contexte hydraté). Les données sont bornées à la sélection côté back.
+  // L'admin n'a pas d'espace métier : on n'interroge pas le tableau de bord.
   useEffect(() => {
-    if (!selection) return;
+    if (estAdmin || !selection) return;
     setErreur(null);
     setTableauBord(null);
     getNavigation().then(setBadges).catch(() => setBadges(null));
     getTableauBord()
       .then(setTableauBord)
       .catch((e) => setErreur(e instanceof Error ? e.message : 'Erreur de chargement'));
-  }, [selection]);
+  }, [estAdmin, selection]);
 
   return (
     <div>
-      <Topbar contexte={contexte} onChanger={changer} />
+      <Topbar contexte={contexte} principal={principal} onChanger={changer} />
       <div className="shell">
         <Sidebar badges={badges} />
         <main className="main">

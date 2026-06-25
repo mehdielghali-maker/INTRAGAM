@@ -22,11 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Administration des profils SSO (AGA/agents) et de leurs agences — substitut, en attendant
- * Entra ID + le référentiel agences. CRUD persisté ; à l'enregistrement, publie
- * {@link AgencesDeclareesEvent} pour semer les chiffres/chèques de démo des nouvelles agences.
+ * Administration des profils SSO (AGA/agents), de leurs agences et de leurs identifiants de
+ * connexion (login + mot de passe) — substitut, en attendant Entra ID + le référentiel agences.
+ * CRUD persisté ; à l'enregistrement, publie {@link AgencesDeclareesEvent} pour semer les
+ * chiffres/chèques de démo des nouvelles agences. Réservé à l'admin (cf. interceptor).
  */
 @RestController
 @RequestMapping("/api/admin/profils")
@@ -51,6 +53,10 @@ public class AdminProfilsController {
         if (store.trouver(requete.identifiant()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Identifiant déjà utilisé : " + requete.identifiant());
         }
+        if (requete.motDePasse() == null || requete.motDePasse().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le mot de passe est requis à la création");
+        }
+        verifierLoginDisponible(requete.login(), requete.identifiant());
         return enregistrer(requete);
     }
 
@@ -63,6 +69,7 @@ public class AdminProfilsController {
         if (store.trouver(identifiant).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profil inconnu : " + identifiant);
         }
+        verifierLoginDisponible(requete.login(), identifiant);
         return enregistrer(requete);
     }
 
@@ -75,24 +82,44 @@ public class AdminProfilsController {
         store.supprimer(identifiant);
     }
 
+    /** Le login doit être libre (ou déjà détenu par ce même profil). */
+    private void verifierLoginDisponible(String login, String identifiant) {
+        if (login == null || login.isBlank()) {
+            return;
+        }
+        Optional<String> proprietaire = store.trouverParLogin(login.trim())
+                .map(dz.gam.poste.contexte.domain.model.IdentifiantsAga::identifiant);
+        if (proprietaire.isPresent() && !proprietaire.get().equals(identifiant)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Login déjà utilisé : " + login);
+        }
+    }
+
     private ContexteProperties.Profil enregistrer(ProfilRequest r) {
         List<ContexteProperties.Agence> agences = r.agences().stream()
                 .map(a -> new ContexteProperties.Agence(a.code(), a.nom()))
                 .toList();
         List<String> modules = r.modules() == null ? List.of() : r.modules();
         ContexteProperties.Profil enregistre = store.enregistrer(
-                new ContexteProperties.Profil(r.identifiant(), r.nomAffiche(), r.profil(), agences, modules));
+                new ContexteProperties.Profil(r.identifiant(), r.login(), r.nomAffiche(), r.profil(),
+                        agences, modules, r.motDePasse()));
         // Sème les chiffres + chèques de démo des (nouvelles) agences déclarées.
         evenements.publishEvent(new AgencesDeclareesEvent(agences.stream().map(ContexteProperties.Agence::code).toList()));
         return enregistre;
     }
 
+    /**
+     * @param login      login de connexion (requis)
+     * @param motDePasse mot de passe en clair : requis à la création, facultatif en modification
+     *                   (vide = mot de passe inchangé)
+     */
     public record ProfilRequest(
             @NotBlank String identifiant,
+            @NotBlank String login,
             @NotBlank String nomAffiche,
             @NotNull ProfilUtilisateur profil,
             @NotEmpty List<AgenceRequest> agences,
-            List<String> modules) {
+            List<String> modules,
+            String motDePasse) {
     }
 
     public record AgenceRequest(@NotBlank String code, @NotBlank String nom) {

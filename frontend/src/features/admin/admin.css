@@ -294,3 +294,28 @@
   color: var(--vert);
   margin-right: 4px;
 }
+
+/* Identifiants de connexion d'un profil (carte). */
+.adm-login {
+  color: var(--gris);
+}
+
+/* Séparateur entre la gestion des AGA et le compte administrateur. */
+.adm-separateur {
+  border: none;
+  border-top: 1px solid #e6dcc6;
+  margin: 30px 0 24px;
+}
+
+/* Compte administrateur : deux formulaires côte à côte sur grand écran. */
+.adm-compte-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin-top: 8px;
+}
+@media (min-width: 760px) {
+  .adm-compte-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

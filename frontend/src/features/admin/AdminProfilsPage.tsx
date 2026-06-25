@@ -11,10 +11,13 @@ import {
   ProfilUtilisateur,
   supprimerProfil,
 } from './api';
+import CompteAdminPanel from './CompteAdminPanel';
 import './admin.css';
 
 interface FormState {
   identifiant: string;
+  login: string;
+  motDePasse: string;
   nomAffiche: string;
   profil: ProfilUtilisateur;
   agences: AgenceProfil[];
@@ -24,6 +27,8 @@ interface FormState {
 
 const FORM_VIDE: FormState = {
   identifiant: '',
+  login: '',
+  motDePasse: '',
   nomAffiche: '',
   profil: 'AGA',
   agences: [{ code: '', nom: '' }],
@@ -44,7 +49,7 @@ export default function AdminProfilsPage() {
     setErreur(null);
     try {
       setProfils(await getProfils());
-      setActif(await getProfilActif());
+      setActif((await getProfilActif()) ?? '');
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Chargement impossible');
     }
@@ -59,6 +64,8 @@ export default function AdminProfilsPage() {
     setErreur(null);
     setForm({
       identifiant: p.identifiant,
+      login: p.login ?? '',
+      motDePasse: '', // vide = mot de passe inchangé
       nomAffiche: p.nomAffiche,
       profil: p.profil,
       agences: p.agences.length ? p.agences.map((a) => ({ ...a })) : [{ code: '', nom: '' }],
@@ -100,16 +107,23 @@ export default function AdminProfilsPage() {
     const agences = form.agences
       .map((a) => ({ code: a.code.trim(), nom: a.nom.trim() }))
       .filter((a) => a.code && a.nom);
-    if (!form.identifiant.trim() || !form.nomAffiche.trim() || agences.length === 0) {
-      setErreur('Identifiant, nom affiché et au moins une agence (code + nom) sont requis.');
+    if (!form.identifiant.trim() || !form.login.trim() || !form.nomAffiche.trim() || agences.length === 0) {
+      setErreur('Identifiant, login, nom affiché et au moins une agence (code + nom) sont requis.');
+      return;
+    }
+    if (!form.edition && !form.motDePasse) {
+      setErreur('Un mot de passe est requis pour créer un compte AGA.');
       return;
     }
     const payload: Profil = {
       identifiant: form.identifiant.trim(),
+      login: form.login.trim(),
       nomAffiche: form.nomAffiche.trim(),
       profil: form.profil,
       agences,
       modules: form.modules,
+      // Vide en édition = mot de passe inchangé (non envoyé).
+      ...(form.motDePasse ? { motDePasse: form.motDePasse } : {}),
     };
     try {
       if (form.edition) {
@@ -169,7 +183,10 @@ export default function AdminProfilsPage() {
                     {p.nomAffiche} <span className="adm-tag">{p.profil}</span>
                     {p.identifiant === actif && <span className="adm-tag on">actif</span>}
                   </div>
-                  <div className="adm-id">{p.identifiant}</div>
+                  <div className="adm-id">
+                    {p.identifiant}
+                    {p.login && <span className="adm-login"> · login : {p.login}</span>}
+                  </div>
                 </div>
               </div>
               <ul className="adm-agences">
@@ -206,12 +223,31 @@ export default function AdminProfilsPage() {
           <h3>{form.edition ? `Modifier ${form.identifiant}` : 'Nouvel AGA / agent'}</h3>
 
           <label className="adm-field">
-            Identifiant
+            Identifiant technique
             <input
               value={form.identifiant}
               disabled={form.edition}
               placeholder="ex. a.nouveau"
               onChange={(e) => setForm((f) => ({ ...f, identifiant: e.target.value }))}
+            />
+          </label>
+          <label className="adm-field">
+            Login de connexion
+            <input
+              value={form.login}
+              placeholder="ex. nouveau"
+              autoComplete="off"
+              onChange={(e) => setForm((f) => ({ ...f, login: e.target.value }))}
+            />
+          </label>
+          <label className="adm-field">
+            Mot de passe
+            <input
+              type="password"
+              value={form.motDePasse}
+              autoComplete="new-password"
+              placeholder={form.edition ? 'Laisser vide pour conserver' : 'Mot de passe initial'}
+              onChange={(e) => setForm((f) => ({ ...f, motDePasse: e.target.value }))}
             />
           </label>
           <label className="adm-field">
@@ -288,6 +324,9 @@ export default function AdminProfilsPage() {
           </div>
         </form>
       </div>
+
+      <hr className="adm-separateur" />
+      <CompteAdminPanel />
     </section>
   );
 }
