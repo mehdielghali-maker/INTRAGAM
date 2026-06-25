@@ -20,7 +20,6 @@ const STATUTS: StatutCheque[] = [
 export default function ChequeListPage() {
   const [dossiers, setDossiers] = useState<DossierCheque[]>([]);
   const [statut, setStatut] = useState<StatutCheque | ''>('');
-  const [agence, setAgence] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
 
@@ -28,13 +27,13 @@ export default function ChequeListPage() {
     setChargement(true);
     setErreur(null);
     try {
-      setDossiers(await listerCheques({ statut, agence }));
+      setDossiers(await listerCheques({ statut }));
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Erreur inconnue');
     } finally {
       setChargement(false);
     }
-  }, [statut, agence]);
+  }, [statut]);
 
   useEffect(() => {
     charger();
@@ -55,15 +54,6 @@ export default function ChequeListPage() {
               </option>
             ))}
           </select>
-        </label>
-        <label>
-          Agence
-          <input
-            type="text"
-            value={agence}
-            placeholder="ex. Alger-Centre"
-            onChange={(e) => setAgence(e.target.value)}
-          />
         </label>
         <button onClick={charger} disabled={chargement}>
           {chargement ? 'Chargement…' : 'Rafraîchir'}

@@ -24,7 +24,6 @@ export interface DossierCheque {
 
 export interface FiltreCheques {
   statut?: StatutCheque | '';
-  agence?: string;
 }
 
 async function lireJson<T>(reponse: Response): Promise<T> {
@@ -38,7 +37,6 @@ async function lireJson<T>(reponse: Response): Promise<T> {
 export async function listerCheques(filtre: FiltreCheques = {}): Promise<DossierCheque[]> {
   const params = new URLSearchParams();
   if (filtre.statut) params.set('statut', filtre.statut);
-  if (filtre.agence) params.set('agence', filtre.agence);
   const query = params.toString();
   return lireJson(await fetch(`/api/cheques${query ? `?${query}` : ''}`));
 }
