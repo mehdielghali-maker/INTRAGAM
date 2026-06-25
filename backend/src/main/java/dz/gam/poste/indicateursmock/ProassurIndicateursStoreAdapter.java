@@ -29,7 +29,7 @@ public class ProassurIndicateursStoreAdapter implements IndicateursProassurPort 
         MesuresAgenceEntity e = repository.findByCodeAgence(codeAgence).orElse(null);
         if (e == null) {
             BigDecimal z = BigDecimal.ZERO;
-            return new MesuresProassur(z, z, z, z, z, z, z, z, z, z, BigDecimal.ONE, z, BigDecimal.ONE, 0, 0);
+            return new MesuresProassur(z, z, z, z, z, z, z, z, z, z, z, BigDecimal.ONE, z, BigDecimal.ONE, 0, 0);
         }
         BigDecimal sinistres = e.sinistres12m;
         BigDecimal sinistresN1 = e.sinistres12mN1;
@@ -37,11 +37,12 @@ public class ProassurIndicateursStoreAdapter implements IndicateursProassurPort 
             sinistres = sinistres.multiply(FACTEUR_PROVISIONS);
             sinistresN1 = sinistresN1.multiply(FACTEUR_PROVISIONS);
         }
-        // Repli si cumulé absent (anciennes lignes avant backfill) : à défaut, le mensuel.
+        // Replis si valeurs absentes (anciennes lignes avant backfill).
         BigDecimal encaisseCumul = e.encaisseCumul != null ? e.encaisseCumul : e.encaisseMois;
+        BigDecimal caGlissant12m = e.caGlissant12m != null ? e.caGlissant12m : e.caYtdN;
         return new MesuresProassur(
-                e.caYtdN, e.caYtdN1, e.caMoisN, e.caMoisM1, e.productionMois, e.encaisseMois, encaisseCumul,
-                e.echuNonEncaisse, e.echuNonEncaisseM1, sinistres, e.primes12m, sinistresN1, e.primes12mN1,
-                e.contratsActifs, e.contratsActifsVariation);
+                e.caYtdN, e.caYtdN1, caGlissant12m, e.caMoisN, e.caMoisM1, e.productionMois, e.encaisseMois,
+                encaisseCumul, e.echuNonEncaisse, e.echuNonEncaisseM1, sinistres, e.primes12m, sinistresN1,
+                e.primes12mN1, e.contratsActifs, e.contratsActifsVariation);
     }
 }

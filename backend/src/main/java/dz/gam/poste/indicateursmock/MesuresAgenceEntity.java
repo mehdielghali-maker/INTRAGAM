@@ -22,6 +22,8 @@ public class MesuresAgenceEntity {
 
     BigDecimal caYtdN;
     BigDecimal caYtdN1;
+    // CA 12 derniers mois (année glissante) — dénominateur du code couleur de l'écart.
+    BigDecimal caGlissant12m;
     BigDecimal caMoisN;
     BigDecimal caMoisM1;
     BigDecimal productionMois;

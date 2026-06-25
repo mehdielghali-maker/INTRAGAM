@@ -39,17 +39,35 @@ public class IndicateursMockSeed implements ApplicationRunner {
         garantir(evenement.codesAgences());
     }
 
-    /** Backfill global : complète les cumulés nuls de toutes les mesures déjà en base. */
+    /** Backfill global : complète les valeurs cumulées/glissantes nulles de toutes les mesures. */
     @Override
     public void run(ApplicationArguments args) {
         mesures.findAll().forEach(e -> {
-            if (e.encaisseCumul == null || e.deposeCumul == null) {
-                double f = facteur(e.codeAgence);
-                e.encaisseCumul = bd(98_000_000, f);
-                e.deposeCumul = bd(92_000_000, f);
+            if (cumulesManquants(e)) {
+                backfillCumules(e, facteur(e.codeAgence));
                 mesures.save(e);
             }
         });
+    }
+
+    private static boolean cumulesManquants(MesuresAgenceEntity e) {
+        return e.encaisseCumul == null || e.deposeCumul == null || e.caGlissant12m == null;
+    }
+
+    /** Complète les champs ajoutés après coup (cumulés + CA glissant) sans toucher aux autres saisies. */
+    private static void backfillCumules(MesuresAgenceEntity e, double facteur) {
+        if (e.encaisseCumul == null) {
+            e.encaisseCumul = bd(98_000_000, facteur);
+        }
+        if (e.deposeCumul == null) {
+            e.deposeCumul = bd(92_000_000, facteur);
+        }
+        if (e.caGlissant12m == null) {
+            // Cohérent avec le CA YTD de la ligne (≈ 2 × YTD ~ 6 mois), sinon valeur par défaut.
+            e.caGlissant12m = e.caYtdN != null
+                    ? e.caYtdN.multiply(BigDecimal.valueOf(2))
+                    : bd(224_000_000, facteur);
+        }
     }
 
     public void garantir(List<String> codes) {
@@ -59,10 +77,8 @@ public class IndicateursMockSeed implements ApplicationRunner {
             MesuresAgenceEntity existant = mesures.findByCodeAgence(code).orElse(null);
             if (existant == null) {
                 mesures.save(mesuresParDefaut(code, facteur));
-            } else if (existant.encaisseCumul == null || existant.deposeCumul == null) {
-                // Backfill des champs cumulés ajoutés après coup (ne touche pas aux autres saisies).
-                existant.encaisseCumul = bd(98_000_000, facteur);
-                existant.deposeCumul = bd(92_000_000, facteur);
+            } else if (cumulesManquants(existant)) {
+                backfillCumules(existant, facteur);
                 mesures.save(existant);
             }
             for (String m : mois) {
@@ -83,6 +99,7 @@ public class IndicateursMockSeed implements ApplicationRunner {
         e.codeAgence = code;
         e.caYtdN = bd(112_380_000, f);
         e.caYtdN1 = bd(104_200_000, f);
+        e.caGlissant12m = bd(224_000_000, f); // CA année glissante (12 mois)
         e.caMoisN = bd(18_540_000, f);
         e.caMoisM1 = bd(16_980_000, f);
         e.productionMois = bd(18_540_000, f);

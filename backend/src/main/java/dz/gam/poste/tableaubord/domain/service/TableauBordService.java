@@ -97,10 +97,10 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 p.caMoisN(), Variation.pourcentage(p.caMoisN(), p.caMoisM1MemeQuantieme(), true),
                 p.caMoisM1MemeQuantieme(), "vs M‑1 même jour");
 
-        // Écart « à régulariser » = Encaissé (PROASSUR) − Versé en banque (Sage), en CUMULÉ (YTD).
+        // Écart « à régulariser » = Encaissé (PROASSUR) − Versé en banque (Sage), en CUMULÉ.
         // C'est l'écart cumulé à régulariser (l'écart DU MOIS figure dans le bloc Production & dépôts).
-        // Code couleur = écart / CA annuel extrapolé (cf. niveau()).
-        CarteEcart ecartDepot = calculerEcartDepot(p.encaisseCumul(), s.deposeCumul(), p.caYtdN());
+        // Code couleur = écart / CA des 12 derniers mois (année glissante, comme le S/P).
+        CarteEcart ecartDepot = calculerEcartDepot(p.encaisseCumul(), s.deposeCumul(), p.caGlissant12m());
 
         BigDecimal creance = p.echuNonEncaisse().subtract(s.encaissementsLettres());
         BigDecimal creanceM1 = p.echuNonEncaisseM1().subtract(s.encaissementsLettresM1());
@@ -133,6 +133,7 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
     private static MesuresProassur additionner(MesuresProassur a, MesuresProassur b) {
         return new MesuresProassur(
                 a.caYtdN().add(b.caYtdN()), a.caYtdN1().add(b.caYtdN1()),
+                a.caGlissant12m().add(b.caGlissant12m()),
                 a.caMoisN().add(b.caMoisN()), a.caMoisM1MemeQuantieme().add(b.caMoisM1MemeQuantieme()),
                 a.productionMois().add(b.productionMois()), a.encaisseMois().add(b.encaisseMois()),
                 a.encaisseCumul().add(b.encaisseCumul()),
@@ -151,25 +152,17 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 a.encaissementsLettresM1().add(b.encaissementsLettresM1()));
     }
 
-    private CarteEcart calculerEcartDepot(BigDecimal encaisseCumul, BigDecimal deposeCumul, BigDecimal caYtd) {
+    private CarteEcart calculerEcartDepot(BigDecimal encaisseCumul, BigDecimal deposeCumul, BigDecimal caGlissant12m) {
         // Écart cumulé = Encaissé − Versé (définition unique, ADR 0005).
         BigDecimal ecart = encaisseCumul.subtract(deposeCumul);
-        // Sévérité = écart rapporté au CA ANNUEL extrapolé (YTD annualisé au prorata des jours).
-        BigDecimal caAnnuel = extrapolerAnnuel(caYtd);
-        BigDecimal ratio = (ecart.signum() <= 0 || caAnnuel.signum() == 0)
+        // Sévérité = écart rapporté au CA des 12 derniers mois (année glissante, comme le S/P).
+        BigDecimal ratio = (ecart.signum() <= 0 || caGlissant12m.signum() == 0)
                 ? BigDecimal.ZERO
-                : ecart.divide(caAnnuel, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                : ecart.divide(caGlissant12m, 6, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         return new CarteEcart(ecart, ratio.setScale(1, RoundingMode.HALF_UP), niveau(ratio));
     }
 
-    /** CA annuel extrapolé = CA YTD × (jours de l'année / jours écoulés). */
-    private BigDecimal extrapolerAnnuel(BigDecimal caYtd) {
-        LocalDate jour = LocalDate.now(horloge);
-        return caYtd.multiply(BigDecimal.valueOf(jour.lengthOfYear()))
-                .divide(BigDecimal.valueOf(jour.getDayOfYear()), 0, RoundingMode.HALF_UP);
-    }
-
-    /** Code couleur selon le ratio écart / CA annuel (bornes en config). */
+    /** Code couleur selon le ratio écart / CA 12 mois glissants (bornes en config). */
     private NiveauEcart niveau(BigDecimal ratioPct) {
         TableauBordProperties.SeuilsEcart s = properties.seuilsEcart();
         if (ratioPct.compareTo(s.correctMax()) < 0) {

@@ -38,7 +38,7 @@ class TableauBordServiceTest {
         BigDecimal sinN1 = bd(perimetre == PerimetreSP.REGLES_SEULS ? 71_200_000 : 76_000_000, f);
         BigDecimal primes = bd(100_000_000, f);
         return new MesuresProassur(
-                bd(112_380_000, f), bd(104_200_000, f), bd(18_540_000, f), bd(16_980_000, f),
+                bd(112_380_000, f), bd(104_200_000, f), bd(224_000_000, f), bd(18_540_000, f), bd(16_980_000, f),
                 bd(18_540_000, f), bd(17_200_000, f), bd(98_000_000, f), bd(12_000_000, f), bd(12_500_000, f),
                 sin, primes, sinN1, primes, (int) Math.round(3247 * f), 58);
     };
@@ -91,8 +91,8 @@ class TableauBordServiceTest {
         TableauBord tb = serviceAvecMocks(PerimetreSP.REGLES_SEULS).consulter(Periode.YTD, AGENCE);
         // Carte KPI = écart CUMULÉ (98 000 000 − 92 000 000), pas l'écart du mois.
         assertThat(tb.ecartDepot().valeur()).isEqualByComparingTo("6000000");
-        // % = écart / CA annuel extrapolé (112,38M × 365/174 ≈ 235,7M) ≈ 2,5 % → orange (Modéré).
-        assertThat(tb.ecartDepot().pourcentage()).isEqualByComparingTo("2.5");
+        // % = écart / CA 12 mois glissants (6M / 224M ≈ 2,7 %) → orange (Modéré).
+        assertThat(tb.ecartDepot().pourcentage()).isEqualByComparingTo("2.7");
         assertThat(tb.ecartDepot().niveau()).isEqualTo(NiveauEcart.MODERE);
         // Le bloc Production & dépôts garde l'écart DU MOIS (17,2M − 15,9M) → inchangé.
         assertThat(tb.productionDepots().ecart()).isEqualByComparingTo("1300000");
@@ -101,7 +101,7 @@ class TableauBordServiceTest {
     @Test
     void ecart_faible_par_rapport_au_ca_est_correct() {
         IndicateursProassurPort prod = (code, periode, perimetre) -> new MesuresProassur(
-                bd(50_000_000, 1), bd(50_000_000, 1), bd(100, 1), bd(100, 1),
+                bd(50_000_000, 1), bd(50_000_000, 1), bd(50_000_000, 1), bd(100, 1), bd(100, 1),
                 bd(1_000_000, 1), bd(1_000_000, 1), bd(1_000_000, 1), bd(5_000_000, 1), bd(5_200_000, 1),
                 bd(50, 1), bd(100, 1), bd(50, 1), bd(100, 1), 3247, 58);
         IndicateursSagePort sg = (code, periode) ->
@@ -115,24 +115,23 @@ class TableauBordServiceTest {
     }
 
     @Test
-    void code_couleur_selon_le_ratio_ecart_sur_ca_annuel() {
-        // Horloge au 31/12 → facteur d'extrapolation = 1, donc ratio = écart / CA YTD.
-        Clock fin = Clock.fixed(Instant.parse("2026-12-31T09:00:00Z"), ZoneOffset.UTC);
-        assertThat(niveauPour(2_000_000, 100_000_000, fin)).isEqualTo(NiveauEcart.CORRECT);  // 2,0 %
-        assertThat(niveauPour(3_000_000, 100_000_000, fin)).isEqualTo(NiveauEcart.MODERE);   // 3,0 %
-        assertThat(niveauPour(7_000_000, 100_000_000, fin)).isEqualTo(NiveauEcart.CRITIQUE); // 7,0 %
-        assertThat(niveauPour(12_000_000, 100_000_000, fin)).isEqualTo(NiveauEcart.DANGER);  // 12,0 %
-        assertThat(niveauPour(0, 100_000_000, fin)).isEqualTo(NiveauEcart.CORRECT);          // pas d'écart
+    void code_couleur_selon_le_ratio_ecart_sur_ca_12_mois() {
+        // Ratio = écart cumulé / CA des 12 derniers mois (indépendant de la date).
+        assertThat(niveauPour(2_000_000, 100_000_000)).isEqualTo(NiveauEcart.CORRECT);  // 2,0 %
+        assertThat(niveauPour(3_000_000, 100_000_000)).isEqualTo(NiveauEcart.MODERE);   // 3,0 %
+        assertThat(niveauPour(7_000_000, 100_000_000)).isEqualTo(NiveauEcart.CRITIQUE); // 7,0 %
+        assertThat(niveauPour(12_000_000, 100_000_000)).isEqualTo(NiveauEcart.DANGER);  // 12,0 %
+        assertThat(niveauPour(0, 100_000_000)).isEqualTo(NiveauEcart.CORRECT);          // pas d'écart
     }
 
-    /** Niveau obtenu pour un écart cumulé et un CA YTD donnés, à une date donnée. */
-    private NiveauEcart niveauPour(long ecartCumul, long caYtd, Clock horloge) {
+    /** Niveau obtenu pour un écart cumulé et un CA 12 mois glissants donnés. */
+    private NiveauEcart niveauPour(long ecartCumul, long ca12m) {
         IndicateursProassurPort prod = (c, p, per) -> new MesuresProassur(
-                bd(caYtd, 1), bd(caYtd, 1), bd(0, 1), bd(0, 1), bd(0, 1), bd(0, 1), bd(ecartCumul, 1),
+                bd(ca12m, 1), bd(ca12m, 1), bd(ca12m, 1), bd(0, 1), bd(0, 1), bd(0, 1), bd(0, 1), bd(ecartCumul, 1),
                 bd(0, 1), bd(0, 1), bd(50, 1), bd(100, 1), bd(50, 1), bd(100, 1), 0, 0);
         IndicateursSagePort sg = (c, p) -> new MesuresSage(bd(0, 1), bd(0, 1), BigDecimal.ZERO, BigDecimal.ZERO);
         TableauBordService svc = new TableauBordService(prod, sg, compteurs,
-                properties(PerimetreSP.REGLES_SEULS), horloge);
+                properties(PerimetreSP.REGLES_SEULS), HORLOGE);
         return svc.consulter(Periode.YTD, AGENCE).ecartDepot().niveau();
     }
 

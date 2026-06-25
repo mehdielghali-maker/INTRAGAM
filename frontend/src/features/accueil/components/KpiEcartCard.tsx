@@ -3,8 +3,8 @@ import { CarteEcart, NiveauEcart } from '../types';
 import { montantDA, ratioPct } from '../format';
 
 /**
- * Carte « Écart à régulariser » = Encaissé − Versé en banque, en CUMULÉ (YTD). Le code couleur
- * et le message dépendent du ratio écart / CA annuel extrapolé (4 niveaux) :
+ * Carte « Écart à régulariser » = Encaissé − Versé en banque, en CUMULÉ. Le code couleur
+ * et le message dépendent du ratio écart / CA des 12 derniers mois (4 niveaux) :
  * Correct (vert), Modéré (orange), Critique (rouge), Danger (noir).
  * (L'écart DU MOIS figure dans le bloc « Production & dépôts ».)
  */
@@ -26,7 +26,7 @@ export default function KpiEcartCard({ ecart }: { ecart: CarteEcart }) {
         </span>
       </div>
       <div className="k-val">{montantDA(ecart.valeur)}</div>
-      <div className="k-sub">Écart / CA annuel · {ratioPct(ecart.pourcentage)}</div>
+      <div className="k-sub">Écart / CA 12 mois · {ratioPct(ecart.pourcentage)}</div>
       <span className={`pill-state ${n.cls}`}>
         <span className="dot" />
         {n.message}

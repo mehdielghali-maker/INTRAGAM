@@ -48,7 +48,8 @@ server:
 # Paramètres MÉTIER du tableau de bord agence — à caler avec la DG/DFC, jamais en dur.
 poste:
   tableau-bord:
-    # Code couleur de l'« écart à régulariser » = écart / CA annuel extrapolé (YTD annualisé).
+    # Code couleur de l'« écart à régulariser » = écart / CA des 12 derniers mois (année
+    # glissante, comme le S/P ; source : cube Power BI).
     # < correct-max → vert (Correct) ; < modere-max → orange (Modéré) ;
     # <= critique-max → rouge (Critique) ; au-delà → noir (Danger).
     seuils-ecart:

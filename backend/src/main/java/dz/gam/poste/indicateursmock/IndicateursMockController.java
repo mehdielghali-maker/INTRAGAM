@@ -51,6 +51,7 @@ public class IndicateursMockController {
         e.codeAgence = code;
         e.caYtdN = dto.caYtdN();
         e.caYtdN1 = dto.caYtdN1();
+        e.caGlissant12m = dto.caGlissant12m();
         e.caMoisN = dto.caMoisN();
         e.caMoisM1 = dto.caMoisM1();
         e.productionMois = dto.productionMois();

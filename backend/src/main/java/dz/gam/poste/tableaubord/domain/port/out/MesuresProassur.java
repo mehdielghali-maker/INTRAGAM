@@ -11,6 +11,8 @@ public record MesuresProassur(
         // KPI 1 — CA Year-to-Date vs N-1
         BigDecimal caYtdN,
         BigDecimal caYtdN1,
+        // CA des 12 derniers mois (année glissante) — dénominateur du code couleur de l'écart
+        BigDecimal caGlissant12m,
         // KPI 2 — CA du mois à date vs M-1 (même quantième)
         BigDecimal caMoisN,
         BigDecimal caMoisM1MemeQuantieme,

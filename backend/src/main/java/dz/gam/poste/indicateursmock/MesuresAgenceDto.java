@@ -7,6 +7,7 @@ public record MesuresAgenceDto(
         String codeAgence,
         BigDecimal caYtdN,
         BigDecimal caYtdN1,
+        BigDecimal caGlissant12m,
         BigDecimal caMoisN,
         BigDecimal caMoisM1,
         BigDecimal productionMois,
@@ -26,7 +27,7 @@ public record MesuresAgenceDto(
         int contratsActifsVariation) {
 
     static MesuresAgenceDto de(MesuresAgenceEntity e) {
-        return new MesuresAgenceDto(e.codeAgence, e.caYtdN, e.caYtdN1, e.caMoisN, e.caMoisM1,
+        return new MesuresAgenceDto(e.codeAgence, e.caYtdN, e.caYtdN1, e.caGlissant12m, e.caMoisN, e.caMoisM1,
                 e.productionMois, e.encaisseMois, e.deposeMois, e.encaisseCumul, e.deposeCumul,
                 e.echuNonEncaisse, e.echuNonEncaisseM1,
                 e.encaissementsLettres, e.encaissementsLettresM1, e.sinistres12m, e.primes12m,
