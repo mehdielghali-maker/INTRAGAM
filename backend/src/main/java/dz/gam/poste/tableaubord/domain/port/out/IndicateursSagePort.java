@@ -8,5 +8,5 @@ import dz.gam.poste.tableaubord.domain.model.Periode;
  */
 public interface IndicateursSagePort {
 
-    MesuresSage mesurer(Periode periode);
+    MesuresSage mesurer(String codeAgence, Periode periode);
 }

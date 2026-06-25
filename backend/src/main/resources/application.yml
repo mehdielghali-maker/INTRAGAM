@@ -38,10 +38,22 @@ poste:
       # Périmètre du numérateur S/P : REGLES_SEULS | CHARGE_AVEC_PROVISIONS
       perimetre-numerateur: REGLES_SEULS
     periode-defaut: YTD
-    # En attendant un vrai login agence : identité injectée par configuration.
-    agence:
-      nom: Agence Bab Ezzouar
-      code: 16.I.Gharbi
+
+  # Contexte d'agence (brique transverse) — identité SSO mockée : l'utilisateur connecté
+  # et son périmètre d'agences. L'agence active est portée par la session serveur.
+  # En prod, utilisateur + périmètre proviendront des claims du token Entra ID.
+  contexte:
+    utilisateur:
+      identifiant: m.benzerga
+      nom-affiche: M. Benzerga
+      profil: AGA          # AGA (multi-agences) | AGENT (mono-agence)
+    agences:
+      - code: 02.1.S.BENZERGA
+        nom: Agence Saïd Hamdine
+      - code: 02.4.Aïssat Idir
+        nom: Agence Aïssat Idir
+      - code: 02.7.Draria
+        nom: Agence Draria
 
   # Demande de cotation — libellés, branches et délais du mock central paramétrables.
   cotation:

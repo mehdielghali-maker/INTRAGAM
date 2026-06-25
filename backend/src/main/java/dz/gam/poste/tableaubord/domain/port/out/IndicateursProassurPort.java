@@ -10,5 +10,5 @@ import dz.gam.poste.tableaubord.domain.model.PerimetreSP;
  */
 public interface IndicateursProassurPort {
 
-    MesuresProassur mesurer(Periode periode, PerimetreSP perimetreSP);
+    MesuresProassur mesurer(String codeAgence, Periode periode, PerimetreSP perimetreSP);
 }

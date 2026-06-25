@@ -1,27 +1,56 @@
-import { Periode } from '../features/accueil/types';
+import { useEffect, useRef, useState } from 'react';
+import { ContexteAgence } from './agence';
 
-function initiales(nom: string): string {
-  const mots = nom.replace(/^Agence\s*/i, '').trim().split(/\s+/);
-  return mots.slice(0, 2).map((m) => m.charAt(0)).join('').toUpperCase() || 'GA';
+const PIN = 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5';
+const CHECK = 'M5 12l5 5L20 6';
+const CHEVRON = 'M6 9l6 6 6-6';
+
+function PinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
+      <path d={PIN} />
+    </svg>
+  );
 }
 
 /**
- * Barre supérieure : logo GAM (tuile blanche) + identité agence à gauche ; sélecteur
- * de période fonctionnel + avatar à droite.
+ * Barre supérieure : à gauche, logo GAM + identité de l'utilisateur connecté (SSO) ; à
+ * droite, le commutateur « Agence active » (remplace l'ancien sélecteur Période/YTD,
+ * supprimé). Tous les écrans héritent de l'agence choisie ici.
  */
 export default function Topbar({
-  agence,
-  moisAnnee,
-  periode,
-  onPeriodeChange,
+  contexte,
+  onChanger,
 }: {
-  agence: { nom: string; code: string } | null;
-  moisAnnee: string;
-  periode: Periode;
-  onPeriodeChange: (p: Periode) => void;
+  contexte: ContexteAgence | null;
+  onChanger: (code: string) => void;
 }) {
-  const nom = agence?.nom ?? 'Agence';
-  const code = agence?.code ?? '—';
+  const [ouvert, setOuvert] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function surClicExterne(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOuvert(false);
+    }
+    document.addEventListener('click', surClicExterne);
+    return () => document.removeEventListener('click', surClicExterne);
+  }, []);
+
+  const utilisateur = contexte?.utilisateur;
+  const active = contexte?.agenceActive;
+  const agences = contexte?.agencesAutorisees ?? [];
+  const estAga = utilisateur?.profil === 'AGA';
+  const profilLib = estAga ? 'Agent Général' : 'Agent';
+  const n = agences.length;
+  const meta = utilisateur
+    ? `${estAga ? 'Espace AGA' : 'Espace agence'} · ${n} agence${n > 1 ? 's' : ''} gérée${n > 1 ? 's' : ''} · session ouverte`
+    : 'Session en cours…';
+
+  function choisir(code: string) {
+    setOuvert(false);
+    if (code !== active?.code) onChanger(code);
+  }
+
   return (
     <header className="topbar">
       <div className="brandblock">
@@ -30,26 +59,76 @@ export default function Topbar({
         </span>
         <div>
           <div className="agence-nom">
-            {nom}
+            {utilisateur ? `${utilisateur.nomAffiche} — ${profilLib}` : 'Poste de travail unifié'}
             <span className="maquette-tag">Données fictives</span>
           </div>
-          <div className="agence-meta">Code {code} · Espace agence · session ouverte</div>
+          <div className="agence-meta">{meta}</div>
         </div>
       </div>
 
       <div className="ca-zone">
-        {moisAnnee && <span className="period-chip">Période · {moisAnnee}</span>}
-        <select
-          className="period-select"
-          value={periode}
-          aria-label="Période"
-          onChange={(e) => onPeriodeChange(e.target.value as Periode)}
-        >
-          <option value="YTD">YTD</option>
-          <option value="MOIS_COURANT">Mois courant</option>
-        </select>
-        <div className="uavatar" title={nom}>
-          {initiales(nom)}
+        <div className="switcher right" ref={ref}>
+          <div className="switch-label">Agence active</div>
+          <button
+            type="button"
+            className="switch-btn"
+            aria-haspopup="listbox"
+            aria-expanded={ouvert}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOuvert((o) => !o);
+            }}
+            disabled={!active}
+          >
+            <span className="sw-pin">
+              <PinIcon />
+            </span>
+            <span className="sw-txt">
+              <span className="sw-ag">{active?.nom ?? 'Agence'}</span>
+              <span className="sw-aga">{active?.code ?? '—'}</span>
+            </span>
+            <span className="chev">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true">
+                <path d={CHEVRON} />
+              </svg>
+            </span>
+          </button>
+
+          <div className={`switch-menu ${ouvert ? 'open' : ''}`} role="listbox">
+            <div className="sm-h">Changer d'agence</div>
+            {agences.map((a) => (
+              <button
+                type="button"
+                key={a.code}
+                role="option"
+                aria-selected={a.code === active?.code}
+                className={`sm-item ${a.code === active?.code ? 'active' : ''}`}
+                onClick={() => choisir(a.code)}
+              >
+                <span className="d">
+                  <PinIcon />
+                </span>
+                <span className="t">{a.nom}</span>
+                <span className="ok">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                    <path d={CHECK} />
+                  </svg>
+                </span>
+              </button>
+            ))}
+            <div className="sm-item sm-conso" aria-disabled="true" title="Disponible prochainement">
+              <span className="d">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                </svg>
+              </span>
+              <span className="t">Toutes mes agences (consolidé)</span>
+              <span className="sm-soon">à venir</span>
+            </div>
+          </div>
         </div>
       </div>
     </header>

@@ -13,18 +13,14 @@ import java.math.BigDecimal;
  * @param seuilEcartDepot seuil de déclenchement de l'alerte « écart à régulariser »
  * @param sp              paramètres du ratio S/P (périmètre du numérateur)
  * @param periodeDefaut   période affichée par défaut
- * @param agence          identité de l'agence (en attendant un vrai login agence)
  */
 @ConfigurationProperties(prefix = "poste.tableau-bord")
-public record TableauBordProperties(SeuilEcartDepot seuilEcartDepot, Sp sp, Periode periodeDefaut, Agence agence) {
+public record TableauBordProperties(SeuilEcartDepot seuilEcartDepot, Sp sp, Periode periodeDefaut) {
 
     /** Seuil de l'écart de dépôt : alerte si le montant OU le pourcentage est dépassé. */
     public record SeuilEcartDepot(BigDecimal montant, BigDecimal pourcentage) {
     }
 
     public record Sp(PerimetreSP perimetreNumerateur) {
-    }
-
-    public record Agence(String nom, String code) {
     }
 }

@@ -33,7 +33,7 @@ export default function ProductionDepotsPanel({ data }: { data: ProductionDepots
       ))}
 
       <div className="ecart-box">
-        <span className="lab">Écart à régulariser (production − déposé)</span>
+        <span className="lab">Écart à régulariser (encaissé − versé)</span>
         <span className="v">{montantDA(data.ecart)}</span>
       </div>
     </div>

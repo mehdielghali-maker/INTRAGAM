@@ -60,6 +60,15 @@ Fonctions livrées : Suivi des chèques, Accueil agence, Demande de cotation, Ac
 Restantes (placeholders) : Dépôt Situation Financière, Attestations, Envois bureau d'ordre,
 Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
 
-## Identité / auth
-Pas d'auth réelle : identité **SSO (Entra ID) mockée** en config (M. Saïdi / Agence Bab Ezzouar /
-16.I.Gharbi). Le bloc legacy « Code Accès » est supprimé au profit de l'identité SSO.
+## Identité / auth & contexte d'agence
+Pas d'auth réelle : identité **SSO (Entra ID) mockée** en config. Le bloc legacy « Code Accès »
+est supprimé au profit de l'identité SSO.
+
+**Contexte d'agence (brique transverse `dz.gam.poste.contexte`, ADR 0005)** : l'identité fournit
+un **périmètre d'agences** (mock `poste.contexte` : AGA M. Benzerga + 3 agences). L'**agence active**
+est portée par la **session serveur** (`@SessionScope`), jamais par le navigateur. Les autres
+fonctions lisent l'agence active via le port d'entrée `AgenceCouranteQuery` et **ne redemandent
+jamais** l'agence. SÉCURITÉ : le périmètre est **revérifié côté back** à chaque changement/accès
+(hors périmètre → HTTP 403) ; ne jamais faire confiance à l'agence envoyée par le front.
+Les modules `cotation`/`dpd` conservent pour l'instant leur identité mono-agence propre (alignement
+sur le contexte transverse à prévoir).

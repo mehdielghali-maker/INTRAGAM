@@ -52,10 +52,10 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
     }
 
     @Override
-    public TableauBord consulter(Periode periode) {
+    public TableauBord consulter(Periode periode, InfoAgence agence) {
         Periode effective = periode != null ? periode : properties.periodeDefaut();
-        MesuresProassur p = proassur.mesurer(effective, properties.sp().perimetreNumerateur());
-        MesuresSage s = sage.mesurer(effective);
+        MesuresProassur p = proassur.mesurer(agence.code(), effective, properties.sp().perimetreNumerateur());
+        MesuresSage s = sage.mesurer(agence.code(), effective);
         CompteursAgence c = compteurs.compteurs();
 
         CarteMontant caYtd = new CarteMontant(
@@ -66,7 +66,9 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 p.caMoisN(), Variation.pourcentage(p.caMoisN(), p.caMoisM1MemeQuantieme(), true),
                 p.caMoisM1MemeQuantieme(), "vs M‑1 même jour");
 
-        CarteEcart ecartDepot = calculerEcartDepot(p.productionMois(), s.deposeMois());
+        // Écart « à régulariser » = Encaissé (PROASSUR) − Versé en banque (Sage).
+        // Définition canonique unique, partagée avec la fonction « Versement bancaire ».
+        CarteEcart ecartDepot = calculerEcartDepot(p.encaisseMois(), s.deposeMois());
 
         BigDecimal creance = p.echuNonEncaisse().subtract(s.encaissementsLettres());
         BigDecimal creanceM1 = p.echuNonEncaisseM1().subtract(s.encaissementsLettresM1());
@@ -80,10 +82,10 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
 
         ProductionDepots productionDepots = new ProductionDepots(
                 p.productionMois(), p.encaisseMois(), s.deposeMois(),
-                p.productionMois().subtract(s.deposeMois()));
+                p.encaisseMois().subtract(s.deposeMois()));
 
         return new TableauBord(
-                new InfoAgence(properties.agence().nom(), properties.agence().code()),
+                agence,
                 libellePeriode(effective),
                 libelleDate(),
                 p.contratsActifs(),
@@ -98,11 +100,11 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
         return compteurs.compteurs();
     }
 
-    private CarteEcart calculerEcartDepot(BigDecimal production, BigDecimal depose) {
-        BigDecimal ecart = production.subtract(depose);
-        BigDecimal pourcentage = production.signum() == 0
+    private CarteEcart calculerEcartDepot(BigDecimal encaisse, BigDecimal depose) {
+        BigDecimal ecart = encaisse.subtract(depose);
+        BigDecimal pourcentage = encaisse.signum() == 0
                 ? BigDecimal.ZERO
-                : ecart.divide(production, 6, RoundingMode.HALF_UP)
+                : ecart.divide(encaisse, 6, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100)).setScale(1, RoundingMode.HALF_UP);
         TableauBordProperties.SeuilEcartDepot seuil = properties.seuilEcartDepot();
         boolean aRegulariser = ecart.compareTo(seuil.montant()) >= 0

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
+import { AgencyProvider, useAgence } from './AgencyContext';
 import { getNavigation, getTableauBord } from '../features/accueil/api';
-import { CompteursNavigation, Periode, TableauBord } from '../features/accueil/types';
+import { CompteursNavigation, TableauBord } from '../features/accueil/types';
 
 export interface ContexteApp {
   tableauBord: TableauBord | null;
@@ -11,37 +12,41 @@ export interface ContexteApp {
 }
 
 /**
- * Coquille de l'application : barre supérieure + sidebar + zone de contenu (Outlet).
- * Centralise l'état de période (piloté depuis la topbar) et le chargement du tableau
- * de bord, partagé avec la page d'accueil via le contexte d'Outlet.
+ * Coquille de l'application : barre supérieure (commutateur d'agence) + sidebar + zone de
+ * contenu (Outlet). Le contexte d'agence est fourni par {@link AgencyProvider} ; le tableau
+ * de bord et les badges sont rechargés à chaque changement d'agence active.
  */
 export default function AppShell() {
-  const [periode, setPeriode] = useState<Periode>('YTD');
+  return (
+    <AgencyProvider>
+      <CoquilleApp />
+    </AgencyProvider>
+  );
+}
+
+function CoquilleApp() {
+  const { contexte, changer } = useAgence();
   const [tableauBord, setTableauBord] = useState<TableauBord | null>(null);
   const [badges, setBadges] = useState<CompteursNavigation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  useEffect(() => {
-    getNavigation().then(setBadges).catch(() => setBadges(null));
-  }, []);
+  const codeActif = contexte?.agenceActive.code ?? null;
 
+  // Recharge accueil + badges quand l'agence active change (et au premier chargement,
+  // une fois le contexte hydraté). Les données sont bornées à l'agence active côté back.
   useEffect(() => {
+    if (!codeActif) return;
     setErreur(null);
-    getTableauBord(periode)
+    setTableauBord(null);
+    getNavigation().then(setBadges).catch(() => setBadges(null));
+    getTableauBord()
       .then(setTableauBord)
       .catch((e) => setErreur(e instanceof Error ? e.message : 'Erreur de chargement'));
-  }, [periode]);
-
-  const moisAnnee = tableauBord ? tableauBord.periodeLibelle.split(' · ')[0] : '';
+  }, [codeActif]);
 
   return (
     <div>
-      <Topbar
-        agence={tableauBord?.agence ?? null}
-        moisAnnee={moisAnnee}
-        periode={periode}
-        onPeriodeChange={setPeriode}
-      />
+      <Topbar contexte={contexte} onChanger={changer} />
       <div className="shell">
         <Sidebar badges={badges} />
         <main className="main">
