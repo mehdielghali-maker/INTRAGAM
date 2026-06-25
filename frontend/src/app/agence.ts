@@ -13,24 +13,14 @@ export interface UtilisateurContexte {
   profil: ProfilUtilisateur;
 }
 
-/** Nœud du périmètre : une agence et ses sous-agences (vide = agence autonome). */
-export interface GroupeAgence {
-  code: string;
-  nom: string;
-  sousAgences: AgenceRef[];
-}
-
 export interface ContexteAgence {
   utilisateur: UtilisateurContexte;
-  /** Unité d'action sélectionnée ; null si la sélection couvre plusieurs agences (lecture seule). */
+  /** Agence active ; null en mode consolidé. */
   agenceActive: AgenceRef | null;
-  /** Code sélectionné : sous-agence, agence parente (consolidé du groupe) ou « CONSOLIDE ». */
-  selectionCode: string;
-  selectionLibelle: string;
-  /** Périmètre hiérarchique (agences + sous-agences) pour le commutateur. */
-  perimetre: GroupeAgence[];
+  /** Liste plate des agences du périmètre (une agence = un point de vente). */
+  agencesAutorisees: AgenceRef[];
   consolideDisponible: boolean;
-  /** Sélection en lecture seule (groupe parent ou consolidé global) : aucune action. */
+  /** Vue consolidée active (« Toutes mes agences ») : lecture seule, aucune action. */
   consolideActif: boolean;
 }
 

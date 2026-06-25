@@ -30,8 +30,12 @@ function CoquilleApp() {
   const [badges, setBadges] = useState<CompteursNavigation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Clé de sélection (sous-agence, groupe parent ou consolidé) : recharge à chaque changement.
-  const selection = contexte?.selectionCode ?? null;
+  // Clé de sélection : l'agence active, ou « CONSOLIDE » en vue d'ensemble.
+  const selection = contexte
+    ? contexte.consolideActif
+      ? 'CONSOLIDE'
+      : contexte.agenceActive?.code ?? null
+    : null;
 
   // Recharge accueil + badges quand la sélection change (et au premier chargement,
   // une fois le contexte hydraté). Les données sont bornées à la sélection côté back.

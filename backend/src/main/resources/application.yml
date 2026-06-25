@@ -65,23 +65,14 @@ poste:
       identifiant: m.benzerga
       nom-affiche: M. Benzerga
       profil: AGA          # AGA (multi-agences) | AGENT (mono-agence)
-    # Périmètre hiérarchique : agences, dont certaines ont des sous-agences.
-    # - une agence AVEC sous-agences = un groupe : les actions visent une sous-agence ;
-    #   sélectionner le groupe = vue consolidée (lecture seule) de ses sous-agences.
-    # - une agence SANS sous-agence = autonome : elle est sa propre unité d'action.
+    # Périmètre = liste PLATE d'agences (une agence = un point de vente). Un AGA en gère
+    # plusieurs ; un agent une seule. La vue consolidée cumule toutes les agences gérées.
     agences:
-      - code: 02.1.BENZERGA
-        nom: Agence Saïd Hamdine
-        sous-agences:
-          - { code: 02.1.1, nom: Point Hydra }
-          - { code: 02.1.2, nom: Point Bir Mourad Raïs }
-      - code: 02.4.IDIR
-        nom: Agence Aïssat Idir
-        sous-agences:
-          - { code: 02.4.1, nom: Point El Harrach }
-          - { code: 02.4.2, nom: Point Bab Ezzouar }
-      - code: 02.7.DRARIA
-        nom: Agence Draria
+      - { code: 02.1.SAID, nom: Agence Saïd Hamdine }
+      - { code: 02.2.HYDRA, nom: Agence Hydra }
+      - { code: 02.3.BMR, nom: Agence Bir Mourad Raïs }
+      - { code: 02.4.AISSAT, nom: Agence Aïssat Idir }
+      - { code: 02.7.DRARIA, nom: Agence Draria }
 
   # Demande de cotation — libellés, branches et délais du mock central paramétrables.
   cotation:

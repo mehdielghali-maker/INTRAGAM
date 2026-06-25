@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CODE_CONSOLIDE, ContexteAgence } from './agence';
 
 const PIN = 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5';
@@ -36,8 +36,8 @@ function CheckIcon() {
 
 /**
  * Barre supérieure : à gauche, logo GAM + identité de l'utilisateur connecté (SSO) ; à
- * droite, le commutateur « Agence active » hiérarchique (agences, sous-agences, et vues
- * consolidées). Tous les écrans héritent de la sélection faite ici.
+ * droite, le commutateur « Agence active » — liste plate des agences gérées + la vue
+ * consolidée « Toutes mes agences ». Tous les écrans héritent de la sélection faite ici.
  */
 export default function Topbar({
   contexte,
@@ -58,21 +58,23 @@ export default function Topbar({
   }, []);
 
   const utilisateur = contexte?.utilisateur;
-  const perimetre = contexte?.perimetre ?? [];
-  const selection = contexte?.selectionCode;
+  const active = contexte?.agenceActive;
+  const agences = contexte?.agencesAutorisees ?? [];
+  const consolide = contexte?.consolideActif ?? false;
   const consolideDispo = contexte?.consolideDisponible ?? false;
-  const btnNom = contexte?.selectionLibelle ?? 'Agence';
-  const btnCode = contexte?.selectionCode ?? '—';
+  const btnNom = consolide ? 'Toutes mes agences' : (active?.nom ?? 'Agence');
+  const btnCode = consolide ? 'Consolidé' : (active?.code ?? '—');
   const estAga = utilisateur?.profil === 'AGA';
   const profilLib = estAga ? 'Agent Général' : 'Agent';
-  const nbFeuilles = perimetre.reduce((n, g) => n + (g.sousAgences.length || 1), 0);
+  const n = agences.length;
   const meta = utilisateur
-    ? `${estAga ? 'Espace AGA' : 'Espace agence'} · ${nbFeuilles} agence${nbFeuilles > 1 ? 's' : ''} gérée${nbFeuilles > 1 ? 's' : ''} · session ouverte`
+    ? `${estAga ? 'Espace AGA' : 'Espace agence'} · ${n} agence${n > 1 ? 's' : ''} gérée${n > 1 ? 's' : ''} · session ouverte`
     : 'Session en cours…';
 
   function choisir(code: string) {
     setOuvert(false);
-    if (code !== selection) onChanger(code);
+    const courant = consolide ? CODE_CONSOLIDE : active?.code;
+    if (code !== courant) onChanger(code);
   }
 
   return (
@@ -121,61 +123,23 @@ export default function Topbar({
           <div className={`switch-menu ${ouvert ? 'open' : ''}`} role="listbox">
             <div className="sm-h">Changer d'agence</div>
 
-            {perimetre.map((g) => {
-              const estGroupe = g.sousAgences.length > 0;
-              if (!estGroupe) {
-                return (
-                  <button
-                    type="button"
-                    key={g.code}
-                    role="option"
-                    aria-selected={selection === g.code}
-                    className={`sm-item ${selection === g.code ? 'active' : ''}`}
-                    onClick={() => choisir(g.code)}
-                  >
-                    <span className="d">
-                      <PinIcon />
-                    </span>
-                    <span className="t">{g.nom}</span>
-                    <CheckIcon />
-                  </button>
-                );
-              }
+            {agences.map((a) => {
+              const actif = !consolide && a.code === active?.code;
               return (
-                <Fragment key={g.code}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={selection === g.code}
-                    className={`sm-item sm-groupe ${selection === g.code ? 'active' : ''}`}
-                    onClick={() => choisir(g.code)}
-                    title="Vue consolidée du groupe (lecture seule)"
-                  >
-                    <span className="d">
-                      <GridIcon />
-                    </span>
-                    <span className="t">
-                      {g.nom} <span className="sm-tag">consolidé</span>
-                    </span>
-                    <CheckIcon />
-                  </button>
-                  {g.sousAgences.map((s) => (
-                    <button
-                      type="button"
-                      key={s.code}
-                      role="option"
-                      aria-selected={selection === s.code}
-                      className={`sm-item sm-sous ${selection === s.code ? 'active' : ''}`}
-                      onClick={() => choisir(s.code)}
-                    >
-                      <span className="d">
-                        <PinIcon />
-                      </span>
-                      <span className="t">{s.nom}</span>
-                      <CheckIcon />
-                    </button>
-                  ))}
-                </Fragment>
+                <button
+                  type="button"
+                  key={a.code}
+                  role="option"
+                  aria-selected={actif}
+                  className={`sm-item ${actif ? 'active' : ''}`}
+                  onClick={() => choisir(a.code)}
+                >
+                  <span className="d">
+                    <PinIcon />
+                  </span>
+                  <span className="t">{a.nom}</span>
+                  <CheckIcon />
+                </button>
               );
             })}
 
@@ -183,8 +147,8 @@ export default function Topbar({
               <button
                 type="button"
                 role="option"
-                aria-selected={selection === CODE_CONSOLIDE}
-                className={`sm-item ${selection === CODE_CONSOLIDE ? 'active' : ''}`}
+                aria-selected={consolide}
+                className={`sm-item ${consolide ? 'active' : ''}`}
                 onClick={() => choisir(CODE_CONSOLIDE)}
                 title="Vue d'ensemble de toutes les agences (lecture seule)"
               >

@@ -35,11 +35,11 @@ public class IndicateursMockSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        List<Agence> feuilles = identite.identiteCourante().feuilles();
+        List<Agence> agences = identite.identiteCourante().agencesGerees();
         List<String> mois = versementProperties.moisDisponibles();
-        for (int i = 0; i < feuilles.size(); i++) {
-            String code = feuilles.get(i).code();
-            double facteur = Math.max(0.4, 1.0 - 0.12 * i); // distinct par feuille
+        for (int i = 0; i < agences.size(); i++) {
+            String code = agences.get(i).code();
+            double facteur = Math.max(0.4, 1.0 - 0.12 * i); // distinct par agence
             if (mesures.findByCodeAgence(code).isEmpty()) {
                 mesures.save(mesuresParDefaut(code, facteur));
             }
