@@ -61,6 +61,15 @@ Versement bancaire (preuve de paiement, ADR 0006).
 Restantes (placeholders) : Dépôt Situation Financière, Attestations, Envois bureau d'ordre,
 Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
 
+## Source des chiffres (substitut Cube Power BI, ADR 0007)
+Les KPI de l'accueil et la situation mensuelle du versement proviennent du module
+`dz.gam.poste.indicateursmock` : un **store persistant** (tables `mock_mesures_agence` /
+`mock_situation_mensuelle`) derrière les 4 ports (`IndicateursProassurPort`,
+`IndicateursSagePort`, `ProductionEncaissePort`, `VersementsBanquePort`). **Semé au démarrage**
+avec des valeurs distinctes par feuille (depuis le périmètre du contexte) et **éditable** via
+`/api/mock/indicateurs` (GET/PUT par agence et par agence+mois). À remplacer par un adapter
+**Power BI** (mêmes ports) → suppression du store + de l'API mock, sans impact domaine.
+
 ## Identité / auth & contexte d'agence
 Pas d'auth réelle : identité **SSO (Entra ID) mockée** en config. Le bloc legacy « Code Accès »
 est supprimé au profit de l'identité SSO.
