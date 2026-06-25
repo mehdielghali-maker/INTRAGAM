@@ -61,18 +61,31 @@ poste:
   # et son périmètre d'agences. L'agence active est portée par la session serveur.
   # En prod, utilisateur + périmètre proviendront des claims du token Entra ID.
   contexte:
-    utilisateur:
-      identifiant: m.benzerga
-      nom-affiche: M. Benzerga
-      profil: AGA          # AGA (multi-agences) | AGENT (mono-agence)
-    # Périmètre = liste PLATE d'agences (une agence = un point de vente). Un AGA en gère
-    # plusieurs ; un agent une seule. La vue consolidée cumule toutes les agences gérées.
-    agences:
-      - { code: 02.1.SAID, nom: Agence Saïd Hamdine }
-      - { code: 02.2.HYDRA, nom: Agence Hydra }
-      - { code: 02.3.BMR, nom: Agence Bir Mourad Raïs }
-      - { code: 02.4.AISSAT, nom: Agence Aïssat Idir }
-      - { code: 02.7.DRARIA, nom: Agence Draria }
+    # Plusieurs profils SSO simulables (AGA/agents). Chaque profil a SON périmètre d'agences
+    # (liste plate ; une agence = un point de vente). Le profil actif se choisit par session
+    # via POST /api/mock/identite/actif {identifiant} ; à défaut, profil-defaut.
+    profil-defaut: m.benzerga
+    profils:
+      - identifiant: m.benzerga
+        nom-affiche: M. Benzerga
+        profil: AGA          # AGA (multi-agences) | AGENT (mono-agence)
+        agences:
+          - { code: 02.1.SAID, nom: Agence Saïd Hamdine }
+          - { code: 02.2.HYDRA, nom: Agence Hydra }
+          - { code: 02.3.BMR, nom: Agence Bir Mourad Raïs }
+          - { code: 02.4.AISSAT, nom: Agence Aïssat Idir }
+          - { code: 02.7.DRARIA, nom: Agence Draria }
+      - identifiant: m.saidi
+        nom-affiche: M. Saïdi
+        profil: AGENT
+        agences:
+          - { code: 16.I.GHARBI, nom: Agence Bab Ezzouar }
+      - identifiant: k.cherif
+        nom-affiche: K. Cherif
+        profil: AGA
+        agences:
+          - { code: 31.O.CENTRE, nom: Agence Oran Centre }
+          - { code: 31.O.SENIA, nom: Agence Es Sénia }
 
   # Demande de cotation — libellés, branches et délais du mock central paramétrables.
   cotation:

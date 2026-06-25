@@ -6,19 +6,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.List;
 
 /**
- * Identité SSO mockée en dev (préfixe {@code poste.contexte}) : l'utilisateur connecté et son
- * périmètre d'agences. Le périmètre est une LISTE PLATE d'agences (une agence = un point de
- * vente) ; un AGA en gère plusieurs. Jamais figé en dur — caler avec l'annuaire/Entra ID réel.
+ * Identités SSO mockées en dev (préfixe {@code poste.contexte}). Plusieurs PROFILS sont
+ * définis (différents AGA / agents, chacun avec SON périmètre d'agences à plat — une agence
+ * = un point de vente). Le profil actif est choisi par session (mock de la connexion SSO) ;
+ * à défaut, {@code profilDefaut}. Jamais figé en dur — caler avec Entra ID réel.
  *
- * @param utilisateur identité de l'utilisateur connecté
- * @param agences     périmètre d'agences géré (AGA → plusieurs ; agent → une seule)
+ * @param profilDefaut identifiant du profil utilisé tant qu'aucun n'est sélectionné
+ * @param profils      profils simulables
  */
 @ConfigurationProperties(prefix = "poste.contexte")
-public record ContexteProperties(Utilisateur utilisateur, List<Agence> agences) {
+public record ContexteProperties(String profilDefaut, List<Profil> profils) {
 
-    public record Utilisateur(String identifiant, String nomAffiche, ProfilUtilisateur profil) {
+    public record Profil(String identifiant, String nomAffiche, ProfilUtilisateur profil, List<Agence> agences) {
     }
 
     public record Agence(String code, String nom) {
+    }
+
+    /** Profil actif demandé, ou le profil par défaut, ou le premier déclaré. */
+    public Profil resoudre(String identifiantDemande) {
+        return profils.stream().filter(p -> p.identifiant().equals(identifiantDemande)).findFirst()
+                .or(() -> profils.stream().filter(p -> p.identifiant().equals(profilDefaut)).findFirst())
+                .orElse(profils.get(0));
     }
 }
