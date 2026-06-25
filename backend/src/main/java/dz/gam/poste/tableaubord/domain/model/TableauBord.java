@@ -22,5 +22,7 @@ public record TableauBord(
         CarteMontant creances,
         CarteRatio sp,
         List<CompteurAction> coupDoeil,
-        ProductionDepots productionDepots) {
+        ProductionDepots productionDepots,
+        boolean consolide,
+        List<RepartitionAgence> repartition) {
 }

@@ -8,7 +8,8 @@ import './versement.css';
 
 export default function VersementPage() {
   const { contexte } = useAgence();
-  const codeAgence = contexte?.agenceActive.code;
+  const consolide = contexte?.consolideActif ?? false;
+  const codeAgence = contexte?.agenceActive?.code;
 
   const [options, setOptions] = useState<VersementOptions | null>(null);
   const [mois, setMois] = useState<string>('');
@@ -29,7 +30,7 @@ export default function VersementPage() {
 
   // Situation rechargée au changement de mois ET au changement d'agence active.
   const chargerSituation = useCallback(async () => {
-    if (!mois) return;
+    if (!mois || consolide) return; // pas d'action/lecture agence en mode consolidé
     setSituationErreur(null);
     try {
       setSituation(await getSituation(mois));
@@ -37,7 +38,7 @@ export default function VersementPage() {
       setSituation(null);
       setSituationErreur(e instanceof Error ? e.message : 'Situation indisponible');
     }
-  }, [mois, codeAgence]);
+  }, [mois, codeAgence, consolide]);
 
   useEffect(() => {
     chargerSituation();
@@ -45,13 +46,17 @@ export default function VersementPage() {
 
   // Liste des versements déposés (dépend de l'agence active).
   const chargerListe = useCallback(async () => {
+    if (consolide) {
+      setVersements([]);
+      return;
+    }
     setListeErreur(null);
     try {
       setVersements(await listerVersements());
     } catch (e) {
       setListeErreur(e instanceof Error ? e.message : 'Liste indisponible');
     }
-  }, [codeAgence]);
+  }, [codeAgence, consolide]);
 
   useEffect(() => {
     chargerListe();
@@ -72,6 +77,16 @@ export default function VersementPage() {
         choisis.
       </p>
 
+      {consolide ? (
+        <div className="form-card">
+          <div className="conso-banner">
+            Mode consolidé (vue d'ensemble) : le dépôt d'un versement concerne une agence
+            précise. Sélectionnez une agence dans le commutateur en haut à droite pour déposer
+            ou suivre les versements.
+          </div>
+        </div>
+      ) : (
+        <>
       <div className="form-card" style={{ marginBottom: 18 }}>
         <div className="sso-strip">
           <span className="ms" aria-hidden>
@@ -81,7 +96,7 @@ export default function VersementPage() {
           </span>
           <div className="who">
             <b>
-              Agence active : {contexte?.agenceActive.nom ?? '…'} — {codeAgence ?? '…'}
+              Agence active : {contexte?.agenceActive?.nom ?? '…'} — {codeAgence ?? '…'}
             </b>
             <span>
               Héritée du contexte de session. Pour changer d'agence, utilisez le commutateur en haut
@@ -111,6 +126,8 @@ export default function VersementPage() {
         l'agence, il ne recalcule pas la comptabilité. Le statut (Déposé → En contrôle → Validé /
         Rejeté) est porté par le BPM.
       </div>
+        </>
+      )}
     </section>
   );
 }

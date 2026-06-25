@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Adapter d'entrée (web) de l'accueil agence. Expose le tableau de bord et les badges
  * de navigation. L'agence n'est JAMAIS reçue du front : elle est dérivée du contexte de
@@ -37,7 +39,13 @@ public class TableauBordController {
 
     @GetMapping("/tableau-bord")
     public TableauBord tableauBord(@RequestParam(required = false) Periode periode) {
-        Agence active = agenceCourante.agenceActive();
+        if (agenceCourante.estConsolide()) {
+            List<InfoAgence> agences = agenceCourante.agencesActives().stream()
+                    .map(a -> new InfoAgence(a.nom(), a.code()))
+                    .toList();
+            return consulterTableauBord.consolider(periode, agences);
+        }
+        Agence active = agenceCourante.agencePourAction();
         return consulterTableauBord.consulter(periode, new InfoAgence(active.nom(), active.code()));
     }
 

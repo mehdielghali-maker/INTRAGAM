@@ -92,7 +92,8 @@ public class VersementController {
     }
 
     private String agenceActive() {
-        return agenceCourante.agenceActive().code();
+        // En mode consolidé, agencePourAction() lève (409) : le versement vise une agence précise.
+        return agenceCourante.agencePourAction().code();
     }
 
     private String createur() {

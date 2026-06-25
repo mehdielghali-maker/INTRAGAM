@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -120,6 +121,21 @@ class TableauBordServiceTest {
         // Draria (facteur mock 0,4) produit un CA plus faible que l'agence de référence.
         assertThat(caDraria).isLessThan(caBenzerga);
         assertThat(caDraria).isEqualByComparingTo("44952000"); // 112 380 000 × 0,4
+    }
+
+    @Test
+    void vue_consolidee_somme_les_agences_et_fournit_la_repartition() {
+        InfoAgence draria = new InfoAgence("Agence Draria", "02.7.Draria");
+        TableauBord tb = serviceAvecMocks(PerimetreSP.REGLES_SEULS)
+                .consolider(Periode.YTD, List.of(AGENCE, draria));
+
+        assertThat(tb.consolide()).isTrue();
+        assertThat(tb.agence().code()).isEqualTo("CONSOLIDE");
+        // CA YTD cumulé = 112 380 000 × (1,0 + 0,4) = 157 332 000
+        assertThat(tb.caYtd().valeur()).isEqualByComparingTo("157332000");
+        assertThat(tb.repartition()).hasSize(2);
+        assertThat(tb.repartition().get(0).code()).isEqualTo("02.1.S.BENZERGA");
+        assertThat(tb.repartition().get(1).code()).isEqualTo("02.7.Draria");
     }
 
     @Test

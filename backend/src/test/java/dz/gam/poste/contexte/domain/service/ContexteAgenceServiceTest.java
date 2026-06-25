@@ -1,5 +1,6 @@
 package dz.gam.poste.contexte.domain.service;
 
+import dz.gam.poste.contexte.domain.model.ActionConsolideeInterditeException;
 import dz.gam.poste.contexte.domain.model.Agence;
 import dz.gam.poste.contexte.domain.model.AgenceHorsPerimetreException;
 import dz.gam.poste.contexte.domain.model.ContexteAgence;
@@ -36,7 +37,8 @@ class ContexteAgenceServiceTest {
 
         assertThat(ctx.agenceActive()).isEqualTo(SAID_HAMDINE);
         assertThat(ctx.agencesAutorisees()).containsExactly(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
-        assertThat(ctx.consolideDisponible()).isFalse();
+        assertThat(ctx.consolideDisponible()).isTrue();   // multi-agence → vue consolidée proposable
+        assertThat(ctx.consolideActif()).isFalse();
         assertThat(ctx.utilisateur().profil()).isEqualTo(ProfilUtilisateur.AGA);
     }
 
@@ -49,7 +51,7 @@ class ContexteAgenceServiceTest {
         assertThat(ctx.agenceActive()).isEqualTo(DRARIA);
         assertThat(store.codeActif()).contains("02.7.Draria");
         // La lecture suivante reflète bien le choix mémorisé en session.
-        assertThat(service.agenceActive()).isEqualTo(DRARIA);
+        assertThat(service.agencePourAction()).isEqualTo(DRARIA);
     }
 
     @Test
@@ -79,6 +81,39 @@ class ContexteAgenceServiceTest {
 
         assertThat(ctx.agencesAutorisees()).containsExactly(SAID_HAMDINE);
         assertThat(ctx.agenceActive()).isEqualTo(SAID_HAMDINE);
+        assertThat(ctx.consolideDisponible()).isFalse();  // mono-agence : pas de consolidé
+    }
+
+    @Test
+    void mode_consolide_actif_vue_d_ensemble_sans_agence_active() {
+        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
+
+        ContexteAgence ctx = service.changer(ContexteAgenceService.CODE_CONSOLIDE);
+
+        assertThat(ctx.consolideActif()).isTrue();
+        assertThat(ctx.agenceActive()).isNull();
+        assertThat(service.estConsolide()).isTrue();
+        // Lecture : tout le périmètre ; action : interdite (vue d'ensemble seulement).
+        assertThat(service.agencesActives()).containsExactly(SAID_HAMDINE, AISSAT_IDIR, DRARIA);
+        assertThatThrownBy(service::agencePourAction).isInstanceOf(ActionConsolideeInterditeException.class);
+    }
+
+    @Test
+    void mode_consolide_refuse_en_mono_agence() {
+        ContexteAgenceService service = service(SAID_HAMDINE);
+
+        assertThatThrownBy(() -> service.changer(ContexteAgenceService.CODE_CONSOLIDE))
+                .isInstanceOf(AgenceHorsPerimetreException.class);
+    }
+
+    @Test
+    void hors_consolide_agence_pour_action_renvoie_l_agence_active() {
+        ContexteAgenceService service = service(SAID_HAMDINE, AISSAT_IDIR);
+        service.changer("02.4.Aïssat Idir");
+
+        assertThat(service.estConsolide()).isFalse();
+        assertThat(service.agencePourAction()).isEqualTo(AISSAT_IDIR);
+        assertThat(service.agencesActives()).containsExactly(AISSAT_IDIR);
     }
 
     @Test

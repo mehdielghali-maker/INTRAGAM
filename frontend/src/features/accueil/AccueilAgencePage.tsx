@@ -26,12 +26,19 @@ export default function AccueilAgencePage() {
     <>
       <div className="hello">
         <div>
-          <h1>Bonjour, {tb.agence.nom} 👋</h1>
+          <h1>{tb.consolide ? `${tb.agence.nom} 👋` : `Bonjour, ${tb.agence.nom} 👋`}</h1>
           <div className="date">
             {tb.dateLibelle} · {contrats} contrats actifs ({variationContrats}) · arrêté en temps réel
           </div>
         </div>
       </div>
+
+      {tb.consolide && (
+        <div className="conso-banner">
+          Vue consolidée — lecture seule. Pour effectuer une action (dépôt, demande…),
+          choisissez une agence précise dans le commutateur en haut à droite.
+        </div>
+      )}
 
       <div className="kpis">
         <KpiCard
@@ -69,6 +76,40 @@ export default function AccueilAgencePage() {
         <CoupDoeilPanel items={tb.coupDoeil} />
         <ProductionDepotsPanel data={tb.productionDepots} />
       </div>
+
+      {tb.consolide && tb.repartition.length > 0 && (
+        <div className="panel" style={{ marginTop: 14 }}>
+          <div className="panel-h">Répartition par agence</div>
+          <div className="panel-sub">Contribution de chaque agence du périmètre</div>
+          <div className="repartition-wrap">
+            <table className="repartition">
+              <thead>
+                <tr>
+                  <th>Agence</th>
+                  <th>CA YTD</th>
+                  <th>Encaissé</th>
+                  <th>Versé</th>
+                  <th>Écart</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tb.repartition.map((r) => (
+                  <tr key={r.code}>
+                    <td>
+                      <div className="ra-nom">{r.nom}</div>
+                      <div className="ra-code">{r.code}</div>
+                    </td>
+                    <td>{montantDA(r.caYtd)}</td>
+                    <td>{montantDA(r.encaisse)}</td>
+                    <td>{montantDA(r.depose)}</td>
+                    <td className="ra-ecart">{montantDA(r.ecart)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="footnote">
         Données de démonstration — chaque chiffre est lu en temps réel dans son système de

@@ -30,19 +30,24 @@ function CoquilleApp() {
   const [badges, setBadges] = useState<CompteursNavigation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  const codeActif = contexte?.agenceActive.code ?? null;
+  // Clé de sélection : l'agence active, ou « CONSOLIDE » en vue d'ensemble.
+  const selection = contexte
+    ? contexte.consolideActif
+      ? 'CONSOLIDE'
+      : contexte.agenceActive?.code ?? null
+    : null;
 
-  // Recharge accueil + badges quand l'agence active change (et au premier chargement,
-  // une fois le contexte hydraté). Les données sont bornées à l'agence active côté back.
+  // Recharge accueil + badges quand la sélection change (et au premier chargement,
+  // une fois le contexte hydraté). Les données sont bornées à la sélection côté back.
   useEffect(() => {
-    if (!codeActif) return;
+    if (!selection) return;
     setErreur(null);
     setTableauBord(null);
     getNavigation().then(setBadges).catch(() => setBadges(null));
     getTableauBord()
       .then(setTableauBord)
       .catch((e) => setErreur(e instanceof Error ? e.message : 'Erreur de chargement'));
-  }, [codeActif]);
+  }, [selection]);
 
   return (
     <div>

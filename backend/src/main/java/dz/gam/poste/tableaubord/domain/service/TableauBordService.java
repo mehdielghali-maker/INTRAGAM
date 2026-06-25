@@ -8,6 +8,7 @@ import dz.gam.poste.tableaubord.domain.model.CompteurAction;
 import dz.gam.poste.tableaubord.domain.model.InfoAgence;
 import dz.gam.poste.tableaubord.domain.model.Periode;
 import dz.gam.poste.tableaubord.domain.model.ProductionDepots;
+import dz.gam.poste.tableaubord.domain.model.RepartitionAgence;
 import dz.gam.poste.tableaubord.domain.model.TableauBord;
 import dz.gam.poste.tableaubord.domain.model.Variation;
 import dz.gam.poste.tableaubord.domain.port.in.ConsulterNavigationUseCase;
@@ -25,6 +26,7 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -57,6 +59,35 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
         Periode effective = periode != null ? periode : properties.periodeDefaut();
         MesuresProassur p = proassur.mesurer(agence.code(), effective, properties.sp().perimetreNumerateur());
         MesuresSage s = sage.mesurer(agence.code(), effective);
+        return construire(effective, agence, p, s, false, List.of());
+    }
+
+    @Override
+    public TableauBord consolider(Periode periode, List<InfoAgence> agences) {
+        Periode effective = periode != null ? periode : properties.periodeDefaut();
+        MesuresProassur pTotal = null;
+        MesuresSage sTotal = null;
+        List<RepartitionAgence> repartition = new ArrayList<>();
+        for (InfoAgence agence : agences) {
+            MesuresProassur p = proassur.mesurer(agence.code(), effective, properties.sp().perimetreNumerateur());
+            MesuresSage s = sage.mesurer(agence.code(), effective);
+            repartition.add(new RepartitionAgence(agence.code(), agence.nom(),
+                    p.caYtdN(), p.encaisseMois(), s.deposeMois(),
+                    p.encaisseMois().subtract(s.deposeMois())));
+            pTotal = pTotal == null ? p : additionner(pTotal, p);
+            sTotal = sTotal == null ? s : additionner(sTotal, s);
+        }
+        InfoAgence consolidee = new InfoAgence("Toutes mes agences (consolidé)", "CONSOLIDE");
+        return construire(effective, consolidee, pTotal, sTotal, true, repartition);
+    }
+
+    @Override
+    public CompteursAgence badges() {
+        return compteurs.compteurs();
+    }
+
+    private TableauBord construire(Periode effective, InfoAgence agence, MesuresProassur p, MesuresSage s,
+                                   boolean consolide, List<RepartitionAgence> repartition) {
         CompteursAgence c = compteurs.compteurs();
 
         CarteMontant caYtd = new CarteMontant(
@@ -93,12 +124,29 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
                 p.contratsActifsVariation(),
                 caYtd, caMois, ecartDepot, creances, carteSp,
                 coupDoeil(c),
-                productionDepots);
+                productionDepots,
+                consolide,
+                List.copyOf(repartition));
     }
 
-    @Override
-    public CompteursAgence badges() {
-        return compteurs.compteurs();
+    /** Somme des mesures PROASSUR de deux agences (vue consolidée). */
+    private static MesuresProassur additionner(MesuresProassur a, MesuresProassur b) {
+        return new MesuresProassur(
+                a.caYtdN().add(b.caYtdN()), a.caYtdN1().add(b.caYtdN1()),
+                a.caMoisN().add(b.caMoisN()), a.caMoisM1MemeQuantieme().add(b.caMoisM1MemeQuantieme()),
+                a.productionMois().add(b.productionMois()), a.encaisseMois().add(b.encaisseMois()),
+                a.echuNonEncaisse().add(b.echuNonEncaisse()), a.echuNonEncaisseM1().add(b.echuNonEncaisseM1()),
+                a.sinistres12m().add(b.sinistres12m()), a.primes12m().add(b.primes12m()),
+                a.sinistres12mN1().add(b.sinistres12mN1()), a.primes12mN1().add(b.primes12mN1()),
+                a.contratsActifs() + b.contratsActifs(), a.contratsActifsVariation() + b.contratsActifsVariation());
+    }
+
+    /** Somme des mesures Sage de deux agences (vue consolidée). */
+    private static MesuresSage additionner(MesuresSage a, MesuresSage b) {
+        return new MesuresSage(
+                a.deposeMois().add(b.deposeMois()),
+                a.encaissementsLettres().add(b.encaissementsLettres()),
+                a.encaissementsLettresM1().add(b.encaissementsLettresM1()));
     }
 
     private CarteEcart calculerEcartDepot(BigDecimal encaisse, BigDecimal depose) {

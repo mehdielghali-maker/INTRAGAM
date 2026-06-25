@@ -28,8 +28,12 @@ mockée en dev) et constitue un **périmètre de sécurité**.
 3. **Accueil branché** : `TableauBordController` dérive l'agence de `AgenceCouranteQuery` ;
    les ports PROASSUR/Sage prennent le code agence ; le « Bonjour, [agence] » et les KPI
    suivent l'agence active.
-4. **Évolutivité** : entrée « Toutes mes agences (consolidé) » prévue mais **désactivée**
-   (`consolideDisponible = false`) — non implémentée.
+4. **Vue consolidée** (« Toutes mes agences ») : disponible dès que le périmètre compte ≥ 2
+   agences. C'est une **vue d'ensemble en LECTURE SEULE** — l'accueil agrège les indicateurs
+   sur tout le périmètre et fournit la répartition par agence. Toute **action** y est
+   interdite : `AgenceCouranteQuery.agencePourAction()` lève `ActionConsolideeInterditeException`
+   (HTTP 409), car une action (dépôt, nouvelle demande…) doit toujours viser une agence précise.
+   Le mode est porté par la session (sentinelle `CONSOLIDE`), comme l'agence active.
 
 ## Conséquences
 

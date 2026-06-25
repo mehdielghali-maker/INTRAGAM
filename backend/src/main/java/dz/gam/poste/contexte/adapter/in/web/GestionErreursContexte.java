@@ -1,5 +1,6 @@
 package dz.gam.poste.contexte.adapter.in.web;
 
+import dz.gam.poste.contexte.domain.model.ActionConsolideeInterditeException;
 import dz.gam.poste.contexte.domain.model.AgenceHorsPerimetreException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -16,5 +17,10 @@ public class GestionErreursContexte {
     @ExceptionHandler(AgenceHorsPerimetreException.class)
     public ProblemDetail horsPerimetre(AgenceHorsPerimetreException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(ActionConsolideeInterditeException.class)
+    public ProblemDetail actionConsolidee(ActionConsolideeInterditeException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
 }

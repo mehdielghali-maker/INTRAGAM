@@ -40,6 +40,16 @@ export interface ProductionDepots {
   ecart: number;
 }
 
+/** Ligne de répartition par agence (vue consolidée uniquement). */
+export interface RepartitionAgence {
+  code: string;
+  nom: string;
+  caYtd: number;
+  encaisse: number;
+  depose: number;
+  ecart: number;
+}
+
 export interface TableauBord {
   agence: { nom: string; code: string };
   periodeLibelle: string;
@@ -53,6 +63,8 @@ export interface TableauBord {
   sp: CarteRatio;
   coupDoeil: CompteurAction[];
   productionDepots: ProductionDepots;
+  consolide: boolean;
+  repartition: RepartitionAgence[];
 }
 
 /** Badges de navigation (miroir de CompteursAgence côté backend). */

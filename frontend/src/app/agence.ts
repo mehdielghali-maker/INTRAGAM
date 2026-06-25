@@ -15,10 +15,16 @@ export interface UtilisateurContexte {
 
 export interface ContexteAgence {
   utilisateur: UtilisateurContexte;
-  agenceActive: AgenceRef;
+  /** Agence active ; null en mode consolidé. */
+  agenceActive: AgenceRef | null;
   agencesAutorisees: AgenceRef[];
   consolideDisponible: boolean;
+  /** Vue consolidée active (« Toutes mes agences ») : lecture seule, aucune action. */
+  consolideActif: boolean;
 }
+
+/** Sentinelle envoyée au back pour activer la vue consolidée. */
+export const CODE_CONSOLIDE = 'CONSOLIDE';
 
 async function lireJson<T>(reponse: Response): Promise<T> {
   if (!reponse.ok) {

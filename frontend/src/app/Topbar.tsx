@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ContexteAgence } from './agence';
+import { CODE_CONSOLIDE, ContexteAgence } from './agence';
 
 const PIN = 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5';
 const CHECK = 'M5 12l5 5L20 6';
@@ -39,6 +39,10 @@ export default function Topbar({
   const utilisateur = contexte?.utilisateur;
   const active = contexte?.agenceActive;
   const agences = contexte?.agencesAutorisees ?? [];
+  const consolide = contexte?.consolideActif ?? false;
+  const consolideDispo = contexte?.consolideDisponible ?? false;
+  const btnNom = consolide ? 'Toutes mes agences' : (active?.nom ?? 'Agence');
+  const btnCode = consolide ? 'Consolidé' : (active?.code ?? '—');
   const estAga = utilisateur?.profil === 'AGA';
   const profilLib = estAga ? 'Agent Général' : 'Agent';
   const n = agences.length;
@@ -78,14 +82,14 @@ export default function Topbar({
               e.stopPropagation();
               setOuvert((o) => !o);
             }}
-            disabled={!active}
+            disabled={!contexte}
           >
             <span className="sw-pin">
               <PinIcon />
             </span>
             <span className="sw-txt">
-              <span className="sw-ag">{active?.nom ?? 'Agence'}</span>
-              <span className="sw-aga">{active?.code ?? '—'}</span>
+              <span className="sw-ag">{btnNom}</span>
+              <span className="sw-aga">{btnCode}</span>
             </span>
             <span className="chev">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true">
@@ -116,18 +120,34 @@ export default function Topbar({
                 </span>
               </button>
             ))}
-            <div className="sm-item sm-conso" aria-disabled="true" title="Disponible prochainement">
-              <span className="d">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
-                  <rect x="3" y="3" width="7" height="7" />
-                  <rect x="14" y="3" width="7" height="7" />
-                  <rect x="3" y="14" width="7" height="7" />
-                  <rect x="14" y="14" width="7" height="7" />
-                </svg>
-              </span>
-              <span className="t">Toutes mes agences (consolidé)</span>
-              <span className="sm-soon">à venir</span>
-            </div>
+            {consolideDispo && (
+              <button
+                type="button"
+                role="option"
+                aria-selected={consolide}
+                className={`sm-item ${consolide ? 'active' : ''}`}
+                onClick={() => {
+                  setOuvert(false);
+                  if (!consolide) onChanger(CODE_CONSOLIDE);
+                }}
+                title="Vue d'ensemble en lecture seule (aucune action)"
+              >
+                <span className="d">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                  </svg>
+                </span>
+                <span className="t">Toutes mes agences (consolidé)</span>
+                <span className="ok">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                    <path d={CHECK} />
+                  </svg>
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>

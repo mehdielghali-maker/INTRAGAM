@@ -1,5 +1,6 @@
 package dz.gam.poste.contexte.domain.service;
 
+import dz.gam.poste.contexte.domain.model.ActionConsolideeInterditeException;
 import dz.gam.poste.contexte.domain.model.Agence;
 import dz.gam.poste.contexte.domain.model.AgenceHorsPerimetreException;
 import dz.gam.poste.contexte.domain.model.ContexteAgence;
@@ -10,19 +11,24 @@ import dz.gam.poste.contexte.domain.port.in.ConsulterContexteAgenceUseCase;
 import dz.gam.poste.contexte.domain.port.out.AgenceActiveStore;
 import dz.gam.poste.contexte.domain.port.out.IdentitePort;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Service applicatif du contexte d'agence. Java pur (aucune annotation framework).
  *
  * <p>Règle de sécurité centrale : l'agence active est TOUJOURS choisie dans le périmètre
- * de l'identité SSO. Le changement d'agence revérifie le code reçu contre ce périmètre ;
- * un code hors périmètre est rejeté. La vue consolidée n'est pas encore disponible.
+ * de l'identité SSO. Le changement d'agence revérifie le code reçu contre ce périmètre.
+ *
+ * <p>Mode consolidé (« Toutes mes agences ») : vue d'ensemble en LECTURE SEULE. Disponible
+ * seulement si le périmètre compte au moins deux agences. Aucune action ne peut s'y faire :
+ * {@link #agencePourAction()} lève alors {@link ActionConsolideeInterditeException}.
  */
 public class ContexteAgenceService
         implements ConsulterContexteAgenceUseCase, ChangerAgenceActiveUseCase, AgenceCouranteQuery {
 
-    private static final boolean CONSOLIDE_DISPONIBLE = false;
+    /** Sentinelle stockée en session pour représenter le mode consolidé. */
+    public static final String CODE_CONSOLIDE = "CONSOLIDE";
 
     private final IdentitePort identitePort;
     private final AgenceActiveStore store;
@@ -35,23 +41,47 @@ public class ContexteAgenceService
     @Override
     public ContexteAgence contexte() {
         Identite identite = identitePort.identiteCourante();
-        return new ContexteAgence(identite.utilisateur(), agenceActive(identite),
-                identite.agencesGerees(), CONSOLIDE_DISPONIBLE);
+        boolean consolideDisponible = identite.agencesGerees().size() > 1;
+        boolean consolide = estConsolide(identite);
+        Agence active = consolide ? null : agenceResolue(identite);
+        return new ContexteAgence(identite.utilisateur(), active, identite.agencesGerees(),
+                consolideDisponible, consolide);
     }
 
     @Override
     public ContexteAgence changer(String codeAgence) {
         Identite identite = identitePort.identiteCourante();
-        Agence cible = trouver(identite, codeAgence)
-                .orElseThrow(() -> new AgenceHorsPerimetreException(codeAgence));
-        store.definir(cible.code());
-        return new ContexteAgence(identite.utilisateur(), cible,
-                identite.agencesGerees(), CONSOLIDE_DISPONIBLE);
+        if (CODE_CONSOLIDE.equals(codeAgence)) {
+            if (identite.agencesGerees().size() <= 1) {
+                throw new AgenceHorsPerimetreException(codeAgence); // consolidé non pertinent en mono-agence
+            }
+            store.definir(CODE_CONSOLIDE);
+        } else {
+            Agence cible = trouver(identite, codeAgence)
+                    .orElseThrow(() -> new AgenceHorsPerimetreException(codeAgence));
+            store.definir(cible.code());
+        }
+        return contexte();
     }
 
     @Override
-    public Agence agenceActive() {
-        return agenceActive(identitePort.identiteCourante());
+    public boolean estConsolide() {
+        return estConsolide(identitePort.identiteCourante());
+    }
+
+    @Override
+    public Agence agencePourAction() {
+        Identite identite = identitePort.identiteCourante();
+        if (estConsolide(identite)) {
+            throw new ActionConsolideeInterditeException();
+        }
+        return agenceResolue(identite);
+    }
+
+    @Override
+    public List<Agence> agencesActives() {
+        Identite identite = identitePort.identiteCourante();
+        return estConsolide(identite) ? identite.agencesGerees() : List.of(agenceResolue(identite));
     }
 
     @Override
@@ -61,8 +91,13 @@ public class ContexteAgenceService
         }
     }
 
+    private boolean estConsolide(Identite identite) {
+        return store.codeActif().filter(CODE_CONSOLIDE::equals).isPresent()
+                && identite.agencesGerees().size() > 1;
+    }
+
     /** Agence active = celle mémorisée si elle est (toujours) dans le périmètre, sinon la première. */
-    private Agence agenceActive(Identite identite) {
+    private Agence agenceResolue(Identite identite) {
         return store.codeActif()
                 .flatMap(code -> trouver(identite, code))
                 .orElse(identite.agencesGerees().get(0));
