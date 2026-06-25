@@ -393,14 +393,14 @@ body {
 .kpis {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 18px;
 }
 .card {
   background: var(--blanc);
   border: 1px solid #ece4d2;
   border-radius: 14px;
-  padding: 16px 17px;
+  padding: 16px 14px;
   box-shadow: 0 1px 0 rgba(10, 61, 18, 0.05);
 }
 .k-top {
@@ -435,8 +435,9 @@ body {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   /* S'adapte à la largeur de la carte (grands montants à 9 chiffres) sans renvoyer « DA »
-     à la ligne : grand sur écran large, réduit si la place manque. */
-  font-size: clamp(16px, 1.35vw, 21px);
+     à la ligne : grand sur écran large, réduit si la place manque — les 5 cartes restent
+     toujours sur une seule ligne. */
+  font-size: clamp(14px, 1.35vw, 21px);
   color: var(--noir);
   line-height: 1.05;
   white-space: nowrap;
@@ -818,14 +819,6 @@ table.repartition tbody td:first-child {
 }
 .ra-ecart {
   color: var(--terra);
-}
-
-/* Largeurs intermédiaires (sidebar encore visible) : 5 colonnes deviennent trop serrées
-   pour les montants à 9 chiffres → on passe à 3 colonnes, cartes plus larges. */
-@media (max-width: 1320px) {
-  .kpis {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 @media (max-width: 1080px) {
