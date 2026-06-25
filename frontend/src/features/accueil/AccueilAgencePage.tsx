@@ -4,7 +4,7 @@ import KpiCard from './components/KpiCard';
 import KpiEcartCard from './components/KpiEcartCard';
 import CoupDoeilPanel from './components/CoupDoeilPanel';
 import ProductionDepotsPanel from './components/ProductionDepotsPanel';
-import { montantDA, ratioPct } from './format';
+import { montantDA, nombre, ratioPct } from './format';
 
 /** Page d'accueil agence : tableau de bord de pilotage (5 KPI + coup d'œil + dépôts). */
 export default function AccueilAgencePage() {
@@ -18,7 +18,7 @@ export default function AccueilAgencePage() {
   }
 
   const tb = tableauBord;
-  const contrats = new Intl.NumberFormat('fr-FR').format(tb.contratsActifs);
+  const contrats = nombre(tb.contratsActifs);
   const variationContrats =
     (tb.contratsActifsVariation >= 0 ? '+' : '') + tb.contratsActifsVariation;
 

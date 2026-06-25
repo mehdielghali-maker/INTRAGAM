@@ -3,9 +3,23 @@ import { Variation } from './types';
 const NF = new Intl.NumberFormat('fr-FR');
 const NF1 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-/** Montant en DA avec séparateur de milliers (locale fr). Ex. 18 540 000 DA */
+/**
+ * Entier avec un POINT comme séparateur de milliers (convention demandée). fr-FR insère une
+ * espace fine insécable entre les milliers ; on la remplace par un point. Ex. 1.000.000
+ * (\s couvre l'espace fine insécable U+202F et l'espace insécable U+00A0 en JS.)
+ */
+function grouperMilliers(valeur: number): string {
+  return NF.format(Math.round(valeur)).replace(/\s/g, '.');
+}
+
+/** Entier avec séparateur de milliers en point. Ex. 1.248 */
+export function nombre(valeur: number): string {
+  return grouperMilliers(valeur);
+}
+
+/** Montant en DA avec séparateur de milliers en point. Ex. 18.540.000 DA */
 export function montantDA(valeur: number): string {
-  return `${NF.format(Math.round(valeur))} DA`;
+  return `${grouperMilliers(valeur)} DA`;
 }
 
 /** Ratio en pourcentage. Ex. 68,4 % */
