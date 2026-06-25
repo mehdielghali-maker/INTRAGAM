@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useAgence } from '../../app/AgencyContext';
 import {
   DossierCheque,
   LIBELLE_STATUT,
@@ -11,6 +12,8 @@ import StatutBadge from './StatutBadge';
 
 export default function ChequeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { contexte } = useAgence();
+  const consolide = contexte?.consolideActif ?? false;
   const [dossier, setDossier] = useState<DossierCheque | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
@@ -92,10 +95,15 @@ export default function ChequeDetailPage() {
         <div className="actions">
           <span>Faire avancer&nbsp;:</span>
           {dossier.prochainsStatuts.map((s) => (
-            <button key={s} onClick={() => avancer(s)} disabled={enCours}>
+            <button key={s} onClick={() => avancer(s)} disabled={enCours || consolide}>
               {LIBELLE_STATUT[s]}
             </button>
           ))}
+          {consolide && (
+            <span className="conso-note">
+              Action indisponible en vue consolidée — choisissez une agence.
+            </span>
+          )}
         </div>
       )}
     </section>

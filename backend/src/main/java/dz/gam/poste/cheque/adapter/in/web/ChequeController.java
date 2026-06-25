@@ -6,6 +6,7 @@ import dz.gam.poste.cheque.domain.model.StatutCheque;
 import dz.gam.poste.cheque.domain.port.in.ConsulterDossiersUseCase;
 import dz.gam.poste.cheque.domain.port.in.FaireAvancerStatutUseCase;
 import dz.gam.poste.cheque.domain.port.in.FiltreDossier;
+import dz.gam.poste.contexte.domain.port.in.AgenceCouranteQuery;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,16 +29,19 @@ public class ChequeController {
 
     private final ConsulterDossiersUseCase consulter;
     private final FaireAvancerStatutUseCase faireAvancer;
+    private final AgenceCouranteQuery agenceCourante;
 
-    public ChequeController(ConsulterDossiersUseCase consulter, FaireAvancerStatutUseCase faireAvancer) {
+    public ChequeController(ConsulterDossiersUseCase consulter, FaireAvancerStatutUseCase faireAvancer,
+                           AgenceCouranteQuery agenceCourante) {
         this.consulter = consulter;
         this.faireAvancer = faireAvancer;
+        this.agenceCourante = agenceCourante;
     }
 
     @GetMapping
-    public List<DossierChequeResponse> lister(
-            @RequestParam(required = false) StatutCheque statut,
-            @RequestParam(required = false) String agence) {
+    public List<DossierChequeResponse> lister(@RequestParam(required = false) StatutCheque statut) {
+        // Agence dérivée du contexte : l'agence active ; toutes (filtre nul) en mode consolidé.
+        String agence = agenceCourante.estConsolide() ? null : agenceCourante.agencePourAction().code();
         return consulter.lister(FiltreDossier.de(statut, agence))
                 .stream()
                 .map(DossierChequeResponse::de)
@@ -52,6 +56,7 @@ public class ChequeController {
     @PostMapping("/{id}/statut")
     public DossierChequeResponse faireAvancerStatut(@PathVariable UUID id,
                                                     @Valid @RequestBody FaireAvancerStatutRequest requete) {
+        agenceCourante.agencePourAction(); // avancement interdit en mode consolidé (409)
         return DossierChequeResponse.de(faireAvancer.faireAvancer(id, requete.statutCible()));
     }
 }

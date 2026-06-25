@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAgence } from '../../app/AgencyContext';
 import SuiviDemandesTab from './SuiviDemandesTab';
 import NouvelleDemandeTab from './NouvelleDemandeTab';
 import './cotation.css';
@@ -11,6 +12,8 @@ const ETAPES = [
 ];
 
 export default function CotationPage() {
+  const { contexte } = useAgence();
+  const consolide = contexte?.consolideActif ?? false;
   const [onglet, setOnglet] = useState<'suivi' | 'nouvelle'>('suivi');
 
   return (
@@ -50,6 +53,13 @@ export default function CotationPage() {
 
       {onglet === 'suivi' ? (
         <SuiviDemandesTab onNouvelle={() => setOnglet('nouvelle')} />
+      ) : consolide ? (
+        <div className="form-card">
+          <div className="conso-banner">
+            Mode consolidé (vue d'ensemble) : créer une demande concerne une agence précise.
+            Sélectionnez une agence dans le commutateur en haut à droite.
+          </div>
+        </div>
       ) : (
         <NouvelleDemandeTab onEnvoye={() => setOnglet('suivi')} />
       )}

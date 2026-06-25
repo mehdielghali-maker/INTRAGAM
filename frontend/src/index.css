@@ -171,6 +171,11 @@ button:disabled {
   flex-wrap: wrap;
 }
 
+.conso-note {
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
 .info-terminal {
   margin-top: 1.2rem;
   padding: 0.8rem 1rem;

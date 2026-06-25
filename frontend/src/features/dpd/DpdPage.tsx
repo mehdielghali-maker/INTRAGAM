@@ -1,8 +1,20 @@
 import { useState } from 'react';
+import { useAgence } from '../../app/AgencyContext';
 import SuiviDpdTab from './SuiviDpdTab';
 import NouvelleDpdTab from './NouvelleDpdTab';
 import MiseAJourDpdTab from './MiseAJourDpdTab';
 import './dpd.css';
+
+function BanniereConsolide() {
+  return (
+    <div className="form-card">
+      <div className="conso-banner">
+        Mode consolidé (vue d'ensemble) : créer une demande concerne une agence précise.
+        Sélectionnez une agence dans le commutateur en haut à droite.
+      </div>
+    </div>
+  );
+}
 
 const ETAPES = [
   { n: '1 · Envoyée', src: "par l'agence", handoff: false },
@@ -14,6 +26,8 @@ const ETAPES = [
 type Onglet = 'suivi' | 'nouvelle' | 'maj';
 
 export default function DpdPage() {
+  const { contexte } = useAgence();
+  const consolide = contexte?.consolideActif ?? false;
   const [onglet, setOnglet] = useState<Onglet>('suivi');
 
   return (
@@ -50,8 +64,8 @@ export default function DpdPage() {
       </div>
 
       {onglet === 'suivi' && <SuiviDpdTab onNouvelle={() => setOnglet('nouvelle')} />}
-      {onglet === 'nouvelle' && <NouvelleDpdTab onEnvoye={() => setOnglet('suivi')} />}
-      {onglet === 'maj' && <MiseAJourDpdTab />}
+      {onglet === 'nouvelle' && (consolide ? <BanniereConsolide /> : <NouvelleDpdTab onEnvoye={() => setOnglet('suivi')} />)}
+      {onglet === 'maj' && (consolide ? <BanniereConsolide /> : <MiseAJourDpdTab />)}
     </section>
   );
 }

@@ -67,9 +67,12 @@ est supprimé au profit de l'identité SSO.
 
 **Contexte d'agence (brique transverse `dz.gam.poste.contexte`, ADR 0005)** : l'identité fournit
 un **périmètre d'agences** (mock `poste.contexte` : AGA M. Benzerga + 3 agences). L'**agence active**
-est portée par la **session serveur** (`@SessionScope`), jamais par le navigateur. Les autres
-fonctions lisent l'agence active via le port d'entrée `AgenceCouranteQuery` et **ne redemandent
-jamais** l'agence. SÉCURITÉ : le périmètre est **revérifié côté back** à chaque changement/accès
-(hors périmètre → HTTP 403) ; ne jamais faire confiance à l'agence envoyée par le front.
-Les modules `cotation`/`dpd` conservent pour l'instant leur identité mono-agence propre (alignement
-sur le contexte transverse à prévoir).
+est portée par la **session serveur** (HttpSession via `RequestContextHolder` ; repli vide hors
+requête), jamais par le navigateur. Toutes les fonctions (accueil, versement, cotation, DPD,
+chèques) lisent l'agence active via `AgenceCouranteQuery` et **ne redemandent jamais** l'agence :
+`agencePourAction()` pour une action (création/dépôt/avancement), `agencesActives()` pour borner les
+listes. SÉCURITÉ : périmètre **revérifié côté back** (hors périmètre → 403) ; ne jamais faire
+confiance à l'agence envoyée par le front.
+**Vue consolidée** (« Toutes mes agences », ≥2 agences) : vue d'ensemble **lecture seule** ;
+toute action est **interdite** (`agencePourAction()` → HTTP 409). L'accueil agrège + répartition
+par agence ; les listes montrent tout le périmètre.
