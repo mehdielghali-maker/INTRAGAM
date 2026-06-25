@@ -65,6 +65,7 @@ export interface CompteursNavigation {
   bureauOrdre: number;
   expertises: number;
   accordsEcheancier: number;
+  versementsEnCours: number;
 }
 
 export type Periode = 'MOIS_COURANT' | 'YTD';

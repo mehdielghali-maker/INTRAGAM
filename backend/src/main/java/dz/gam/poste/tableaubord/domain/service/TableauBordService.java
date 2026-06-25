@@ -18,6 +18,7 @@ import dz.gam.poste.tableaubord.domain.port.out.IndicateursProassurPort;
 import dz.gam.poste.tableaubord.domain.port.out.IndicateursSagePort;
 import dz.gam.poste.tableaubord.domain.port.out.MesuresProassur;
 import dz.gam.poste.tableaubord.domain.port.out.MesuresSage;
+import dz.gam.poste.shared.regularisation.EcartRegularisation;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -101,15 +102,11 @@ public class TableauBordService implements ConsulterTableauBordUseCase, Consulte
     }
 
     private CarteEcart calculerEcartDepot(BigDecimal encaisse, BigDecimal depose) {
-        BigDecimal ecart = encaisse.subtract(depose);
-        BigDecimal pourcentage = encaisse.signum() == 0
-                ? BigDecimal.ZERO
-                : ecart.divide(encaisse, 6, RoundingMode.HALF_UP)
-                        .multiply(BigDecimal.valueOf(100)).setScale(1, RoundingMode.HALF_UP);
+        // Calcul partagé avec la fonction « Versement bancaire » (source unique, ADR 0005).
         TableauBordProperties.SeuilEcartDepot seuil = properties.seuilEcartDepot();
-        boolean aRegulariser = ecart.compareTo(seuil.montant()) >= 0
-                || pourcentage.compareTo(seuil.pourcentage()) >= 0;
-        return new CarteEcart(ecart, pourcentage, aRegulariser);
+        EcartRegularisation.Resultat r = EcartRegularisation.calculer(
+                encaisse, depose, seuil.montant(), seuil.pourcentage());
+        return new CarteEcart(r.valeur(), r.pourcentage(), r.aRegulariser());
     }
 
     private List<CompteurAction> coupDoeil(CompteursAgence c) {

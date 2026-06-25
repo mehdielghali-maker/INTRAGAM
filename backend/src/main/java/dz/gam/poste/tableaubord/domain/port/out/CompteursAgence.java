@@ -16,5 +16,6 @@ public record CompteursAgence(
         int contentieux,
         int bureauOrdre,
         int expertises,
-        int accordsEcheancier) {
+        int accordsEcheancier,
+        int versementsEnCours) {
 }

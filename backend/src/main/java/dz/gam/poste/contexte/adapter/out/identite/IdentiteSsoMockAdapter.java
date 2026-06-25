@@ -13,7 +13,7 @@ import java.util.List;
  * MOCK du fournisseur d'identité SSO (Microsoft/Entra ID). En production, l'utilisateur et
  * son périmètre d'agences seraient extraits des claims du token. Ici, lus en configuration.
  */
-@Component
+@Component("contexteIdentiteSsoMockAdapter")
 public class IdentiteSsoMockAdapter implements IdentitePort {
 
     private final ContexteProperties properties;

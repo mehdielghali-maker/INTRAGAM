@@ -7,6 +7,7 @@ import dz.gam.poste.cotation.domain.port.in.ConsulterDemandesUseCase;
 import dz.gam.poste.dpd.domain.port.in.ConsulterDpdUseCase;
 import dz.gam.poste.tableaubord.domain.port.out.CompteursAgence;
 import dz.gam.poste.tableaubord.domain.port.out.CompteursAgencePort;
+import dz.gam.poste.versement.domain.port.in.ConsulterVersementsUseCase;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,13 +21,16 @@ public class CompteursAgenceAdapter implements CompteursAgencePort {
     private final ConsulterDossiersUseCase consulterCheques;
     private final ConsulterDemandesUseCase consulterCotations;
     private final ConsulterDpdUseCase consulterDpd;
+    private final ConsulterVersementsUseCase consulterVersements;
 
     public CompteursAgenceAdapter(ConsulterDossiersUseCase consulterCheques,
                                   ConsulterDemandesUseCase consulterCotations,
-                                  ConsulterDpdUseCase consulterDpd) {
+                                  ConsulterDpdUseCase consulterDpd,
+                                  ConsulterVersementsUseCase consulterVersements) {
         this.consulterCheques = consulterCheques;
         this.consulterCotations = consulterCotations;
         this.consulterDpd = consulterDpd;
+        this.consulterVersements = consulterVersements;
     }
 
     @Override
@@ -37,6 +41,7 @@ public class CompteursAgenceAdapter implements CompteursAgencePort {
                 .count();
         int cotationsEnCours = (int) consulterCotations.compterActives();
         int accordsEnCours = (int) consulterDpd.compterActives();
+        int versementsEnCours = (int) consulterVersements.compterEnCours();
 
         // Mocks (fonctions non encore implémentées) — cohérents avec la maquette.
         return new CompteursAgence(
@@ -47,6 +52,7 @@ public class CompteursAgenceAdapter implements CompteursAgencePort {
                 9,                   // contentieux
                 2,                   // envois bureau d'ordre
                 5,                   // demandes d'expertise
-                accordsEnCours);     // accords d'échéancier (réel)
+                accordsEnCours,      // accords d'échéancier (réel)
+                versementsEnCours);  // versements bancaires en cours (réel)
     }
 }

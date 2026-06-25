@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gam.dz/contracts/events/versement-statut.schema.json",
+  "title": "VersementStatut",
+  "description": "Statut renvoyé par le BPM/OneBase au poste pour un versement (boucle fermée). Routing key : versement.statut",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "statut"],
+  "properties": {
+    "reference": {
+      "type": "string",
+      "description": "Référence interne du versement (reprise de VersementBancaireDepose).",
+      "minLength": 1,
+      "examples": ["VB-2026-3391"]
+    },
+    "statut": {
+      "type": "string",
+      "description": "Nouveau statut porté par le BPM.",
+      "enum": ["EN_CONTROLE", "VALIDE", "REJETE"]
+    },
+    "referenceBpm": {
+      "type": ["string", "null"],
+      "description": "Référence attribuée par le BPM (à la prise en contrôle).",
+      "examples": ["BPM-3391"]
+    },
+    "motif": {
+      "type": ["string", "null"],
+      "description": "Motif du rejet, le cas échéant.",
+      "examples": ["Pièce non conforme (contrôle BPM)"]
+    }
+  }
+}

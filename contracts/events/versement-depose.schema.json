@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gam.dz/contracts/events/versement-depose.schema.json",
+  "title": "VersementBancaireDepose",
+  "description": "Événement publié par le poste lorsqu'un versement bancaire (reçu) est soumis au BPM. Consommé par le BPM/OneBase pour instruire le contrôle et renvoyer les statuts (boucle fermée). Routing key : versement.depose",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reference", "codeAgence", "moisSituation", "montantVerse", "dateVersement", "dateDepot"],
+  "properties": {
+    "reference": {
+      "type": "string",
+      "description": "Référence interne du versement attribuée par le poste.",
+      "minLength": 1,
+      "examples": ["VB-2026-3391"]
+    },
+    "codeAgence": {
+      "type": "string",
+      "description": "Code de l'agence active (périmètre SSO), source de la situation justifiée.",
+      "examples": ["02.1.S.BENZERGA"]
+    },
+    "moisSituation": {
+      "type": "string",
+      "description": "Mois de la situation financière justifiée (AAAA-MM).",
+      "pattern": "^\\d{4}-\\d{2}$",
+      "examples": ["2026-06"]
+    },
+    "montantVerse": {
+      "type": "number",
+      "description": "Montant versé en banque, en DA (strictement positif).",
+      "exclusiveMinimum": 0,
+      "examples": [1450000]
+    },
+    "dateVersement": {
+      "type": "string",
+      "format": "date",
+      "description": "Date du versement bancaire.",
+      "examples": ["2026-06-24"]
+    },
+    "dateDepot": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Horodatage du dépôt côté poste.",
+      "examples": ["2026-06-24T09:00:00Z"]
+    }
+  }
+}

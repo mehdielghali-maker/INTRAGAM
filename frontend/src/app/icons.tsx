@@ -8,6 +8,7 @@ export type IconName =
   | 'cheques'
   | 'bureau'
   | 'cotation'
+  | 'versement'
   | 'expertise'
   | 'accords'
   | 'echeanciers'
@@ -28,6 +29,7 @@ const PATHS: Record<IconName, string> = {
   cheques: 'M2 6h20v12H2zM2 10h20M6 15h4',
   bureau: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
   cotation: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M12 11v6M9 14h6',
+  versement: 'M2 6h20v12H2zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4M6 9v.01M18 15v.01',
   expertise: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
   accords: 'M3 4h18v18H3zM3 9h18M8 2v4M16 2v4M8 14h2M14 14h2',
   echeanciers: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',

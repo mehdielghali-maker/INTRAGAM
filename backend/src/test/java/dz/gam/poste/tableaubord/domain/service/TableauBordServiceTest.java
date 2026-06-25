@@ -30,7 +30,7 @@ class TableauBordServiceTest {
     // Agence de référence de la maquette (facteur mock = 1,0 → chiffres bruts).
     private static final InfoAgence AGENCE = new InfoAgence("Agence Saïd Hamdine", "02.1.S.BENZERGA");
 
-    private final CompteursAgencePort compteurs = () -> new CompteursAgence(5, 7, 4, 3, 9, 2, 5, 2);
+    private final CompteursAgencePort compteurs = () -> new CompteursAgence(5, 7, 4, 3, 9, 2, 5, 2, 2);
 
     private TableauBordProperties properties(BigDecimal seuilMontant, BigDecimal seuilPct, PerimetreSP perimetre) {
         return new TableauBordProperties(

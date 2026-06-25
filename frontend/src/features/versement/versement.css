@@ -1,0 +1,599 @@
+/* Versement bancaire — preuve de paiement. Design GAM, MOBILE-FIRST.
+   Porté de la maquette ; ne duplique pas .topbar/.side/.card (déjà dans gam.css). */
+
+.page-h {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--vert-fonce);
+}
+.page-sub {
+  font-size: 13.5px;
+  color: var(--gris);
+  margin: 3px 0 18px;
+  max-width: 880px;
+}
+
+/* CARTE FORMULAIRE */
+.form-card {
+  background: var(--blanc);
+  border: 1px solid #ece4d2;
+  border-radius: 16px;
+  padding: 18px 18px 24px;
+  box-shadow: 0 1px 0 rgba(10, 61, 18, 0.05);
+  max-width: 960px;
+}
+
+/* BANDEAU SSO / AGENCE */
+.sso-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #eef6f1;
+  border: 1px solid #cfe7da;
+  border-radius: 11px;
+  padding: 11px 15px;
+}
+.sso-strip .ms {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--vert);
+  color: var(--menthe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+}
+.sso-strip .ms svg {
+  width: 18px;
+  height: 18px;
+}
+.sso-strip .who {
+  font-size: 13.5px;
+}
+.sso-strip .who b {
+  font-family: 'Poppins', sans-serif;
+  color: var(--vert-fonce);
+}
+.sso-strip .who span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--gris);
+}
+
+/* EN-TÊTES DE SECTION */
+.sec-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 14px;
+  flex-wrap: wrap;
+}
+.sec-head .tile {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--menthe);
+  color: var(--vert-fonce);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+}
+.sec-head .tile svg {
+  width: 16px;
+  height: 16px;
+}
+.sec-head h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--vert);
+}
+.sec-head .ro-tag {
+  font-size: 11px;
+  color: var(--gris);
+  background: #f4efe3;
+  border: 1px dashed #d9cfb8;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+.sec-head .ro-tag.obligatoire {
+  border-style: solid;
+  border-color: #ecd9a8;
+  background: #fbf6ea;
+  color: #8a6d1f;
+}
+
+/* GRILLES — empilées sur mobile, multi-colonnes ensuite */
+.grid2,
+.grid4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.field.full {
+  grid-column: 1 / -1;
+}
+.field label {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--vert);
+}
+.field label .req {
+  color: var(--terra);
+}
+.field label .opt {
+  color: var(--gris);
+  font-weight: 400;
+  font-size: 11px;
+}
+.field input,
+.field select,
+.field textarea {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 16px; /* ≥16px : évite le zoom auto iOS */
+  color: var(--noir);
+  border: 1px solid #d9cfb8;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: var(--blanc);
+  outline: none;
+  width: 100%;
+  min-height: 44px;
+}
+.field select {
+  cursor: pointer;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--or);
+}
+.field .hint {
+  font-size: 11px;
+  color: var(--gris);
+}
+.field.key select,
+.field.key input {
+  border-color: var(--or);
+  background: #fffdf7;
+  font-weight: 600;
+}
+.field textarea {
+  resize: vertical;
+  min-height: 84px;
+}
+
+/* TUILES DE CONTEXTE (situation du mois) */
+.ctx {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 4px 0;
+}
+.ctx-tile {
+  background: #fcfaf4;
+  border: 1px solid #ece4d2;
+  border-radius: 11px;
+  padding: 13px 14px;
+}
+.ctx-tile.alert {
+  background: #fbf1ef;
+  border-color: #e8c8c2;
+}
+.ctx-tile .l {
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gris);
+  font-weight: 600;
+}
+.ctx-tile .v {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--noir);
+  margin-top: 5px;
+}
+.ctx-tile.alert .v {
+  color: var(--terra);
+}
+.ctx-tile .s {
+  font-size: 10.5px;
+  color: var(--gris);
+  margin-top: 3px;
+}
+
+/* UPLOAD REÇU */
+.upload {
+  border: 1.5px solid #ecd9a8;
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  background: #fbf6ea;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.upload .ttl {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--vert-fonce);
+}
+.upload .sub {
+  font-size: 12px;
+  color: #8a6d1f;
+}
+.upload .btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+.ubtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  cursor: pointer;
+  border: 1px solid #d9cfb8;
+  background: var(--blanc);
+  color: var(--vert);
+  min-height: 44px;
+}
+.ubtn.cam {
+  background: var(--or);
+  color: var(--vert-fonce);
+  border-color: var(--or);
+}
+.ubtn svg {
+  width: 16px;
+  height: 16px;
+}
+.ubtn input {
+  display: none;
+}
+
+/* VIGNETTES / PROGRESSION */
+.upload .thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  justify-content: center;
+}
+.thumb {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e0d6bf;
+  background: var(--sable-tres-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumb .pdf {
+  font-size: 11px;
+  color: var(--gris);
+  text-align: center;
+  padding: 4px;
+}
+.thumb .rm {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(184, 80, 66, 0.92);
+  color: #fff;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.upload .hint {
+  font-size: 11.5px;
+  color: var(--gris);
+  margin-top: 8px;
+}
+.upload .err {
+  font-size: 12px;
+  color: var(--terra);
+  font-weight: 600;
+}
+.progress {
+  height: 6px;
+  width: 100%;
+  border-radius: 4px;
+  background: #efe8d8;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--or);
+  transition: width 0.2s;
+}
+
+/* BOUTONS / ACTIONS */
+.btn-primary {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  background: var(--or);
+  color: var(--vert-fonce);
+  border: none;
+  padding: 11px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.btn-primary:hover {
+  background: #bd9b50;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-primary svg {
+  width: 16px;
+  height: 16px;
+}
+.btn-ghost {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  background: none;
+  color: var(--gris);
+  border: 1px solid #d9cfb8;
+  padding: 11px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.act-txt {
+  font-size: 12.5px;
+  color: var(--gris);
+}
+.form-msg {
+  margin-top: 14px;
+  padding: 11px 15px;
+  border-radius: 9px;
+  font-size: 13.5px;
+}
+.form-msg.ok {
+  background: #eef6f1;
+  border: 1px solid #cfe7da;
+  color: var(--vert-fonce);
+}
+.form-msg.ko {
+  background: #fbf1ef;
+  border: 1px solid #e8c8c2;
+  color: var(--terra);
+}
+
+/* SUIVI — TABLEAU */
+.sec-title2 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--vert);
+  margin: 30px 0 12px;
+}
+table.list {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--blanc);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(10, 61, 18, 0.06);
+  font-size: 13.5px;
+  border: 1px solid #ece4d2;
+}
+table.list thead th {
+  background: var(--vert);
+  color: #f3efe2;
+  text-align: left;
+  padding: 12px 14px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+}
+table.list tbody td {
+  padding: 12px 14px;
+  border-top: 1px solid #efe8d8;
+  vertical-align: middle;
+}
+table.list tbody tr:nth-child(even) {
+  background: #fcfaf4;
+}
+.amt {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: var(--noir);
+}
+
+/* PASTILLES DE STATUT */
+.st {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.st .dt {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.st-depose {
+  background: #efe8d8;
+  color: #6b5417;
+}
+.st-depose .dt {
+  background: #b89a4e;
+}
+.st-controle {
+  background: #f5e9cf;
+  color: #8a6d1f;
+}
+.st-controle .dt {
+  background: var(--or);
+}
+.st-valide {
+  background: var(--vert);
+  color: #fff;
+}
+.st-valide .dt {
+  background: var(--menthe);
+}
+.st-rejete {
+  background: #f3ddd9;
+  color: var(--terra);
+}
+.st-rejete .dt {
+  background: var(--terra);
+}
+.st-brouillon {
+  background: #eee;
+  color: var(--gris);
+}
+.st-brouillon .dt {
+  background: var(--gris);
+}
+
+.pj {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vert);
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12.5px;
+}
+.pj svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* CARTES (mobile) pour le suivi — masquées par défaut */
+.vers-cards {
+  display: none;
+}
+.vers-card {
+  background: var(--blanc);
+  border: 1px solid #ece4d2;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.vers-card .l1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.vers-card .l1 .ref {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: var(--vert-fonce);
+  font-size: 14px;
+}
+.vers-card .who {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: var(--noir);
+}
+.vers-card .meta {
+  font-size: 12.5px;
+  color: var(--gris);
+  margin: 2px 0 8px;
+}
+.vers-card .l-act {
+  margin-top: 8px;
+}
+
+/* NOTE */
+.note {
+  background: #fbf6ea;
+  border-left: 4px solid var(--or);
+  border-radius: 0 10px 10px 0;
+  padding: 13px 17px;
+  font-size: 13.5px;
+  color: #6b5417;
+  margin-top: 16px;
+  max-width: 960px;
+}
+.note b {
+  color: var(--vert-fonce);
+}
+
+/* RESPONSIVE — reprise des points de rupture de la maquette */
+@media (min-width: 561px) {
+  .grid2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grid4,
+  .ctx {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 1081px) {
+  .grid4,
+  .ctx {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+/* ≤ 719px : on bascule le tableau de suivi en cartes */
+@media (max-width: 719px) {
+  table.list {
+    display: none;
+  }
+  .vers-cards {
+    display: block;
+  }
+}

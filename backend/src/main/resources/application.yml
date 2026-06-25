@@ -106,6 +106,30 @@ poste:
       direction-regionale: DR Alger-Est
       mail-direction-regionale: dr.algerest@gam.dz
 
+  # Versement bancaire (preuve de paiement) — seuil aligné sur l'accueil (même définition
+  # encaissé - versé), banques, mois sélectionnables et comportement du BPM (mock).
+  versement:
+    prefixe-reference: VB
+    reference-seed: 3390
+    seuil-regularisation:
+      montant: 1000000      # DA (cohérent avec tableau-bord.seuil-ecart-depot)
+      pourcentage: 10       # %
+    banques:
+      - AGB
+      - BNA
+      - BEA
+      - CPA
+      - Autre
+    mois-disponibles:
+      - 2026-06
+      - 2026-05
+      - 2026-04
+      - 2026-03
+    mock:
+      delai-controle-ms: 4000
+      delai-decision-ms: 5000
+      decision: VALIDE      # VALIDE | REJETE (simulation du contrôle BPM)
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

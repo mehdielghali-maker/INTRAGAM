@@ -56,7 +56,8 @@ mapping champ→source ; (2) contexte backend hexagonal (domaine, ports, service
 PROASSUR/Sage/BPM/GED/SSO, bus, config en `application.yml` jamais en dur) + tests (unitaires +
 1 IT de boucle) ; (3) feature React fidèle ; (4) brancher le **compteur de nav réel**
 (`tableaubord/.../CompteursAgenceAdapter`) ; (5) `mvn verify` puis commits conventionnels.
-Fonctions livrées : Suivi des chèques, Accueil agence, Demande de cotation, Accords d'échéancier (DPD).
+Fonctions livrées : Suivi des chèques, Accueil agence, Demande de cotation, Accords d'échéancier (DPD),
+Versement bancaire (preuve de paiement, ADR 0006).
 Restantes (placeholders) : Dépôt Situation Financière, Attestations, Envois bureau d'ordre,
 Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
 
