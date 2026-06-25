@@ -6,16 +6,12 @@ import dz.gam.poste.versement.domain.port.in.ConsulterVersementsUseCase;
 import dz.gam.poste.versement.domain.port.in.DeposerVersementCommand;
 import dz.gam.poste.versement.domain.port.in.FiltreVersement;
 import dz.gam.poste.versement.domain.port.in.SoumettreVersementUseCase;
+import dz.gam.poste.integration.IntegrationTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -32,29 +28,12 @@ import static org.awaitility.Awaitility.await;
  * <p>Délais du mock BPM forcés à 0, décision VALIDE. Nécessite Docker (sinon ignoré).
  */
 @SpringBootTest
-@Testcontainers(disabledWithoutDocker = true)
-class BoucleVersementIT {
+class BoucleVersementIT extends IntegrationTestBase {
 
     private static final String AGENCE = "02.1.S.BENZERGA";
 
-    @Container
-    static final RabbitMQContainer RABBITMQ =
-            new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.13-management"));
-
-    @Container
-    static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>(DockerImageName.parse("postgres:16"))
-                    .withDatabaseName("poste").withUsername("poste").withPassword("poste");
-
     @DynamicPropertySource
-    static void proprietes(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-        registry.add("spring.rabbitmq.host", RABBITMQ::getHost);
-        registry.add("spring.rabbitmq.port", RABBITMQ::getAmqpPort);
-        registry.add("spring.rabbitmq.username", RABBITMQ::getAdminUsername);
-        registry.add("spring.rabbitmq.password", RABBITMQ::getAdminPassword);
+    static void mockProperties(DynamicPropertyRegistry registry) {
         registry.add("poste.versement.mock.delai-controle-ms", () -> 0);
         registry.add("poste.versement.mock.delai-decision-ms", () -> 0);
         registry.add("poste.versement.mock.decision", () -> "VALIDE");

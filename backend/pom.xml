@@ -117,6 +117,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <!-- Rejoue une boucle d'intégration qui échoue (coupures RabbitMQ
+                         transitoires des Testcontainers) : elle repasse au rejeu, donc un
+                         flake environnemental ne fait plus échouer le build. -->
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

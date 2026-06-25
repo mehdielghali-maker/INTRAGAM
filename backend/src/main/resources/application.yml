@@ -23,6 +23,24 @@ spring:
     port: 5672
     username: guest
     password: guest
+    # Résilience aux coupures transitoires du bus (démarrage, reconnexion) : retry à la
+    # publication et au démarrage des listeners, files manquantes non fatales (recovery).
+    template:
+      retry:
+        enabled: true
+        max-attempts: 5
+        initial-interval: 1s
+        multiplier: 2
+        max-interval: 10s
+    listener:
+      simple:
+        missing-queues-fatal: false
+        retry:
+          enabled: true
+          max-attempts: 5
+          initial-interval: 2s
+          multiplier: 2
+          max-interval: 10s
 
 server:
   port: 8080
