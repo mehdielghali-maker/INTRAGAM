@@ -1,8 +1,21 @@
 import { LIBELLE_STATUT, StatutCheque } from '../../api/cheques';
 
-/** Pastille colorée par statut. Vert = encaissé, rouge = retourné, gris = en cours. */
+// Mappe le statut vers la classe de pastille (cohérent avec les autres sections).
+const CLASSE: Record<StatutCheque, string> = {
+  EMIS: 'st-emis',
+  IMPRIME: 'st-imprime',
+  REMIS_AGENCE: 'st-remis-agence',
+  REMIS_BENEFICIAIRE: 'st-remis-beneficiaire',
+  ENCAISSE: 'st-encaisse',
+  RETOURNE: 'st-retourne',
+};
+
+/** Pastille de statut du chèque (style commun « .st »). */
 export default function StatutBadge({ statut }: { statut: StatutCheque }) {
-  const variante =
-    statut === 'ENCAISSE' ? 'ok' : statut === 'RETOURNE' ? 'ko' : 'en-cours';
-  return <span className={`badge badge-${variante}`}>{LIBELLE_STATUT[statut]}</span>;
+  return (
+    <span className={`st ${CLASSE[statut]}`}>
+      <span className="dt" />
+      {LIBELLE_STATUT[statut]}
+    </span>
+  );
 }
