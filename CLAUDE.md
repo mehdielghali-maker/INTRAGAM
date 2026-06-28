@@ -98,6 +98,20 @@ produit/assuré → capture → contrôle → enregistrer) et **PWA agent autono
 (`getOcrData`, mock figé). Auth = monde **agent** (login/mdp + OTP), distinct du monde client. **Rien en
 dur** (`.env`). Détails : `modules/souscription-auto/README.md`.
 
+## Workflow PRÉSENTIEL + BROUILLON (déclaration & souscription — ADR 0012)
+Modèle corrigé, **commun** aux deux fonctions : **PRÉSENTIEL par défaut** (l'AGA saisit en agence,
+**BROUILLON** enregistrable à tout moment même incomplet + **reprise/édition** + **auto-save débouncé**
+anti-perte) → **VALIDE** quand complet ; **lien client = EXCEPTION** (le client remplit à distance).
+**Rattachement PROASSUR/GAM UNIQUEMENT à la validation** ; un brouillon reste **LOCAL** (localStorage
+poste / Dexie PWA), jamais envoyé avant validation. Machine à états **unifiée** dans le socle
+`shared/dossier/` (alias `@dossier`) : `BROUILLON·LIEN_ENVOYE·A_VALIDER·RELANCE·VALIDEE` (helpers
+`estModifiable`/`peutValider`/`estRattachable` + `creerAutoEnregistrement`). La **complétude** (catalogue
+`piecesManquantes`, paramétrable par module) conditionne **SEULEMENT** la validation, jamais le brouillon.
+Stores locaux de brouillons : `shared/decsin/brouillonsLocaux.ts`, `shared/souscription/brouillonsLocaux.ts`.
+Souscription : face client distante neuve `modules/souscription-client/` (lien + OTP, offline) + action
+poste « Envoyer un lien ». **[DSI à confirmer]** : brouillon serveur DECSIN/SecGam (sinon local jusqu'à
+validation). À NE PAS casser : RECO, masques SVG, détail/contrôle, offline, mock.
+
 ## Reconnaissance véhicule + lecture de plaque (ANPR — ADR 0011)
 Capacité **INDÉPENDANTE et REMPLAÇABLE** : vérifier qu'une photo est bien un véhicule et **lire la
 plaque**, puis la comparer à l'**immatriculation du contrat** (PROASSUR) — aide qualité + garde-fou

@@ -75,6 +75,23 @@ fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte
 - **Reste optionnel** : si `reco.bloque-non-conforme=true`, griser le bouton de validation côté front quand
   `bloquant` (aujourd'hui le statut est affiché mais le bouton reste actif). Détails : `services/reco/README.md`.
 
+## Workflow présentiel + BROUILLON (nouveau — ADR 0012)
+Correction du modèle (déclaration ET souscription) : **présentiel par défaut** (AGA en agence,
+**BROUILLON** enregistrable même incomplet + reprise/édition + **auto-save débouncé**), **lien client =
+exception**, **rattachement PROASSUR/GAM seulement à la validation** (brouillon = local-only).
+- **Socle commun** `shared/dossier/` (alias `@dossier`) : machine à états unifiée
+  `BROUILLON·LIEN_ENVOYE·A_VALIDER·RELANCE·VALIDEE` + auto-save (`creerAutoEnregistrement`) + interface
+  `BrouillonStore`. Stores locaux : `shared/{decsin,souscription}/brouillonsLocaux.ts`.
+- **Déclaration** : poste (`features/sinistre/` — stepper brouillon/auto-save/valider gated, suivi avec
+  brouillons + « Reprendre », détail Reprendre/Valider/Renvoyer→RELANCE, reprise via `?reprendre`) +
+  PWA client (`modules/declarations-sinistre/` — auto-save, statut LIEN_ENVOYE→A_VALIDER à l'envoi).
+- **Souscription** : poste (`features/souscription/`, idem) + PWA agent (`modules/souscription-auto/`,
+  auto-save) + **nouvelle PWA cliente** `modules/souscription-client/` (port 5176, lien + OTP, offline) ;
+  action poste « Envoyer un lien au client ».
+- Complétude (catalogue) → **valide** seulement, jamais le brouillon. **[DSI à confirmer]** : brouillon
+  serveur (sinon local jusqu'à validation). Tests : socle 8, déclaration 31, souscription 6 (verts).
+- **Nouvelle PWA à lancer** : `cd modules/souscription-client && npm i && npm run dev` (:5176 ?reference=…).
+
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
 ```bash
