@@ -5,18 +5,22 @@
 > _Dernière mise à jour : 2026-06-28._
 
 ## Où on en est
-- **Branche** : `feat/IntraGAM250626EGM` (PAS `main`). Working tree propre, à jour avec `origin`.
-  Dernier commit : `f415522` (déclaration de sinistre + souscription auto).
+- **Branche** : `feat/IntraGAM250626EGM` (PAS `main`). À jour avec `origin`.
+  Dernier commit : `843cbe1` (workflow GitHub Pages). Le repo est **PRIVÉ**.
 - **Remote** : `origin` = `https://github.com/mehdielghali-maker/INTRAGAM.git` (compte
-  `mehdielghali-maker`, authentifié via GitHub CLI `gh`). **Ex-PR INTRAGAM#1 = FERMÉE**
-  (closed le 2026-06-25, après renommage de la branche) → **plus aucune PR ouverte à ce jour**.
+  `mehdielghali-maker`, authentifié via GitHub CLI `gh` — scopes `repo, read:org, gist, workflow`).
+  **Ex-PR INTRAGAM#1 = FERMÉE** (closed le 2026-06-25) → **aucune PR ouverte à ce jour**.
   *(Le repo client `mtirchi/INTRAGAM` était inaccessible → repo créé sous le compte connecté.)*
-- **Tests** : back `mvn verify` vert = **73 unitaires + 4 boucles d'intégration** Testcontainers ;
-  modules front (Vitest) : déclaration **10 verts**, souscription **6 verts**.
-- **Derniers ajouts** (tous commités + poussés) : authentification login/mot de passe (ADR 0008),
-  **déclaration de sinistre** (ADR 0009) et **souscription auto** (ADR 0010) — PWA mobile-first à
-  deux faces, socle de capture partagé `@sinistre-ui` rendu générique (piloté par catalogue).
-  Détails dans les sections dédiées ci-dessous.
+- **Tests** : back `mvn verify` vert (unitaires + boucles d'intégration Testcontainers) ;
+  modules front (Vitest) verts (déclaration, souscription, socle `@dossier`).
+- **Derniers ajouts** (tous commités + poussés) : auth login/mdp (ADR 0008), **déclaration de
+  sinistre** (0009), **souscription auto** (0010), **reconnaissance véhicule + plaque** (0011),
+  **workflow présentiel + brouillon** (0012), puis **déploiement étages 1 & 2** (voir section
+  « Déploiement » plus bas). Détails dans les sections dédiées.
+- **⚠️ État opérationnel en cours** (session du 2026-06-28) : choix d'hébergement **permanent =
+  Vercel** (repo privé, gratuit) pour les 3 PWA ; le **poste** reste sur l'Étage 2 (backend). Le
+  workflow GitHub Pages est poussé mais **inopérant tant que le repo est privé** (Pages gratuit =
+  repo public). **RECO** en cours de validation en mode **réel** (Docker) — cf. section RECO.
 
 ## Connexion (nouveau — ADR 0008)
 - **Page `/login`** : login + mot de passe (admin ou AGA) ; bouton « Se connecter avec Microsoft »
@@ -61,8 +65,20 @@ fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte
   `immatriculation`, session requise) → `{statut, plaqueLue, typeVehicule, confiance, estVehicule, bloquant}`.
   Statut = `CONFORME|NON_CONFORME|NON_LUE|PAS_UN_VEHICULE|VUE_SANS_PLAQUE`.
 - **Config** (`application.yml`) : `reco.mode` (mock défaut | http), `reco.base-url`, `reco.bloque-non-conforme`.
-- **Tester le mode http** : `docker-compose --profile reco up -d reco-service` (1re fois : build + modèles ML).
-  Backend en natif → mettre `reco.base-url=http://localhost:8088`.
+- **⚠️ MOCK ≠ vraie reconnaissance** (source de confusion fréquente — vérifié le 2026-06-28) : en
+  `reco.mode=mock` (défaut dev), l'adapter renvoie **TOUJOURS** la plaque figée **`0987611616`** et
+  **toujours** « voiture », quelle que soit la photo. Donc une vraie plaque ne « matche » jamais le
+  contrat → **NON_CONFORME quasi systématique**, et un non-véhicule passe pour une voiture. **Ce n'est
+  pas un bug** : toute la chaîne (microservice → adapter → domaine → front/PWA) est correcte et testée ;
+  c'est juste que le mock est bidon. Pour une **vraie** lecture, lancer le microservice en mode http.
+- **Lancer le VRAI service** (Python pas requis sur l'hôte, tout est dans Docker) :
+  `docker compose --profile reco up -d --build reco-service` (1re fois : build torch + **téléchargement
+  des modèles ML**, plusieurs min ; modèles ensuite cachés dans le volume `reco-models`). Health :
+  `curl http://localhost:8088/health`. Puis backend en `http` : `mvn spring-boot:run` avec
+  `-Dreco.mode=http -Dreco.base-url=http://localhost:8088` (le poste compare alors la VRAIE plaque lue).
+  Pour la **PWA** `declarations-sinistre` : `VITE_RECO_MODE=real` + `VITE_RECO_BASE_URL=<url reco>`
+  (appel navigateur direct → CORS `RECO_CORS_ORIGINS`). En Étage 2 (`docker-compose.full.yml`),
+  `RECO_MODE=http` est déjà câblé → RECO réel en prod.
 - **Panne RECO = jamais bloquante** (résultat neutre). Tests : unitaires purs (`VerificationPlaqueServiceTest`,
   `ReconnaissanceServiceTest`), pas d'IT (capacité synchrone, sans boucle fermée).
 - **Front câblé** : composant partagé `@sinistre-ui/VerificationPlaque` affiche CONFORME/NON_CONFORME/NON_LUE
@@ -91,6 +107,31 @@ exception**, **rattachement PROASSUR/GAM seulement à la validation** (brouillon
 - Complétude (catalogue) → **valide** seulement, jamais le brouillon. **[DSI à confirmer]** : brouillon
   serveur (sinon local jusqu'à validation). Tests : socle 8, déclaration 31, souscription 6 (verts).
 - **Nouvelle PWA à lancer** : `cd modules/souscription-client && npm i && npm run dev` (:5176 ?reference=…).
+
+## Déploiement & test sur téléphone (session 2026-06-28)
+Objectif : tester sur **téléphone** (caméra + PWA installable ⇒ **HTTPS obligatoire**) et déployer en
+ligne, **sans toucher au métier** (seule une fabrique de bascule mock/real par env a été ajoutée).
+- **Étage 1 — 3 PWA en mock, statique HTTPS** (commits `7c45405`, `2dcfc85`, `064d59b`) :
+  `modules/{declarations-sinistre,souscription-auto,souscription-client}/` reçoivent `vercel.json` +
+  `netlify.toml` (fallback SPA, `sw.js` no-cache), scripts `dev:host` + `dev:tunnel` (cloudflared) avec
+  `allowedHosts` (tunnels autorisés dans les `vite.config`), `base` paramétrable (`VITE_BASE`, défaut
+  `/`) + `start_url` relatif. Bascule globale **`VITE_API_MODE=mock`** (repli si `VITE_*_MODE` absent).
+- **Étage 2 — stack complète** (commit `6a35266`) : `frontend/Dockerfile` (+ `nginx.conf` : SPA, proxy
+  `/api`→backend), `backend/Dockerfile`, **`docker-compose.full.yml`** (postgres + rabbitmq + reco +
+  backend + front, healthchecks, `RECO_MODE=http`), CORS configurable (`CORS_ALLOWED_ORIGINS` dans
+  `WebAccesConfig`), `.env.example` (racine, **aucun secret**), `deploy/Caddyfile` (HTTPS auto VPS).
+  Lancer : `docker compose -f docker-compose.full.yml up --build` → poste sur `:8081`.
+- **Hébergement PERMANENT retenu = Vercel** (repo **privé** ⇒ Vercel gratuit gère le privé) : 1 projet
+  par PWA, **Root Directory = `modules/<pwa>`** + cocher **« Include files outside of the Root
+  Directory »** (indispensable : les PWA importent `shared/`). URLs `*.vercel.app` à la racine
+  (`base=/`), redéploiement auto à chaque push. **Le poste** (login backend) ne va PAS en statique →
+  Étage 2 sur Railway/Render/Fly (compte client). Détails : `README_DEPLOIEMENT.md`.
+- **GitHub Pages** : workflow `.github/workflows/deploy-pages.yml` poussé (`843cbe1`, build des 3 PWA →
+  Pages, `VITE_BASE=/<repo>/<app>/`). **Inopérant tant que le repo est privé** (Pages gratuit = repo
+  public + Settings → Pages → Source = GitHub Actions). Conservé pour activation ultérieure.
+- **Test téléphone immédiat (sans déployer)** : `cloudflared` est installé (winget). `cd modules/<pwa>
+  && npm run dev:host` puis `npm run dev:tunnel` → URL `https://*.trycloudflare.com` (temporaire, vit le
+  temps de la session). Le poste se tunnelise aussi (front `:5173` + backend `:8080` via proxy `/api`).
 
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
