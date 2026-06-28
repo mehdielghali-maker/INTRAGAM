@@ -1,6 +1,7 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { catalogueDeclaration, CODE_OTP_DEMO, decsin, Declaration, peutEnvoyer, Piece } from '@decsin';
 import { ApercusControle, PieceCapturee, PiecesCapture, VerificationPlaque } from '@sinistre-ui';
+import { creerAutoEnregistrement } from '@dossier';
 import { analyseurReco } from './reco';
 import { ajouterPiece, enregistrerDeclaration, getDeclarationLocale, piecesDe, supprimerPiece } from './offline/db';
 import { demanderPersistance } from './offline/persist';
@@ -90,7 +91,8 @@ export default function App() {
       idLocal: `local-${code}`,
       code,
       origine: 'CLIENT',
-      statut: 'A_VALIDER',
+      // Le client remplit un lien envoyé par l'AGA ; le dossier devient « à valider » À L'ENVOI.
+      statut: 'LIEN_ENVOYE',
       immatriculation: vehicule?.immatriculation ?? '',
       marque: vehicule?.marque ?? '',
       numPolice: vehicule?.numPolice ?? '',
@@ -118,6 +120,23 @@ export default function App() {
     },
     [],
   );
+
+  // Auto-enregistrement DÉBOUNCÉ (anti-perte) : sauvegarde le brouillon local à chaque modification
+  // des champs (étapes de saisie), en plus des sauvegardes explicites. Les photos sont déjà persistées
+  // immédiatement (Dexie). N'écrase pas un dossier déjà envoyé (étape 5).
+  const autoRef = useRef(
+    creerAutoEnregistrement<Declaration>(async (d) => {
+      await enregistrerDeclaration(d, 'brouillon');
+    }, 800),
+  );
+  useEffect(() => {
+    if (!declaration || etape < 2 || etape > 4) return;
+    autoRef.current.planifier(declaration);
+  }, [declaration, etape]);
+  useEffect(() => {
+    const auto = autoRef.current;
+    return () => auto.flush();
+  }, []);
 
   // Pièces : stockées dans le dossier interne (Dexie) ; l'état reflète la base.
   const rechargerPieces = useCallback(async (idLocal: string) => {
@@ -157,7 +176,8 @@ export default function App() {
     if (!declaration) {
       return;
     }
-    await enregistrerDeclaration({ ...declaration, pieces }, 'en_attente');
+    // À l'envoi, le dossier client passe « à valider » (l'AGA contrôlera puis rattachera PROASSUR).
+    await enregistrerDeclaration({ ...declaration, pieces, statut: 'A_VALIDER' }, 'en_attente');
     if (navigator.onLine) {
       await synchroniser();
     }
@@ -251,6 +271,10 @@ export default function App() {
           <div className="field"><label>Compagnie adverse (si tiers)</label><input value={declaration.compagnieAdverse ?? ''} placeholder="Si tiers" onChange={(e) => majChamp('compagnieAdverse', e.target.value)} /></div>
           <div className="field"><label>Véhicule adverse (si tiers)</label><input value={declaration.vehiculeAdverse ?? ''} placeholder="Immat. tiers" onChange={(e) => majChamp('vehiculeAdverse', e.target.value)} /></div>
           <label className="check"><input type="checkbox" checked={declaration.blesses} onChange={(e) => majChamp('blesses', e.target.checked)} /> Y a-t-il des blessés ?</label>
+          <div className="save-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={CHECK} /></svg>
+            Saisie enregistrée automatiquement sur votre téléphone — rien n'est perdu, même sans réseau.
+          </div>
           <button type="submit" className="btn btn-primary">Continuer vers les photos</button>
         </form>
       )}
