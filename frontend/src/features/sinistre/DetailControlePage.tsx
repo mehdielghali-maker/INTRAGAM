@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { catalogueDeclaration, decsin, Declaration, peutEnvoyer } from '@decsin';
-import { ApercusControle } from '@sinistre-ui';
+import { ApercusControle, VerificationPlaque } from '@sinistre-ui';
 import StatutDeclarationBadge from './StatutDeclarationBadge';
 import './sinistre.css';
 
@@ -78,6 +78,8 @@ export default function DetailControlePage() {
       )}
 
       <ApercusControle catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={decl.pieces} />
+
+      <VerificationPlaque pieces={decl.pieces} immatriculation={decl.immatriculation} />
 
       {decl.statut !== 'VALIDEE' && (
         <div className="form-actions">

@@ -49,10 +49,14 @@ bascule possible vers Plate Recognizer sans toucher au reste).
   compose `reco` n'est lancé que pour tester `reco.mode=http`.
 - **+** En ligne / hors-ligne : la reconnaissance est un **confort** côté serveur ; hors-ligne on capture
   et envoie normalement, l'analyse se fait à la synchronisation. Une panne RECO ne bloque jamais.
-- **−** Pas (encore) câblé au front : l'endpoint existe et est testable, mais l'affichage du statut
-  (CONFORME / NON_CONFORME / NON_LUE) dans les écrans de contrôle (`DetailControlePage` sinistre,
-  `DetailSouscriptionPage`) et le mapping des vues souscription `veh_*` → `avant/arriere/...` restent à
-  faire (tranche suivante).
+- **+** Câblé au front (écrans de contrôle AGA) : composant partagé `@sinistre-ui/VerificationPlaque`
+  affiche CONFORME / NON_CONFORME / NON_LUE sous le contrôle de complétude (`DetailControlePage`
+  sinistre, `DetailSouscriptionPage`). Il sélectionne la face porteuse de plaque (avant puis arrière),
+  mappe les types des deux catalogues (`face_*`/`veh_*` → `avant/arriere/...` par suffixe) et appelle
+  `POST /api/reconnaissance/analyser` (session, `credentials: same-origin`). Bandeau de **confort** :
+  n'altère jamais la complétude du dossier.
+- **−** Reste optionnel : quand `reco.bloque-non-conforme=true`, désactiver effectivement le bouton de
+  validation côté front (aujourd'hui `bloquant` est affiché dans le bandeau mais le bouton n'est pas grisé).
 - **−** Les photos partent déjà vers DECSIN/SecGam ; le mode http re-analyse l'image une 2ᵉ fois côté
   RECO (on ne redirige pas DECSIN vers RECO). Acceptable pour un confort.
 - **−** **Déviation à la règle « 1 IT Testcontainers par fonction »** : RECO n'a **pas de boucle fermée**

@@ -65,9 +65,11 @@
 .sui-cb { display: flex; align-items: flex-start; gap: 12px; border-radius: 13px; padding: 14px 16px; margin: 6px 0 18px; }
 .sui-cb.ok { background: #eef6f1; border: 1px solid #cfe7da; }
 .sui-cb.ko { background: #fbeae7; border: 1px solid #e8c8c2; }
+.sui-cb.neutre { background: #f3f1ea; border: 1px solid #e2dccc; }
 .sui-cb .cb-ic { width: 26px; height: 26px; flex: 0 0 26px; }
 .sui-cb.ok .cb-ic { color: var(--vert); }
 .sui-cb.ko .cb-ic { color: var(--terra); }
+.sui-cb.neutre .cb-ic { color: var(--gris); }
 .sui-cb .cb-t { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 14px; }
 .sui-cb.ok .cb-t { color: var(--vert); }
 .sui-cb.ko .cb-t { color: var(--terra); }

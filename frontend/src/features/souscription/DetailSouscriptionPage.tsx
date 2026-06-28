@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { catalogueSouscription, peutEnvoyer, souscription, Souscription } from '@souscription';
-import { ApercusControle } from '@sinistre-ui';
+import { ApercusControle, VerificationPlaque } from '@sinistre-ui';
 import StatutSouscriptionBadge from './StatutSouscriptionBadge';
 import '../sinistre/sinistre.css';
 
@@ -60,6 +60,8 @@ export default function DetailSouscriptionPage() {
       </div>
 
       <ApercusControle catalogue={catalogueSouscription} contexte={{}} pieces={s.pieces} />
+
+      <VerificationPlaque pieces={s.pieces} immatriculation={s.vehicule.immatriculation} />
 
       {s.statut !== 'ENREGISTREE' && (
         <div className="form-actions">

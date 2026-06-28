@@ -110,8 +110,9 @@ Comparaison côté domaine `VerificationPlaqueService` → `CONFORME/NON_CONFORM
 VUE_SANS_PLAQUE` (plaque attendue seulement sur `avant`/`arriere`). Endpoint `POST
 /api/reconnaissance/analyser` (multipart `photo`+`vue`+`immatriculation`, session requise) ; anti-fraude
 bloquante optionnelle (`reco.bloque-non-conforme`). Pas de boucle fermée (capacité synchrone) → tests
-**unitaires purs** (pas d'IT Testcontainers). **Pas encore câblé au front** (affichage du statut dans
-`DetailControlePage`/`DetailSouscriptionPage` + mapping vues `veh_*`→`avant…` = tranche suivante).
+**unitaires purs** (pas d'IT Testcontainers). **Câblé au front** : composant partagé
+`@sinistre-ui/VerificationPlaque` affiche le statut sous le contrôle de complétude dans
+`DetailControlePage` (sinistre) et `DetailSouscriptionPage` (mapping vues `face_*`/`veh_*`→`avant…`).
 Détails : `services/reco/README.md`.
 
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)

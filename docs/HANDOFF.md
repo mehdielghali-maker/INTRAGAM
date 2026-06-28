@@ -65,8 +65,11 @@ fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte
   Backend en natif → mettre `reco.base-url=http://localhost:8088`.
 - **Panne RECO = jamais bloquante** (résultat neutre). Tests : unitaires purs (`VerificationPlaqueServiceTest`,
   `ReconnaissanceServiceTest`), pas d'IT (capacité synchrone, sans boucle fermée).
-- **Reste à faire** : câbler le front (statut dans `DetailControlePage`/`DetailSouscriptionPage`, mapping
-  vues souscription `veh_*`→`avant/arriere/...`). Détails : `services/reco/README.md`.
+- **Front câblé** : composant partagé `@sinistre-ui/VerificationPlaque` affiche CONFORME/NON_CONFORME/NON_LUE
+  sous le contrôle de complétude dans `DetailControlePage` (sinistre) + `DetailSouscriptionPage` (sélection
+  face avant/arrière + mapping `face_*`/`veh_*`→vues RECO + appel `POST /api/reconnaissance/analyser`).
+- **Reste optionnel** : si `reco.bloque-non-conforme=true`, griser le bouton de validation côté front quand
+  `bloquant` (aujourd'hui le statut est affiché mais le bouton reste actif). Détails : `services/reco/README.md`.
 
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
