@@ -1,0 +1,68 @@
+# Déploiement PERMANENT des 3 PWA clientes/agent (mode mock) sur GitHub Pages — gratuit, HTTPS, auto.
+# Prérequis (une seule fois) : dépôt PUBLIC + Settings → Pages → Source = « GitHub Actions ».
+# URLs obtenues : https://<user>.github.io/<repo>/  (page d'accueil) → /declarations-sinistre/ , etc.
+name: Déploiement PWA (GitHub Pages)
+
+on:
+  push:
+    branches: [main, feat/IntraGAM250626EGM]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build des 3 PWA (mode mock) + page d'accueil
+        env:
+          VITE_API_MODE: mock # aucune dépendance back-end : tout en données fictives
+        run: |
+          set -e
+          base="/${GITHUB_REPOSITORY#*/}"   # ex. /INTRAGAM
+          mkdir -p site
+          for app in declarations-sinistre souscription-auto souscription-client; do
+            echo "::group::build $app"
+            ( cd "modules/$app" && npm install && VITE_BASE="$base/$app/" npm run build )
+            mkdir -p "site/$app"
+            cp -r "modules/$app/dist/." "site/$app/"
+            echo "::endgroup::"
+          done
+          cat > site/index.html <<'EOF'
+          <!doctype html><html lang="fr"><head><meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>INTRAGAM — démo PWA (mock)</title>
+          <style>body{font-family:system-ui,sans-serif;max-width:560px;margin:48px auto;padding:0 16px;color:#143}
+          h1{color:#0A3D12}a{display:block;padding:14px 16px;margin:10px 0;border:1px solid #cfe;border-radius:12px;
+          text-decoration:none;color:#0A3D12;font-weight:600}small{color:#678;font-weight:400}</style></head>
+          <body><h1>INTRAGAM — démo (mode mock)</h1>
+          <p>Applications de test, données fictives. OTP démo : <b>0000</b>. Installable et caméra (HTTPS).</p>
+          <a href="./declarations-sinistre/?code=DEC-7F3A-2026">Déclaration de sinistre — client <small>?code=…</small></a>
+          <a href="./souscription-auto/">Souscription auto — agent <small>login + OTP</small></a>
+          <a href="./souscription-client/?reference=SCR-TEST-2026">Souscription auto — client <small>?reference=…</small></a>
+          </body></html>
+          EOF
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
