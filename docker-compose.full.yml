@@ -1,0 +1,94 @@
+# Stack COMPLÈTE INTRAGAM (Étage 2) : poste front + backend Spring + RECO + dépendances (PG, RabbitMQ).
+# Un seul lancement :  docker compose -f docker-compose.full.yml up --build
+# Variables : copier .env.example en .env et ajuster. AUCUN secret n'est commité (démo en mock).
+# Réseau interne : le FRONT parle au BACKEND (proxy nginx /api) ; le BACKEND parle à RECO ;
+# le front ne parle JAMAIS directement à reco.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-poste}
+      POSTGRES_USER: ${POSTGRES_USER:-poste}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-poste}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-poste}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reco:
+    build: ./services/reco            # Dockerfile RECO réutilisé tel quel (non réécrit)
+    environment:
+      ULTRALYTICS_DIR: /models
+      FAST_ALPR_HOME: /models/fast-alpr
+      RECO_SEUIL_VEHICULE: ${RECO_SEUIL_VEHICULE:-0.45}
+      RECO_SEUIL_PLAQUE: ${RECO_SEUIL_PLAQUE:-0.35}
+      RECO_CORS_ORIGINS: "*"
+    volumes:
+      - reco-models:/models           # cache des modèles YOLO/fast-alpr (pas de re-téléchargement)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8088/health').status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s              # chargement des modèles au démarrage (RAM importante)
+
+  backend:
+    build: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      reco:
+        condition: service_started
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-poste}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-poste}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-poste}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER:-guest}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      RECO_MODE: ${RECO_MODE:-http}
+      RECO_BASE_URL: http://reco:8088  # le backend (et lui seul) appelle reco
+      RECO_BLOQUE_NON_CONFORME: ${RECO_BLOQUE_NON_CONFORME:-false}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/auth/config >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  front:
+    build:
+      context: .                       # RACINE : le poste importe shared/ (alias relatifs)
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_MODE: ${VITE_API_MODE:-real}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_DECSIN_MODE: ${VITE_DECSIN_MODE:-mock}
+        VITE_SOUSCRIPTION_MODE: ${VITE_SOUSCRIPTION_MODE:-mock}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONT_PORT:-8081}:80"
+
+volumes:
+  pgdata:
+  reco-models:

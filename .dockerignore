@@ -1,0 +1,9 @@
+# Contexte de build (racine) — exclut ce qui n'a pas à entrer dans les images.
+**/node_modules
+**/dist
+**/target
+.git
+**/.env
+**/.env.local
+**/*.log
+**/.vscode

@@ -98,8 +98,55 @@ cloudflared`, ou binaire). Alternative : `ngrok http 5174`.
 
 ---
 
-# ÉTAGE 2 — Stack complète (front poste + back Spring + RECO)
+# ÉTAGE 2 — Stack complète (poste + back Spring + RECO)
 
-*(Voir la section dédiée plus bas — `docker-compose`, Dockerfiles, CORS, déploiement en ligne.)*
+Le **poste AGA** a besoin du back-end Java (login, contexte d'agence, fonctions métier) → il se lance
+avec toute la stack. Fichiers fournis :
+- `frontend/Dockerfile` (+ `frontend/nginx.conf`) : build Vite → **nginx** (fallback SPA, `sw.js`
+  no-cache, gzip, **proxy `/api` → backend**). Le mode/URL d'API passent en **args de build** (`VITE_*`).
+- `backend/Dockerfile` : multi-stage **Maven** → image **JRE slim**, profils Spring par env.
+- `services/reco/Dockerfile` : **réutilisé tel quel** (non modifié).
+- `docker-compose.full.yml` : `postgres` + `rabbitmq` + `reco` + `backend` + `front`, réseau interne,
+  **healthchecks** (reco `GET /health` ; backend `GET /api/auth/config`), **cache des modèles** RECO
+  (volume `reco-models`).
+- `.env.example` (racine) : toutes les variables (front build, backend, CORS, infra). **Aucun secret commité.**
 
-<!-- ÉTAGE 2 : complété dans le commit suivant (Dockerfiles + compose + README détaillé). -->
+## Lancer en local
+```bash
+cp .env.example .env            # ajuster si besoin (la démo tourne en mock, sans clé)
+docker compose -f docker-compose.full.yml up --build
+```
+- **Poste** : http://localhost:8081 (login démo `benzerga` / `gam2026`, semé au 1er démarrage).
+- Le **front parle au backend** via `/api` (proxy nginx, **même origine → pas de CORS**) ; le **backend
+  parle à RECO** (`RECO_MODE=http`, `RECO_BASE_URL=http://reco:8088`) ; **le front ne touche jamais reco.**
+- Première construction : l'image **RECO télécharge les modèles** (YOLO/fast-alpr) → long + **RAM
+  conséquente** ; ensuite mis en cache (volume `reco-models`).
+
+## Modes mock/real dans la stack
+- Le **poste** est bâti `VITE_API_MODE=real` (il appelle le backend Spring). La **déclaration** et la
+  **souscription** restent `VITE_DECSIN_MODE=mock` / `VITE_SOUSCRIPTION_MODE=mock` par défaut (les backends
+  externes DECSIN/SecGam ne sont **pas** requis pour la démo). Pour les passer en réel : renseigner
+  `VITE_DECSIN_*` / `VITE_SOUSCRIPTION_*` (base-url + clés d'API) **côté front** — ce sont des appels
+  **front → GAM**, pas via le backend Java.
+- La **reconnaissance de plaque** du poste passe, elle, **par le backend** (`/api/reconnaissance`) → RECO.
+
+## CORS
+`CORS_ALLOWED_ORIGINS` (env du backend, **vide par défaut**) : à renseigner **uniquement** si le front est
+servi sur une **autre origine** que le backend (ex. front sur Vercel + backend ailleurs). En compose,
+le front et l'API sont en **même origine** (nginx) → CORS inutile. Valeurs sensibles (clé DECSIN, etc.)
+**toujours par variables d'environnement de la plateforme**, jamais en dur.
+
+## Déploiement en ligne (HTTPS)
+- **PaaS conteneurs** (Railway / Render / Fly.io) : déployer chaque image (`reco`, `backend`, `front`)
+  comme un service ; brancher les variables d'env (cf. `.env.example`) ; **le TLS/HTTPS est géré par la
+  plateforme**. Régler `RECO_BASE_URL` sur l'URL interne du service reco, et — si le front est sur un
+  domaine distinct du backend — `CORS_ALLOWED_ORIGINS` = l'origine du front + `VITE_API_BASE_URL` au build.
+  ⚠️ **RECO consomme beaucoup de RAM** (modèles ML) → choisir une instance suffisamment dotée (≥ 2–4 Go).
+- **VPS** : `docker compose -f docker-compose.full.yml up -d` derrière un reverse proxy **HTTPS
+  automatique** — voir **`deploy/Caddyfile`** (Caddy, certificat Let's Encrypt auto ; un seul domaine
+  suffit, le backend reste interne). Alternative : Traefik (labels) — même principe.
+
+## Récap des livrables Étage 2
+`frontend/Dockerfile`, `frontend/nginx.conf`, `backend/Dockerfile`, `docker-compose.full.yml`,
+`.env.example` (racine), `deploy/Caddyfile`, et le CORS configurable (`CORS_ALLOWED_ORIGINS`) côté backend.
+

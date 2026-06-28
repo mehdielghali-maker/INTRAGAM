@@ -1,0 +1,25 @@
+# Reverse proxy HTTPS AUTOMATIQUE (Caddy) — OPTION VPS (Étage 2). Remplacer le domaine.
+# Caddy obtient et renouvelle seul le certificat TLS (Let's Encrypt). Le front (nginx) proxifie déjà
+# /api vers le backend : un SEUL domaine suffit, le backend reste interne (jamais exposé publiquement).
+#
+# Pour l'activer, ajouter ce service au docker-compose.full.yml (et retirer le mapping de port du front) :
+#
+#   caddy:
+#     image: caddy:2-alpine
+#     depends_on: [front]
+#     ports: ["80:80", "443:443"]
+#     volumes:
+#       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+#       - caddy-data:/data
+#       - caddy-config:/config
+#   volumes: { caddy-data: {}, caddy-config: {} }
+
+poste.mondomaine.dz {
+    encode zstd gzip
+    reverse_proxy front:80
+}
+
+# Variante 2 domaines (si l'API doit être exposée séparément — sinon inutile, nginx gère /api) :
+# api.mondomaine.dz {
+#     reverse_proxy backend:8080
+# }
