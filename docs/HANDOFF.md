@@ -2,16 +2,21 @@
 
 > Document de passation pour reprendre le travail dans une nouvelle session.
 > Voir aussi `CLAUDE.md` (règles projet) et `docs/adr/` (décisions).
+> _Dernière mise à jour : 2026-06-28._
 
 ## Où on en est
-- **Branche** : `feat/contexte-agence-versement` (PAS `main`).
+- **Branche** : `feat/IntraGAM250626EGM` (PAS `main`). Working tree propre, à jour avec `origin`.
+  Dernier commit : `f415522` (déclaration de sinistre + souscription auto).
 - **Remote** : `origin` = `https://github.com/mehdielghali-maker/INTRAGAM.git` (compte
-  `mehdielghali-maker`, authentifié via GitHub CLI `gh`). **PR ouverte : INTRAGAM#1**.
+  `mehdielghali-maker`, authentifié via GitHub CLI `gh`). **Ex-PR INTRAGAM#1 = FERMÉE**
+  (closed le 2026-06-25, après renommage de la branche) → **plus aucune PR ouverte à ce jour**.
   *(Le repo client `mtirchi/INTRAGAM` était inaccessible → repo créé sous le compte connecté.)*
-- **Tests** : `mvn verify` vert = **73 unitaires + 4 boucles d'intégration** Testcontainers.
-- **Dernier ajout** : **authentification par login/mot de passe** (page `/login`, comptes AGA
-  gérés en admin, compte admin avec e-mail de récupération, bouton SSO Microsoft désactivé —
-  cf. ADR 0008). ⚠️ commits à faire (voir plus bas).
+- **Tests** : back `mvn verify` vert = **73 unitaires + 4 boucles d'intégration** Testcontainers ;
+  modules front (Vitest) : déclaration **10 verts**, souscription **6 verts**.
+- **Derniers ajouts** (tous commités + poussés) : authentification login/mot de passe (ADR 0008),
+  **déclaration de sinistre** (ADR 0009) et **souscription auto** (ADR 0010) — PWA mobile-first à
+  deux faces, socle de capture partagé `@sinistre-ui` rendu générique (piloté par catalogue).
+  Détails dans les sections dédiées ci-dessous.
 
 ## Connexion (nouveau — ADR 0008)
 - **Page `/login`** : login + mot de passe (admin ou AGA) ; bouton « Se connecter avec Microsoft »
@@ -60,7 +65,9 @@ cd frontend && npm run dev                           # UI  :5173
 ```
 ⚠️ curl sous Git Bash : **pas d'accents dans le JSON** (corrompus → HTTP 400).
 
-## Ce qui a été fait cette session (résumé des commits)
+## Historique — session « contexte d'agence + versement » (résumé des commits)
+> _Travaux antérieurs. L'auth (ADR 0008), la déclaration (0009) et la souscription (0010)
+> sont décrites dans leurs sections dédiées plus haut._
 1. **Contexte d'agence** transverse (`dz.gam.poste.contexte`) + rebranch accueil. Agence active
    en session serveur ; périmètre revérifié back (403 hors périmètre) ; écart accueil aligné
    sur **encaissé − versé** (calcul unique `shared.regularisation.EcartRegularisation`).
@@ -114,8 +121,12 @@ ADR ajoutés : 0005 (contexte d'agence), 0006 (versement), 0007 (indicateurs/Pow
 - `BoucleDpdIT` peut « flaker » (RabbitMQ Testcontainers) : c'est rejoué automatiquement, build vert.
 
 ## Prochaines pistes (au choix)
+- Implémenter les **fonctions placeholder** restantes (6) : Dépôt Situation Financière, Attestations,
+  Envois bureau d'ordre, Demande d'expertise, Suivi des échéanciers, Créances & contentieux
+  (pattern hexagonal + maquette `~/Downloads/Maquette_*.html`, cf. `CLAUDE.md`).
 - Brancher l'**adapter Power BI** réel (remplacer les `*StoreAdapter` d'`indicateursmock`, mêmes ports).
 - **Auth Entra ID** réelle (le contexte est prêt à recevoir utilisateur + périmètre + modules depuis les claims).
 - Gérer les **chiffres par agence dans le dashboard Admin** (aujourd'hui via `/api/mock/indicateurs`).
-- Implémenter les **fonctions placeholder** (Dépôt SF, Attestations, etc.).
-- **Merger la PR** INTRAGAM#1.
+- Démarrer la **couche IA GAMIA** (non commencée à ce jour).
+- Décider de la **stratégie de merge vers `main`** (aucune PR ouverte actuellement ; ouvrir une nouvelle
+  PR depuis `feat/IntraGAM250626EGM` ou merger en direct selon le besoin client).
