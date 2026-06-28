@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   catalogueSouscription,
   CODE_OTP_AGENT,
@@ -10,6 +10,7 @@ import {
   Souscription,
 } from '@souscription';
 import { ApercusControle, identifiant, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { creerAutoEnregistrement } from '@dossier';
 import { ajouterPiece, enregistrerSouscriptionLocale, getSouscriptionLocale, piecesDe, supprimerPiece } from './offline/db';
 import { demanderPersistance } from './offline/persist';
 import { activerSyncAuto, synchroniser } from './offline/sync';
@@ -125,6 +126,23 @@ export default function App() {
     setSouscription((s) => (s ? { ...s, assure: { ...s.assure, [champ]: valeur } } : s));
   }
 
+  // Auto-enregistrement DÉBOUNCÉ (anti-perte) : sauvegarde le brouillon local à chaque modification
+  // des champs (étapes de saisie). Les photos sont déjà persistées immédiatement (Dexie). N'écrase pas
+  // un dossier déjà envoyé (étape 6).
+  const autoRef = useRef(
+    creerAutoEnregistrement<Souscription>(async (s) => {
+      await enregistrerSouscriptionLocale(s, 'brouillon');
+    }, 800),
+  );
+  useEffect(() => {
+    if (!souscriptionEnCours || etape < 3 || etape > 5) return;
+    autoRef.current.planifier(souscriptionEnCours);
+  }, [souscriptionEnCours, etape]);
+  useEffect(() => {
+    const auto = autoRef.current;
+    return () => auto.flush();
+  }, []);
+
   async function prereremplirOcr() {
     const cni = pieces.find((p) => p.type === 'cni_recto');
     if (!cni?.dataUrl) {
@@ -137,7 +155,8 @@ export default function App() {
 
   async function envoyer() {
     if (!souscriptionEnCours) return;
-    await enregistrerSouscriptionLocale({ ...souscriptionEnCours, pieces }, 'en_attente');
+    // À l'enregistrement, le dossier passe « à valider » (la synchro GAM le finalise → VALIDEE).
+    await enregistrerSouscriptionLocale({ ...souscriptionEnCours, pieces, statut: 'A_VALIDER' }, 'en_attente');
     if (navigator.onLine) {
       await synchroniser();
     }

@@ -105,6 +105,7 @@ export const souscriptionMock: SouscriptionPort = {
       const ref = references.find((r) => r.type === p.type);
       return ref ? { ...p, reference: ref.reference } : p;
     });
-    return upsert({ ...souscription, pieces, statut: 'ENREGISTREE' });
+    // « Enregistrer » = VALIDER : la souscription est finalisée côté GAM (terminal, verrouillé).
+    return upsert({ ...souscription, pieces, statut: 'VALIDEE' });
   },
 };

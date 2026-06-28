@@ -32,7 +32,9 @@ export const config: SouscriptionConfig = {
 };
 
 export const LIBELLES_STATUT: Record<string, string> = {
-  BROUILLON: 'En cours',
-  ENREGISTREE: 'Enregistrée',
-  INCOMPLETE: 'Incomplète',
+  BROUILLON: 'Brouillon',
+  LIEN_ENVOYE: 'Lien envoyé',
+  A_VALIDER: 'À valider',
+  RELANCE: 'Relancé',
+  VALIDEE: 'Enregistrée',
 };

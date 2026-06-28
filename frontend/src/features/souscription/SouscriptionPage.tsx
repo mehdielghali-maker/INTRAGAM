@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { brouillonsLocaux, Souscription } from '@souscription';
 import NouvelleSouscriptionTab from './NouvelleSouscriptionTab';
 import SuiviSouscriptionsTab from './SuiviSouscriptionsTab';
 import '../sinistre/sinistre.css';
@@ -9,28 +11,44 @@ const LIST = 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01';
 type Onglet = 'suivi' | 'nouvelle';
 
 /**
- * Souscription auto — face AGA. Frise du flux (Police → Pièces → Contrôle → Enregistrée) +
- * onglets « Suivi » et « Nouvelle souscription ». Réutilise le design de la feature sinistre.
+ * Souscription auto — face AGA. Modèle PRÉSENTIEL par défaut : l'AGA saisit en agence et peut
+ * enregistrer en BROUILLON (reprise possible), puis valide → enregistrement GAM. Réutilise le
+ * design de la feature sinistre.
  */
 export default function SouscriptionPage() {
   const [onglet, setOnglet] = useState<Onglet>('suivi');
+  const [brouillonEdit, setBrouillonEdit] = useState<Souscription | null>(null);
+  const [params, setParams] = useSearchParams();
+
+  // Reprise d'un brouillon via ?reprendre=<idLocal> (depuis le suivi ou le détail).
+  useEffect(() => {
+    const id = params.get('reprendre');
+    if (!id) return;
+    void brouillonsLocaux.obtenir(id).then((b) => {
+      if (b) {
+        setBrouillonEdit(b);
+        setOnglet('nouvelle');
+      }
+      params.delete('reprendre');
+      setParams(params, { replace: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   return (
     <section className="sinistre">
       <div className="page-h">Souscription auto</div>
       <p className="page-sub">
-        Recherchez une police, capturez les pièces (CNI, permis, carte grise, photos du véhicule)
-        puis contrôlez la complétude avant d'enregistrer la souscription.
+        Cas normal : le client se présente à l'agence, l'AGA recherche la police et saisit la
+        souscription (brouillon possible), contrôle puis valide → enregistrement GAM.
       </p>
 
       <div className="flow-strip">
-        <div className="flow-step"><span className="s">1 · Police</span><span className="src">recherche & sélection</span></div>
+        <div className="flow-step"><span className="s">1 · Brouillon</span><span className="src">saisie AGA en agence (présentiel)</span></div>
         <span className="flow-arrow">→</span>
-        <div className="flow-step"><span className="s">2 · Pièces</span><span className="src">CNI · permis · carte grise · photos</span></div>
+        <div className="flow-step"><span className="s">2 · À valider</span><span className="src">dossier complet, contrôle AGA</span></div>
         <span className="flow-arrow">→</span>
-        <div className="flow-step"><span className="s">3 · Contrôle</span><span className="src">complétude</span></div>
-        <span className="flow-arrow">→</span>
-        <div className="flow-step"><span className="s">4 · Enregistrée</span><span className="src">transmise à GAM</span></div>
+        <div className="flow-step"><span className="s">3 · Enregistrée</span><span className="src">validée · transmise à GAM</span></div>
       </div>
 
       <div className="tabs">
@@ -38,13 +56,20 @@ export default function SouscriptionPage() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d={LIST} /></svg>
           Suivi des souscriptions
         </button>
-        <button className={`tab-btn ${onglet === 'nouvelle' ? 'active' : ''}`} onClick={() => setOnglet('nouvelle')}>
+        <button
+          className={`tab-btn ${onglet === 'nouvelle' ? 'active' : ''}`}
+          onClick={() => { setBrouillonEdit(null); setOnglet('nouvelle'); }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}><path d={PLUS} /></svg>
           Nouvelle souscription
         </button>
       </div>
 
-      {onglet === 'suivi' ? <SuiviSouscriptionsTab /> : <NouvelleSouscriptionTab />}
+      {onglet === 'suivi' ? (
+        <SuiviSouscriptionsTab />
+      ) : (
+        <NouvelleSouscriptionTab brouillonInitial={brouillonEdit} onFini={() => setBrouillonEdit(null)} />
+      )}
     </section>
   );
 }

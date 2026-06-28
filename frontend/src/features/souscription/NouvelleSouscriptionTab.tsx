@@ -1,10 +1,19 @@
 import { FormEvent, useState } from 'react';
-import { Entite, souscription } from '@souscription';
+import { Entite, souscription, Souscription } from '@souscription';
 import { useAgence } from '../../app/AgencyContext';
 import SouscriptionStepper from './SouscriptionStepper';
 
-/** Onglet « Nouvelle souscription » : recherche de la police puis parcours guidé. */
-export default function NouvelleSouscriptionTab() {
+/**
+ * Onglet « Nouvelle souscription » : PRÉSENTIEL par défaut — l'AGA recherche la police puis saisit
+ * (brouillon possible). Sait aussi REPRENDRE un brouillon existant (prop `brouillonInitial`).
+ */
+export default function NouvelleSouscriptionTab({
+  brouillonInitial,
+  onFini,
+}: {
+  brouillonInitial?: Souscription | null;
+  onFini?: () => void;
+} = {}) {
   const { contexte } = useAgence();
   const consolide = contexte?.consolideActif ?? false;
   const agenceActive = contexte?.agenceActive ?? undefined;
@@ -34,6 +43,30 @@ export default function NouvelleSouscriptionTab() {
     setResultats(null);
     setNumeroPolice('');
     setNomClient('');
+    onFini?.();
+  }
+
+  // --- REPRISE d'un brouillon : ouvre directement le stepper pré-rempli ------------------------
+  if (brouillonInitial) {
+    const entiteBrouillon: Entite = {
+      numeroPolice: brouillonInitial.numeroPolice,
+      nomClient: brouillonInitial.nomClient,
+      codeBranche: brouillonInitial.codeBranche,
+      libelleBranche: brouillonInitial.libelleBranche ?? 'Automobile',
+      codeSousBranche: brouillonInitial.codeSousBranche,
+      libelleSousBranche: brouillonInitial.libelleSousBranche,
+      marque: brouillonInitial.vehicule.marque,
+      immatriculation: brouillonInitial.vehicule.immatriculation,
+    };
+    return (
+      <div className="form-card">
+        <div className="sec-head">
+          <h3>Reprise du brouillon {brouillonInitial.reference}</h3>
+          <button type="button" className="btn-ghost" onClick={() => onFini?.()}>Annuler la reprise</button>
+        </div>
+        <SouscriptionStepper entite={entiteBrouillon} agence={brouillonInitial.agence} brouillon={brouillonInitial} onTermine={terminer} />
+      </div>
+    );
   }
 
   return (

@@ -30,6 +30,7 @@ export default defineConfig({
     alias: {
       '@souscription': fileURLToPath(new URL('../../shared/souscription', import.meta.url)),
       '@sinistre-ui': fileURLToPath(new URL('../../shared/sinistre-ui', import.meta.url)),
+      '@dossier': fileURLToPath(new URL('../../shared/dossier', import.meta.url)),
     },
   },
   server: { port: 5175 },

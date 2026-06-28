@@ -1,40 +1,96 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  brouillonsLocaux,
   catalogueSouscription,
   Entite,
   genererReference,
   peutEnvoyer,
+  piecesManquantes,
   Piece,
   souscription,
   Souscription,
 } from '@souscription';
-import { ApercusControle, identifiant, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { ApercusControle, definition, identifiant, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { creerAutoEnregistrement } from '@dossier';
 
 type Etape = 1 | 2 | 3;
 
 /**
- * Parcours guidé de souscription auto (AGA, après sélection d'une police) : produit & assuré
- * (pré-remplissage OCR — seam) → capture des pièces (socle partagé, catalogue souscription) →
- * contrôle de complétude → enregistrement.
+ * Parcours de souscription auto (AGA, PRÉSENTIEL par défaut) : produit & assuré (OCR seam) → pièces
+ * → contrôle. Enregistrable en BROUILLON à tout moment + AUTO-SAVE débouncé (anti-perte). La VALIDATION
+ * (enregistrement GAM) n'est possible qu'une fois complet et envoie seule le dossier (un brouillon reste
+ * LOCAL). Reprise possible via la prop `brouillon`.
  */
 export default function SouscriptionStepper({
   entite,
   agence,
   onTermine,
+  brouillon,
 }: {
   entite: Entite;
   agence?: { code: string; nom: string };
   onTermine: (message: string) => void;
+  brouillon?: Souscription;
 }) {
   const [etape, setEtape] = useState<Etape>(1);
-  const [prenom, setPrenom] = useState('');
-  const [nom, setNom] = useState(entite.nomClient);
-  const [numeroCni, setNumeroCni] = useState('');
-  const [telephone, setTelephone] = useState('');
-  const [immatriculation, setImmat] = useState(entite.immatriculation ?? '');
-  const [marque, setMarque] = useState(entite.marque ?? '');
-  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [prenom, setPrenom] = useState(brouillon?.assure.prenom ?? '');
+  const [nom, setNom] = useState(brouillon?.assure.nom ?? entite.nomClient);
+  const [numeroCni, setNumeroCni] = useState(brouillon?.assure.numeroCni ?? '');
+  const [telephone, setTelephone] = useState(brouillon?.assure.telephone ?? '');
+  const [immatriculation, setImmat] = useState(brouillon?.vehicule.immatriculation ?? entite.immatriculation ?? '');
+  const [marque, setMarque] = useState(brouillon?.vehicule.marque ?? entite.marque ?? '');
+  const [pieces, setPieces] = useState<Piece[]>(brouillon?.pieces ?? []);
   const [message, setMessage] = useState<string | null>(null);
+  const [enregistre, setEnregistre] = useState(false);
+
+  // Identité STABLE : reprise d'un brouillon, ou nouvelle générée une seule fois.
+  const idLocalRef = useRef(brouillon?.idLocal ?? identifiant('s'));
+  const referenceRef = useRef(brouillon?.reference ?? genererReference());
+
+  const complet = peutEnvoyer(pieces);
+  const manquantes = piecesManquantes(pieces);
+
+  function construire(statut: Souscription['statut']): Souscription {
+    return {
+      idLocal: idLocalRef.current,
+      reference: referenceRef.current,
+      typeProduit: 'AUTO',
+      codeBranche: entite.codeBranche,
+      libelleBranche: entite.libelleBranche,
+      codeSousBranche: entite.codeSousBranche,
+      libelleSousBranche: entite.libelleSousBranche,
+      numeroPolice: entite.numeroPolice,
+      nomClient: entite.nomClient,
+      assure: { prenom, nom, numeroCni, telephone },
+      vehicule: { immatriculation, marque },
+      pieces,
+      statut,
+      origine: 'AGA',
+      agence,
+      dateSaisie: brouillon?.dateSaisie ?? new Date().toISOString().slice(0, 10),
+    };
+  }
+
+  // Auto-enregistrement DÉBOUNCÉ (anti-perte) : sauvegarde le brouillon LOCAL à chaque modification.
+  const autoRef = useRef(
+    creerAutoEnregistrement<Souscription>(async (s) => {
+      await brouillonsLocaux.enregistrer(s);
+      setEnregistre(true);
+    }, 800),
+  );
+  useEffect(() => {
+    const aDuContenu =
+      Boolean(brouillon) ||
+      Boolean(prenom || numeroCni.trim() || telephone.trim() || immatriculation.trim() || marque.trim() || pieces.length);
+    if (!aDuContenu) return;
+    setEnregistre(false);
+    autoRef.current.planifier(construire('BROUILLON'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prenom, nom, numeroCni, telephone, immatriculation, marque, pieces]);
+  useEffect(() => {
+    const auto = autoRef.current;
+    return () => auto.flush();
+  }, []);
 
   function ajouter(p: PieceCapturee) {
     setPieces((prev) => [...prev.filter((x) => x.type !== p.type), p as Piece]);
@@ -57,34 +113,29 @@ export default function SouscriptionStepper({
     setMessage('Champs pré-remplis depuis la CNI (OCR — données de démo).');
   }
 
-  function construire(): Souscription {
-    return {
-      idLocal: identifiant('s'),
-      reference: genererReference(),
-      typeProduit: 'AUTO',
-      codeBranche: entite.codeBranche,
-      libelleBranche: entite.libelleBranche,
-      codeSousBranche: entite.codeSousBranche,
-      libelleSousBranche: entite.libelleSousBranche,
-      numeroPolice: entite.numeroPolice,
-      nomClient: entite.nomClient,
-      assure: { prenom, nom, numeroCni, telephone },
-      vehicule: { immatriculation, marque },
-      pieces,
-      statut: 'BROUILLON',
-      agence,
-    };
+  async function enregistrerBrouillon() {
+    autoRef.current.annuler();
+    await brouillonsLocaux.enregistrer(construire('BROUILLON'));
+    onTermine(`Brouillon ${referenceRef.current} enregistré — vous pourrez le reprendre depuis le suivi.`);
   }
 
-  async function enregistrer() {
-    const s = await souscription.creerSouscription(construire());
+  async function valider() {
+    autoRef.current.annuler();
+    const s = construire('A_VALIDER');
     if (!navigator.onLine) {
-      onTermine(`Souscription ${s.reference} enregistrée hors-ligne — transmise à la reconnexion.`);
+      await souscription.creerSouscription(s);
+      await brouillonsLocaux.supprimer(idLocalRef.current);
+      onTermine(`Souscription ${s.reference} enregistrée hors-ligne — finalisée à la reconnexion.`);
       return;
     }
     const enregistree = await souscription.enregistrerSouscription(s, []);
-    onTermine(`Souscription ${enregistree.reference} enregistrée pour ${entite.nomClient}.`);
+    await brouillonsLocaux.supprimer(idLocalRef.current);
+    onTermine(`Souscription ${enregistree.reference} validée et enregistrée pour ${entite.nomClient}.`);
   }
+
+  const boutonBrouillon = (
+    <button type="button" className="btn-ghost" onClick={enregistrerBrouillon}>Enregistrer en brouillon</button>
+  );
 
   return (
     <div>
@@ -93,6 +144,9 @@ export default function SouscriptionStepper({
           <span key={n} className={`sin-pdot ${etape >= (n as Etape) ? 'on' : ''}`} />
         ))}
       </div>
+      <p className="hint" style={{ marginTop: -6 }}>
+        Saisie par l'AGA (présentiel). {enregistre ? 'Brouillon enregistré automatiquement ✓' : 'Enregistrement automatique anti-perte.'}
+      </p>
 
       {message && <p style={{ color: 'var(--vert)', fontWeight: 600, marginBottom: 10 }}>{message}</p>}
 
@@ -110,7 +164,7 @@ export default function SouscriptionStepper({
             <div className="field"><label>Immatriculation</label><input value={immatriculation} onChange={(e) => setImmat(e.target.value)} /></div>
             <div className="field"><label>Marque / modèle</label><input value={marque} onChange={(e) => setMarque(e.target.value)} /></div>
           </div>
-          <div className="form-actions"><button className="btn-primary" onClick={() => setEtape(2)}>Continuer vers les pièces</button></div>
+          <div className="form-actions">{boutonBrouillon}<button className="btn-primary" onClick={() => setEtape(2)}>Continuer vers les pièces</button></div>
         </div>
       )}
 
@@ -121,6 +175,7 @@ export default function SouscriptionStepper({
           <div className="form-actions">
             <button className="btn-ghost" onClick={() => setEtape(1)}>Retour</button>
             <button className="btn-ghost" onClick={prereremplirOcr}>Pré-remplir l'assuré (OCR)</button>
+            {boutonBrouillon}
             <button className="btn-primary" onClick={() => setEtape(3)}>Contrôler</button>
           </div>
         </div>
@@ -128,12 +183,19 @@ export default function SouscriptionStepper({
 
       {etape === 3 && (
         <div>
-          <div className="sec-head"><h3>Contrôle &amp; enregistrement</h3></div>
+          <div className="sec-head"><h3>Contrôle &amp; validation</h3></div>
           <ApercusControle catalogue={catalogueSouscription} contexte={{}} pieces={pieces} />
           <div className="form-actions">
             <button className="btn-ghost" onClick={() => setEtape(2)}>Retour aux pièces</button>
-            <button className="btn-primary" disabled={!peutEnvoyer(pieces)} onClick={enregistrer}>Enregistrer la souscription</button>
+            {boutonBrouillon}
+            <button className="btn-primary" disabled={!complet} onClick={valider}>Valider la souscription</button>
           </div>
+          {!complet && (
+            <p className="hint" style={{ marginTop: 6 }}>
+              Validation impossible — pièces obligatoires manquantes :{' '}
+              {manquantes.map((t) => definition(catalogueSouscription, t)?.libelle ?? t).join(', ')}.
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,8 @@
 // Inspiré du principe de l'app « UNF Expert GAM » (recherche police → produit → capture+OCR →
 // enregistrement métadonnées + pièces). Backend GAM (/SecGam/*) derrière un adaptateur mock↔réel.
 
+import type { OrigineDossier, StatutDossier } from '../dossier/etats';
+
 /** Produit souscrit — AUTO pour l'instant (architecture extensible). */
 export type TypeProduit = 'AUTO';
 
@@ -26,7 +28,11 @@ export type TypePieceSouscription =
   | 'veh_vin'
   | 'veh_interieur';
 
-export type StatutSouscription = 'BROUILLON' | 'ENREGISTREE' | 'INCOMPLETE';
+/**
+ * Machine à états métier UNIFIÉE (socle @dossier) : présentiel par défaut.
+ * BROUILLON · LIEN_ENVOYE (exception distant) · A_VALIDER · RELANCE · VALIDEE (enregistrée GAM, verrouillée).
+ */
+export type StatutSouscription = StatutDossier;
 export type StatutSync = 'brouillon' | 'en_attente' | 'synchronise' | 'erreur';
 
 /** Pièce capturée (même forme que les autres domaines / le socle). */
@@ -110,8 +116,12 @@ export interface Souscription {
   vehicule: VehiculeContrat;
   pieces: Piece[];
   statut: StatutSouscription;
+  /** Présentiel (AGA en agence, défaut) ou client à distance (lien). */
+  origine?: OrigineDossier;
   dateSaisie?: string;
   agence?: { code: string; nom: string };
+  /** Côté client (face distante) : contact pour le lien. */
+  client?: { nom: string; telephone: string; email?: string };
 }
 
 /** Référence d'un fichier uploadé (flux 2 temps). */

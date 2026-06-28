@@ -13,4 +13,5 @@ export * from './types';
 export { config, LIBELLES_STATUT } from './config';
 export { catalogueSouscription, peutEnvoyer, piecesManquantes, REQUIS } from './piecesSouscription';
 export { CODE_OTP_AGENT, genererReference } from './souscriptionMock';
+export { brouillonsLocaux } from './brouillonsLocaux';
 export type { SouscriptionPort, CriteresRecherche } from './souscriptionPort';

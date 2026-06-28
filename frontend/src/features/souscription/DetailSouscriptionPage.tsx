@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { catalogueSouscription, peutEnvoyer, souscription, Souscription } from '@souscription';
+import { brouillonsLocaux, catalogueSouscription, peutEnvoyer, souscription, Souscription } from '@souscription';
 import { ApercusControle, VerificationPlaque } from '@sinistre-ui';
 import StatutSouscriptionBadge from './StatutSouscriptionBadge';
 import '../sinistre/sinistre.css';
@@ -13,8 +13,9 @@ export default function DetailSouscriptionPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
-    const liste = await souscription.getSouscriptions();
-    setS(liste.find((x) => x.idLocal === idLocal) ?? null);
+    // Un brouillon présentiel vit en local ; les autres dans GAM.
+    const [brouillons, envoyees] = await Promise.all([brouillonsLocaux.lister(), souscription.getSouscriptions()]);
+    setS([...brouillons, ...envoyees].find((x) => x.idLocal === idLocal) ?? null);
   }, [idLocal]);
 
   useEffect(() => {
@@ -34,14 +35,14 @@ export default function DetailSouscriptionPage() {
 
   async function enregistrer() {
     if (!s) return;
-    const e = await souscription.enregistrerSouscription(s, []);
-    setMessage(`Souscription ${e.reference} enregistrée.`);
+    const e = await souscription.enregistrerSouscription({ ...s, statut: 'A_VALIDER' }, []);
+    setMessage(`Souscription ${e.reference} validée et enregistrée.`);
     await charger();
   }
-  async function marquerIncomplete() {
+  async function renvoyer() {
     if (!s) return;
-    await souscription.creerSouscription({ ...s, statut: 'INCOMPLETE' });
-    setMessage('Souscription marquée incomplète.');
+    await souscription.creerSouscription({ ...s, statut: 'RELANCE' });
+    setMessage('Souscription renvoyée au client pour correction.');
     await charger();
   }
 
@@ -63,11 +64,20 @@ export default function DetailSouscriptionPage() {
 
       <VerificationPlaque pieces={s.pieces} immatriculation={s.vehicule.immatriculation} />
 
-      {s.statut !== 'ENREGISTREE' && (
+      {s.statut === 'BROUILLON' && (
         <div className="form-actions">
-          <button className="btn-primary" disabled={!complet} onClick={enregistrer}>Enregistrer la souscription</button>
-          <button className="btn-ghost" onClick={marquerIncomplete}>Marquer incomplète</button>
-          {!complet && <span className="hint">Enregistrement impossible : pièces obligatoires manquantes.</span>}
+          <button className="btn-primary" onClick={() => navigate(`/souscription-auto?reprendre=${encodeURIComponent(s.idLocal)}`)}>
+            Reprendre la saisie
+          </button>
+          <span className="hint">Brouillon présentiel — non transmis à GAM tant qu'il n'est pas validé.</span>
+        </div>
+      )}
+
+      {s.statut === 'A_VALIDER' && (
+        <div className="form-actions">
+          <button className="btn-primary" disabled={!complet} onClick={enregistrer}>Valider la souscription</button>
+          <button className="btn-ghost" onClick={renvoyer}>Renvoyer au client</button>
+          {!complet && <span className="hint">Validation impossible : pièces obligatoires manquantes.</span>}
         </div>
       )}
     </section>
