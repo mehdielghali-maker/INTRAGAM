@@ -1,7 +1,11 @@
 import { FormEvent, useState } from 'react';
-import { Entite, souscription, Souscription } from '@souscription';
+import { Entite, genererReference, souscription, Souscription } from '@souscription';
+import { identifiant } from '@sinistre-ui';
 import { useAgence } from '../../app/AgencyContext';
 import SouscriptionStepper from './SouscriptionStepper';
+
+type Mode = 'saisie' | 'lien';
+const URL_CLIENT = (import.meta.env.VITE_SOUSCRIPTION_CLIENT_URL as string) || 'http://localhost:5176';
 
 /**
  * Onglet « Nouvelle souscription » : PRÉSENTIEL par défaut — l'AGA recherche la police puis saisit
@@ -22,8 +26,38 @@ export default function NouvelleSouscriptionTab({
   const [nomClient, setNomClient] = useState('');
   const [resultats, setResultats] = useState<Entite[] | null>(null);
   const [choisie, setChoisie] = useState<Entite | null>(null);
+  const [mode, setMode] = useState<Mode>('saisie');
+  const [clientNom, setClientNom] = useState('');
+  const [clientTel, setClientTel] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [lienGenere, setLienGenere] = useState<{ reference: string; url: string } | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  async function genererLien() {
+    setErreur(null);
+    if (consolide) {
+      setErreur('Action impossible en vue consolidée : sélectionnez une agence.');
+      return;
+    }
+    if (!clientNom.trim() || !clientTel.trim() || !choisie) {
+      setErreur('Nom et téléphone du client sont obligatoires.');
+      return;
+    }
+    const reference = genererReference();
+    const s: Souscription = {
+      idLocal: identifiant('s'), reference, typeProduit: 'AUTO',
+      codeBranche: choisie.codeBranche, libelleBranche: choisie.libelleBranche,
+      codeSousBranche: choisie.codeSousBranche, libelleSousBranche: choisie.libelleSousBranche,
+      numeroPolice: choisie.numeroPolice, nomClient: choisie.nomClient,
+      assure: { nom: choisie.nomClient }, vehicule: { immatriculation: choisie.immatriculation, marque: choisie.marque },
+      pieces: [], statut: 'LIEN_ENVOYE', origine: 'CLIENT',
+      agence: agenceActive ? { code: agenceActive.code, nom: agenceActive.nom } : undefined,
+      client: { nom: clientNom.trim(), telephone: clientTel.trim(), email: clientEmail.trim() || undefined },
+    };
+    await souscription.creerSouscription(s);
+    setLienGenere({ reference, url: `${URL_CLIENT}/?reference=${encodeURIComponent(reference)}` });
+  }
 
   async function rechercher(e: FormEvent) {
     e.preventDefault();
@@ -107,15 +141,54 @@ export default function NouvelleSouscriptionTab({
       )}
 
       {choisie && (
-        consolide ? (
-          <p className="bloc-msg">Action impossible en vue consolidée : sélectionnez une agence.</p>
-        ) : (
-          <SouscriptionStepper
-            entite={choisie}
-            agence={agenceActive ? { code: agenceActive.code, nom: agenceActive.nom } : undefined}
-            onTermine={terminer}
-          />
-        )
+        <>
+          <div className="sec-head"><h3>Mode de souscription</h3></div>
+          <div className="seg">
+            <button type="button" className={mode === 'saisie' ? 'active' : ''} onClick={() => setMode('saisie')}>Je saisis (présentiel)</button>
+            <button type="button" className={mode === 'lien' ? 'active' : ''} onClick={() => setMode('lien')}>Envoyer un lien (à distance)</button>
+          </div>
+          <p className="hint" style={{ marginTop: -2 }}>
+            {mode === 'saisie'
+              ? 'Cas normal : le client est en agence, vous saisissez et pouvez enregistrer en brouillon.'
+              : 'Exception : seulement si le client ne peut pas se déplacer.'}
+          </p>
+
+          {mode === 'saisie' ? (
+            consolide ? (
+              <p className="bloc-msg">Action impossible en vue consolidée : sélectionnez une agence.</p>
+            ) : (
+              <SouscriptionStepper
+                entite={choisie}
+                agence={agenceActive ? { code: agenceActive.code, nom: agenceActive.nom } : undefined}
+                onTermine={terminer}
+              />
+            )
+          ) : (
+            <div>
+              <div className="sec-head"><h3>Identification du client</h3></div>
+              <div className="grid3">
+                <div className="field"><label>Nom <span className="req">*</span></label><input value={clientNom} onChange={(e) => setClientNom(e.target.value)} /></div>
+                <div className="field"><label>Téléphone <span className="req">*</span></label><input value={clientTel} onChange={(e) => setClientTel(e.target.value)} /></div>
+                <div className="field"><label>Email <span className="opt">— facultatif</span></label><input value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} /></div>
+              </div>
+              {!lienGenere ? (
+                <div className="form-actions"><button type="button" className="btn-primary" onClick={genererLien}>Générer le lien</button></div>
+              ) : (
+                <div className="link-box" style={{ marginTop: 16 }}>
+                  <div className="code-chip">Réf. : {lienGenere.reference}</div>
+                  <div className="link-row">
+                    <input className="link-url" value={lienGenere.url} readOnly />
+                    <button type="button" className="btn-ghost" onClick={() => navigator.clipboard?.writeText(lienGenere.url)}>Copier</button>
+                  </div>
+                  <div className="send-btns">
+                    <a className="btn-primary" href={`sms:${clientTel}?body=${encodeURIComponent('Souscription GAM : ' + lienGenere.url)}`}>Envoyer par SMS</a>
+                    <a className="btn-ghost" href={`mailto:${clientEmail}?subject=Souscription auto&body=${encodeURIComponent(lienGenere.url)}`}>Envoyer par email</a>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

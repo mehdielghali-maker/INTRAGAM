@@ -5,6 +5,7 @@ import {
   ChampsOcr,
   Entite,
   FiltreSouscription,
+  LoginClientResponse,
   PreEntite,
   ReferenceFichier,
   SessionAgent,
@@ -22,6 +23,8 @@ export interface CriteresRecherche {
 export interface SouscriptionPort {
   /** Authentification agent (login/mot de passe + OTP). */
   loginAgent(login: string, motDePasse: string, otp?: string): Promise<SessionAgent>;
+  /** Authentification CLIENT (face distante : téléphone + code SMS, sur un lien envoyé par l'AGA). */
+  loginClient(telephone: string, code: string): Promise<LoginClientResponse>;
   /** Recherche d'entité police/contrat (rechercheEntiteGam). */
   rechercheEntite(criteres: CriteresRecherche): Promise<Entite[]>;
   /** Pré-entités candidates pour un type de produit (listePreEntitesGAM). */

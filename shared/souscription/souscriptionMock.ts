@@ -62,6 +62,13 @@ export const souscriptionMock: SouscriptionPort = {
     return { code: 0, message: 'OK', codeAgent: 'AG-MOCK', nomAgent: 'Agent GAM' };
   },
 
+  async loginClient(_telephone, code) {
+    if (code !== CODE_OTP_AGENT) {
+      return { code: 401, message: 'Code incorrect', nomClient: '' };
+    }
+    return { code: 0, message: 'OK' };
+  },
+
   async rechercheEntite(criteres: CriteresRecherche) {
     const np = criteres.numeroPolice?.trim().toLowerCase();
     const nom = criteres.nomClient?.trim().toLowerCase();

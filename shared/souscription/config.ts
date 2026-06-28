@@ -8,6 +8,7 @@ interface EnvBrut {
   VITE_SOUSCRIPTION_API_KEY_HEADER?: string;
   VITE_SESSION_AGENT_JOURS?: string;
   VITE_CODE_PREFIXE?: string;
+  VITE_SOUSCRIPTION_CLIENT_URL?: string;
 }
 
 const env: EnvBrut = (typeof import.meta !== 'undefined' && (import.meta as { env?: EnvBrut }).env) || {};
@@ -19,6 +20,7 @@ export interface SouscriptionConfig {
   apiKeyHeader: string;
   sessionAgentJours: number;
   codePrefixe: string;
+  clientUrl: string;
 }
 
 export const config: SouscriptionConfig = {
@@ -29,6 +31,8 @@ export const config: SouscriptionConfig = {
   apiKeyHeader: env.VITE_SOUSCRIPTION_API_KEY_HEADER || 'X-Api-Key',
   sessionAgentJours: Number(env.VITE_SESSION_AGENT_JOURS) || 7,
   codePrefixe: env.VITE_CODE_PREFIXE || 'SCR',
+  // URL de la PWA cliente (lien envoyé par l'AGA quand le client ne peut pas se déplacer).
+  clientUrl: env.VITE_SOUSCRIPTION_CLIENT_URL || 'http://localhost:5176',
 };
 
 export const LIBELLES_STATUT: Record<string, string> = {

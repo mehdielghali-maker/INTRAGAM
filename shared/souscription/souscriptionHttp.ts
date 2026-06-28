@@ -4,7 +4,7 @@
 
 import { config } from './config';
 import { CriteresRecherche, SouscriptionPort } from './souscriptionPort';
-import { ChampsOcr, Entite, FiltreSouscription, PreEntite, SessionAgent, Souscription } from './types';
+import { ChampsOcr, Entite, FiltreSouscription, LoginClientResponse, PreEntite, SessionAgent, Souscription } from './types';
 
 function url(chemin: string): string {
   return new URL(chemin, config.baseUrl).toString();
@@ -36,6 +36,16 @@ export const souscriptionHttp: SouscriptionPort = {
       body: JSON.stringify({ login, motDePasse, otp }),
     });
     return lireJson<SessionAgent>(r);
+  },
+
+  async loginClient(telephone, code) {
+    // [DSI à confirmer] endpoint d'auth client (lien + double facteur).
+    const r = await fetch(url('SecGam/loginClientGam'), {
+      method: 'POST',
+      headers: entetes(),
+      body: JSON.stringify({ telephone, code }),
+    });
+    return lireJson<LoginClientResponse>(r);
   },
 
   async rechercheEntite(criteres: CriteresRecherche) {

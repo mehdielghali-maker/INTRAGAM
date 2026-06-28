@@ -73,6 +73,13 @@ export interface SessionAgent {
   nomAgent: string;
 }
 
+/** Réponse du login CLIENT (face distante : lien + double facteur téléphone + code). */
+export interface LoginClientResponse {
+  code: number; // 0 = OK
+  message: string;
+  nomClient?: string;
+}
+
 /** Champs pré-remplis par l'OCR (seam — non implémenté, mock figé). */
 export interface ChampsOcr {
   prenom?: string;
