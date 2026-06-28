@@ -61,6 +61,43 @@ Versement bancaire (preuve de paiement, ADR 0006).
 Restantes (placeholders) : Dépôt Situation Financière, Attestations, Envois bureau d'ordre,
 Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
 
+## Déclaration de sinistre (front + DECSIN, PWA — ADR 0009)
+Fonction **mobile-first** à **deux faces** demandant les mêmes pièces : **AGA** (feature
+`frontend/src/features/sinistre/`, hérite du contexte d'agence : saisie OU envoi de lien, suivi,
+**Valider → PROASSUR**) et **client** (PWA autonome `modules/declarations-sinistre/`, offline-first).
+Le backend de déclaration **existe déjà** (DECSIN) : **pas de contexte Java** ici. Tout passe par la
+couche partagée **`shared/decsin/`** (alias Vite `@decsin`) : port + **mock** (dev) / **HTTP réel**
+(`VITE_DECSIN_MODE=real`). PROASSUR (prefill/rattachement) via ce même adaptateur. **Rien en dur**
+(URL, clé d'API, paramètres → `.env`). Règle de pièces UNIQUE dans `shared/decsin/pieces.ts`
+(`peutEnvoyer`) : recto+verso constat + 4 faces ; assurance adverse si tiers. **Flux d'envoi 2 temps**
+(pièce→référence, puis déclaration) = base de la synchro offline (Dexie + Workbox côté client).
+**Deux mondes d'auth à NE PAS mélanger** : AGA = SSO/contexte (interne) ; client = lien + double
+facteur (téléphone + code), session locale persistée, déconnexion = purge du local. Le poste et la
+PWA client sont **installables** (vite-plugin-pwa). Détails : `modules/declarations-sinistre/README.md`.
+**Socle de capture PARTAGÉ** (`shared/sinistre-ui/`, alias `@sinistre-ui`) réutilisé par les 3 usages
+(AGA poste, AGA mobile, client) : véhicule = **5 vues** (sélecteur + silhouettes SVG en overlay,
+verbatim des maquettes ; toit FACULTATIF), capture caméra/galerie, écran de **contrôle** (complétude
+calculée + vignettes + lightbox). Côté AGA : page détail `/declaration-sinistre/:idLocal` (Valider →
+PROASSUR si complet / Renvoyer). **Validation différée** : capture hors-ligne, rattachement PROASSUR
+auto à la reconnexion (`aRattacher`). OCR : seam prévu (non implémenté).
+
+Le socle `@sinistre-ui` est **GÉNÉRIQUE** : piloté par un **Catalogue** (`shared/sinistre-ui/catalogue.ts`)
+— groupes, pièces, silhouettes, règle de complétude. Chaque domaine fournit son catalogue
+(`@decsin` → `catalogueDeclaration` ; `@souscription` → `catalogueSouscription`). Les `.tsx` de `shared/`
+résolvent React via `paths`/`@types/react` dans les tsconfig.
+
+## Souscription auto (front + GAM /SecGam, PWA agent — ADR 0010)
+Fonction **mobile-first** calquée sur la déclaration, d'après l'APK « UNF Expert GAM ». Domaine
+**`shared/souscription/`** (alias `@souscription`) : port + **mock**/**HTTP réel** (`VITE_SOUSCRIPTION_MODE`),
+endpoints `/SecGam/*` (`api2.gam.dz/APIS/api/v2`), envoi **2 temps** (`postFile`→`enregistrerSouscription`).
+**Produit AUTO** ; pièces obligatoires : CNI r/v + permis + carte grise + 4 faces véhicule (vues
+complémentaires + permis verso facultatifs) ; `catalogueSouscription` (8 vues). Deux accès : **section
+poste** `frontend/src/features/souscription/` (AGA, contexte d'agence — recherche police → stepper
+produit/assuré → capture → contrôle → enregistrer) et **PWA agent autonome** `modules/souscription-auto/`
+(offline Dexie, login agent + OTP, synchro 2 temps, installable). **OCR = seam non implémenté**
+(`getOcrData`, mock figé). Auth = monde **agent** (login/mdp + OTP), distinct du monde client. **Rien en
+dur** (`.env`). Détails : `modules/souscription-auto/README.md`.
+
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)
 Les KPI de l'accueil et la situation mensuelle du versement proviennent du module
 `dz.gam.poste.indicateursmock` : un **store persistant** (tables `mock_mesures_agence` /

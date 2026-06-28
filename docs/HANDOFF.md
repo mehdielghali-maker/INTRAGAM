@@ -27,6 +27,26 @@
 - ⚠️ Si la base contient déjà d'anciens profils (sans login), ils ne peuvent pas se connecter :
   leur définir login + mot de passe dans `/admin`, ou recréer la base docker.
 
+## Déclaration de sinistre (nouveau — ADR 0009)
+Fonction mobile-first **2 faces**, sans backend Java (DECSIN externe via adaptateur front).
+- **AGA** : feature `frontend/src/features/sinistre/` (nav « Déclaration de sinistre ») — saisie/lien,
+  suivi, **Valider → PROASSUR**. Le poste est désormais **installable** (PWA, vite-plugin-pwa).
+- **Client** : PWA autonome `modules/declarations-sinistre/` (offline-first, Dexie, synchro 2 temps).
+  Lancer : `cd modules/declarations-sinistre && npm install && npm run dev` → `http://localhost:5174/?code=DEC-7F3A-2026`
+  (OTP de démo : `0000`). Le lien généré par l'AGA pointe vers cette PWA (`VITE_CLIENT_URL`).
+- **Couche partagée** : `shared/decsin/` (alias `@decsin`), bascule mock↔réel `VITE_DECSIN_MODE`.
+  Tests : `cd modules/declarations-sinistre && npm test`. Détails : `modules/declarations-sinistre/README.md`.
+
+## Souscription auto (nouveau — ADR 0010)
+Calquée sur la déclaration, d'après l'APK « UNF Expert GAM ». Socle de capture `@sinistre-ui` rendu
+**générique** (piloté par un **catalogue**) ; nouveau domaine **`shared/souscription/`** (`@souscription`,
+port + mock/http `/SecGam/*`, bascule `VITE_SOUSCRIPTION_MODE`).
+- **Section poste** : `frontend/src/features/souscription/` (nav « Souscription auto ») — recherche police →
+  stepper (produit/assuré → capture → contrôle → enregistrer) + suivi + détail. Produit **AUTO**.
+- **PWA agent autonome** : `cd modules/souscription-auto && npm install && npm run dev` → `http://localhost:5175`
+  (login agent démo + **OTP `0000`**), offline-first. Pièces oblig. : CNI r/v + permis + carte grise + 4 faces.
+- Tests : `cd modules/souscription-auto && npm test`. Détails : `modules/souscription-auto/README.md`.
+
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
 ```bash

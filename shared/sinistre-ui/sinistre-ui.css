@@ -1,0 +1,98 @@
+/* Socle de capture partagé (AGA poste/mobile + client). Classes préfixées « sui- » pour ne
+   pas entrer en collision avec les styles propres à chaque app. Utilise les variables GAM
+   (--vert, --or…) définies globalement par les deux apps. */
+
+.sui-glabel { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; color: var(--vert); margin: 18px 0 9px; }
+.sui-glabel .cnt { color: var(--gris); font-weight: 500; text-transform: none; font-size: 11px; letter-spacing: 0; }
+
+/* viewfinder véhicule + silhouette overlay */
+.sui-frame { margin-bottom: 12px; }
+.sui-viewfinder { position: relative; background: #16161c; border-radius: 14px; height: 230px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.sui-viewfinder video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.sui-guide { position: relative; z-index: 2; width: 82%; max-height: 86%; display: flex; align-items: center; justify-content: center; }
+.sui-guide svg { width: 100%; height: auto; max-height: 190px; }
+.sui-corner { position: absolute; width: 22px; height: 22px; border: 3px solid var(--or); z-index: 3; }
+.sui-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; border-radius: 7px 0 0 0; }
+.sui-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; border-radius: 0 7px 0 0; }
+.sui-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; border-radius: 0 0 0 7px; }
+.sui-br { bottom: 12px; right: 12px; border-left: none; border-top: none; border-radius: 0 0 7px 0; }
+.sui-tag { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); background: rgba(201,169,97,.96); color: var(--vert-fonce); font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 11px; padding: 4px 13px; border-radius: 20px; z-index: 3; }
+.sui-cam { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 54px; height: 54px; border-radius: 50%; background: var(--or); color: var(--vert-fonce); border: 4px solid rgba(255,255,255,.85); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 3; }
+.sui-cam svg { width: 24px; height: 24px; }
+.sui-vf-err { position: absolute; z-index: 3; color: #fff; font-size: 12px; padding: 0 16px; text-align: center; }
+
+/* sélecteur de vues (chips) */
+.sui-chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 11px; }
+.sui-chip { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1.5px solid #e0d6bf; border-radius: 11px; padding: 8px 2px; background: var(--blanc); cursor: pointer; position: relative; color: var(--vert-fonce); }
+.sui-chip:hover { border-color: var(--or); }
+.sui-chip.active { border-color: var(--or); background: #fbf6ea; }
+.sui-chip.done { background: #eef6f1; border-color: #aedccc; }
+.sui-chip .fi { height: 22px; display: flex; align-items: center; }
+.sui-chip .fi svg { height: 17px; width: auto; }
+.sui-chip .fl { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 10px; }
+.sui-chip .fdone { position: absolute; top: 4px; right: 4px; width: 15px; height: 15px; color: var(--vert); display: none; }
+.sui-chip.done .fdone { display: block; }
+.sui-cap { font-size: 12px; color: var(--gris); margin-top: 8px; line-height: 1.35; }
+.sui-link { color: var(--or); font-weight: 600; cursor: pointer; text-decoration: underline; }
+
+/* tuiles pièces (constat / documents) — grille (poste) ou liste (mobile/client) */
+.sui-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.sui-list { display: flex; flex-direction: column; gap: 11px; }
+.sui-tile { border: 1.5px dashed #d2c7ac; border-radius: 12px; background: #fcfaf4; padding: 14px 10px; text-align: center; position: relative; }
+.sui-tile.req { border-color: #ecd9a8; background: #fbf6ea; }
+.sui-tile.done { border-style: solid; border-color: var(--vert); background: #eef6f1; }
+.sui-tile .ic { width: 32px; height: 32px; border-radius: 9px; margin: 0 auto; background: var(--menthe); color: var(--vert-fonce); display: flex; align-items: center; justify-content: center; }
+.sui-tile .ic svg { width: 18px; height: 18px; }
+.sui-tile .apercu { width: 100%; height: 70px; object-fit: cover; border-radius: 8px; }
+.sui-tile .lbl { font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; color: var(--vert-fonce); margin-top: 8px; }
+.sui-tile .sub { font-size: 10.5px; color: var(--gris); margin-top: 2px; }
+.sui-tile .ok { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--vert); color: #fff; display: flex; align-items: center; justify-content: center; }
+.sui-tile .ok svg { width: 12px; height: 12px; }
+.sui-acts { display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.sui-acts button { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; border: 1px solid #d9cfb8; background: var(--blanc); color: var(--vert); border-radius: 7px; padding: 5px 9px; cursor: pointer; }
+.sui-acts button.sup { color: var(--terra); border-color: #e8c8c2; }
+
+/* liste (mobile) : tuile horizontale */
+.sui-list .sui-tile { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px; }
+.sui-list .sui-tile .ic { flex: 0 0 44px; width: 44px; height: 44px; overflow: hidden; }
+.sui-list .sui-tile .ic img { width: 100%; height: 100%; object-fit: cover; }
+.sui-list .sui-tile .txt { flex: 1; }
+.sui-list .sui-tile .lbl { margin-top: 0; }
+.sui-list .sui-tile .ok { position: static; }
+.sui-list .sui-tile .sui-acts { margin-top: 0; flex-direction: column; }
+
+/* contrôle : bandeau complétude + vignettes */
+.sui-cb { display: flex; align-items: flex-start; gap: 12px; border-radius: 13px; padding: 14px 16px; margin: 6px 0 18px; }
+.sui-cb.ok { background: #eef6f1; border: 1px solid #cfe7da; }
+.sui-cb.ko { background: #fbeae7; border: 1px solid #e8c8c2; }
+.sui-cb .cb-ic { width: 26px; height: 26px; flex: 0 0 26px; }
+.sui-cb.ok .cb-ic { color: var(--vert); }
+.sui-cb.ko .cb-ic { color: var(--terra); }
+.sui-cb .cb-t { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 14px; }
+.sui-cb.ok .cb-t { color: var(--vert); }
+.sui-cb.ko .cb-t { color: var(--terra); }
+.sui-cb .cb-s { font-size: 12.5px; color: var(--gris); margin-top: 2px; }
+.sui-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.sui-thumb { border: 1px solid #e3dac6; border-radius: 13px; overflow: hidden; background: var(--blanc); cursor: pointer; }
+.sui-thumb .img { height: 112px; background: linear-gradient(135deg, #e3e8e1, #cfd8cd); display: flex; align-items: center; justify-content: center; position: relative; }
+.sui-thumb .img img { width: 100%; height: 100%; object-fit: cover; }
+.sui-thumb .zoom { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.42); color: #fff; border-radius: 7px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.sui-thumb .zoom svg { width: 13px; height: 13px; }
+.sui-thumb .cap { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.sui-thumb .cap .t { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 12.5px; color: var(--noir); flex: 1; }
+.sui-thumb .cap .ok { color: var(--vert); width: 17px; height: 17px; flex: 0 0 17px; }
+.sui-thumb.miss-req { border: 1.6px dashed var(--terra); cursor: default; }
+.sui-thumb.miss-req .img { background: #fbeae7; color: var(--terra); font-weight: 600; font-size: 13px; }
+.sui-thumb.miss-req .cap .t { color: var(--terra); }
+.sui-thumb.miss-opt { border-style: dashed; border-color: #d9cfb8; cursor: default; }
+.sui-thumb.miss-opt .img { background: #f4efe3; color: var(--gris); font-weight: 600; font-size: 12.5px; }
+.sui-thumb.miss-opt .cap .t { color: var(--gris); }
+
+/* lightbox */
+.sui-lightbox { position: fixed; inset: 0; background: rgba(10,20,12,.82); z-index: 120; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.sui-lightbox img { max-width: 100%; max-height: 86vh; border-radius: 12px; }
+.sui-lightbox .fermer { position: absolute; top: 18px; right: 20px; background: rgba(255,255,255,.15); color: #fff; border: none; border-radius: 8px; width: 40px; height: 40px; font-size: 22px; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .sui-grid { grid-template-columns: 1fr 1fr; }
+}

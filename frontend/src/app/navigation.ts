@@ -35,6 +35,11 @@ export const LOT1: NavItem[] = [
   { id: 'cheques', label: 'Suivi des chèques', route: '/cheques', icon: 'cheques', badgeKey: 'chequesEnAttente', urgent: true },
   { id: 'bureau', label: "Envois bureau d'ordre", route: '/bureau-ordre', icon: 'bureau', badgeKey: 'bureauOrdre', soon: true },
   { id: 'cotation', label: 'Demande de cotation', route: '/cotation', icon: 'cotation', badgeKey: 'cotations' },
+  // Déclaration de sinistre : fonction front (adaptateur DECSIN), toujours visible pour l'AGA
+  // (l'accès est gouverné par l'auth DECSIN + le contexte d'agence, pas par le module back).
+  { id: 'sinistre', label: 'Déclaration de sinistre', route: '/declaration-sinistre', icon: 'sinistre', badgeTodo: 'À valider' },
+  // Souscription auto : fonction front (adaptateur GAM), toujours visible pour l'AGA.
+  { id: 'souscription', label: 'Souscription auto', route: '/souscription-auto', icon: 'souscription', badgeTodo: 'Nouveau' },
   { id: 'expertise', label: "Demande d'expertise", route: '/expertise', icon: 'expertise', badgeKey: 'expertises', soon: true },
 ];
 

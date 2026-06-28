@@ -13,6 +13,8 @@ export type IconName =
   | 'accords'
   | 'echeanciers'
   | 'contentieux'
+  | 'sinistre'
+  | 'souscription'
   | 'ca-ytd'
   | 'ca-mois'
   | 'ecart'
@@ -35,6 +37,8 @@ const PATHS: Record<IconName, string> = {
   accords: 'M3 4h18v18H3zM3 9h18M8 2v4M16 2v4M8 14h2M14 14h2',
   echeanciers: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   contentieux: 'M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
+  sinistre: 'M5 16l1.5-5h11L19 16M5 16h14v3H5zM7.5 16v-3M16.5 16v-3M8 19v1.5M16 19v1.5',
+  souscription: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13l2.5 2.5L16 10',
   'ca-ytd': 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6',
   'ca-mois': 'M3 4h18v18H3zM3 9h18M8 2v4M16 2v4',
   ecart: 'M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',

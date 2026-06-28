@@ -10,6 +10,10 @@ import ChequeDetailPage from './features/cheques/ChequeDetailPage';
 import CotationPage from './features/cotation/CotationPage';
 import DpdPage from './features/dpd/DpdPage';
 import VersementPage from './features/versement/VersementPage';
+import SinistrePage from './features/sinistre/SinistrePage';
+import DetailControlePage from './features/sinistre/DetailControlePage';
+import SouscriptionPage from './features/souscription/SouscriptionPage';
+import DetailSouscriptionPage from './features/souscription/DetailSouscriptionPage';
 import AdminProfilsPage from './features/admin/AdminProfilsPage';
 import PlaceholderPage from './features/placeholder/PlaceholderPage';
 import { ITEMS_SOON } from './app/navigation';
@@ -35,6 +39,10 @@ const router = createBrowserRouter([
       { path: 'cotation', element: <CotationPage /> },
       { path: 'versement', element: <VersementPage /> },
       { path: 'accords-echeancier', element: <DpdPage /> },
+      { path: 'declaration-sinistre', element: <SinistrePage /> },
+      { path: 'declaration-sinistre/:idLocal', element: <DetailControlePage /> },
+      { path: 'souscription-auto', element: <SouscriptionPage /> },
+      { path: 'souscription-auto/:idLocal', element: <DetailSouscriptionPage /> },
       { path: 'admin', element: <AdminProfilsPage /> },
       // Fonctions non encore implémentées : page placeholder « à venir ».
       ...ITEMS_SOON.map((item) => ({

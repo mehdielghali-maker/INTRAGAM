@@ -14,8 +14,10 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
   const principal = useAuth();
   const estAdmin = principal.role === 'ADMIN';
   const modules = contexte?.modules ?? [];
-  // Accès accordé si le module est dans la liste autorisée du profil.
-  const autorise = (item: NavItem) => modules.includes(item.id);
+  // Accès accordé si le module est dans la liste autorisée du profil. Déclaration de sinistre
+  // et souscription auto sont des fonctions front (GAM) toujours visibles pour l'AGA.
+  const autorise = (item: NavItem) =>
+    item.id === 'sinistre' || item.id === 'souscription' || modules.includes(item.id);
 
   const lot1 = LOT1.filter(autorise);
   const lot2 = LOT2.filter(autorise);
