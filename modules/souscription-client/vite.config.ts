@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 // PWA CLIENTE de souscription auto : le client remplit à distance (lien + OTP), hors-ligne possible.
 // Réutilise le socle @sinistre-ui + le domaine @souscription + le socle brouillon @dossier.
 export default defineConfig({
+  // Sous-chemin de déploiement (GitHub Pages = /<repo>/<app>/). Défaut '/' en local.
+  base: process.env.VITE_BASE || '/',
   plugins: [
     react(),
     VitePWA({
@@ -19,7 +21,7 @@ export default defineConfig({
         theme_color: '#0A3D12',
         background_color: '#F8F5EE',
         display: 'standalone',
-        start_url: '/',
+        start_url: '.', // relatif : correct à la racine ET en sous-chemin (GitHub Pages)
         icons: [
           { src: '/icone.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
           { src: '/icone.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },

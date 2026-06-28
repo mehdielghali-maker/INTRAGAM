@@ -67,6 +67,24 @@ Cloudflare Pages sert les fichiers statiques en priorité ; pour le fallback SPA
 `public/_redirects` contenant `/*  /index.html  200` si une route profonde renvoie 404 (la plupart
 des routes de ces PWA partent de `/`, donc rarement nécessaire).
 
+## Option D — GitHub Pages (PERMANENT, gratuit, sans compte externe) ⭐
+Un workflow **`.github/workflows/deploy-pages.yml`** construit les **3 PWA** (mode mock) et les publie
+sur **GitHub Pages** à chaque push — URLs **permanentes en HTTPS**, sans Vercel/Netlify.
+
+Activation (une seule fois) :
+1. Le dépôt doit être **public** (Pages gratuit). *(Privé → nécessite GitHub Pro.)*
+2. **Settings → Pages → Build and deployment → Source = « GitHub Actions »**.
+3. Pousser (ou **Actions → Déploiement PWA → Run workflow**). Le déploiement se fait tout seul.
+
+URLs obtenues (ex. dépôt `INTRAGAM` du compte `mehdielghali-maker`) :
+- Accueil : `https://mehdielghali-maker.github.io/INTRAGAM/`
+- `…/declarations-sinistre/?code=DEC-7F3A-2026` · `…/souscription-auto/` · `…/souscription-client/?reference=SCR-TEST-2026`
+- OTP démo : **`0000`**. Caméra + installation PWA OK (HTTPS).
+
+> Le **`base`** des PWA est paramétrable (`VITE_BASE`, défaut `/`) : le workflow le règle sur le
+> sous-chemin Pages ; en local rien ne change. Le **poste** (login `benzerga`) n'est PAS publié ici
+> (il lui faut le backend → Étage 2).
+
 ## Tester sur le téléphone (PWA installée)
 1. Ouvrir l'URL `https://…` de la PWA sur le téléphone.
 2. **Installer** :
