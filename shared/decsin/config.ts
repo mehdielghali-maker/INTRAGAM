@@ -2,6 +2,7 @@
 // Toutes les valeurs ont un défaut « mock/dev » ; le réel se branche via .env (cf. .env.example).
 
 interface EnvBrut {
+  VITE_API_MODE?: string; // bascule GLOBALE mock|real (repli si VITE_DECSIN_MODE absent)
   VITE_DECSIN_MODE?: string;
   VITE_DECSIN_BASE_URL?: string;
   VITE_DECSIN_API_KEY?: string;
@@ -23,7 +24,8 @@ export interface DecsinConfig {
 }
 
 export const config: DecsinConfig = {
-  mode: env.VITE_DECSIN_MODE === 'real' ? 'real' : 'mock',
+  // Priorité au switch par domaine ; repli sur la bascule globale VITE_API_MODE ; défaut mock.
+  mode: (env.VITE_DECSIN_MODE ?? env.VITE_API_MODE) === 'real' ? 'real' : 'mock',
   baseUrl: env.VITE_DECSIN_BASE_URL || 'https://api2.gam.dz/DECSIN/api/',
   apiKey: env.VITE_DECSIN_API_KEY || '',
   // [DSI à confirmer] nom de l'en-tête de clé d'API.

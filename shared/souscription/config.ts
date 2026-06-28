@@ -2,6 +2,7 @@
 // Défauts « mock/dev » ; le réel (backend GAM /SecGam) se branche via .env.
 
 interface EnvBrut {
+  VITE_API_MODE?: string; // bascule GLOBALE mock|real (repli si VITE_SOUSCRIPTION_MODE absent)
   VITE_SOUSCRIPTION_MODE?: string;
   VITE_SOUSCRIPTION_BASE_URL?: string;
   VITE_SOUSCRIPTION_API_KEY?: string;
@@ -24,7 +25,8 @@ export interface SouscriptionConfig {
 }
 
 export const config: SouscriptionConfig = {
-  mode: env.VITE_SOUSCRIPTION_MODE === 'real' ? 'real' : 'mock',
+  // Priorité au switch par domaine ; repli sur la bascule globale VITE_API_MODE ; défaut mock.
+  mode: (env.VITE_SOUSCRIPTION_MODE ?? env.VITE_API_MODE) === 'real' ? 'real' : 'mock',
   // API métier GAM (cf. APK : api2.gam.dz/APIS/api/v2). [DSI à confirmer].
   baseUrl: env.VITE_SOUSCRIPTION_BASE_URL || 'https://api2.gam.dz/APIS/api/v2/',
   apiKey: env.VITE_SOUSCRIPTION_API_KEY || '',

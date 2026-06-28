@@ -3,6 +3,7 @@
 // INDÉPENDANT (microservice auto-hébergé) : la PWA l'appelle directement.
 
 interface EnvBrut {
+  VITE_API_MODE?: string; // bascule GLOBALE mock|real (repli si VITE_RECO_MODE absent)
   VITE_RECO_MODE?: string;
   VITE_RECO_BASE_URL?: string;
 }
@@ -16,7 +17,8 @@ export interface RecoConfig {
 }
 
 export const config: RecoConfig = {
-  mode: env.VITE_RECO_MODE === 'real' ? 'real' : 'mock',
+  // Priorité au switch par domaine ; repli sur la bascule globale VITE_API_MODE ; défaut mock.
+  mode: (env.VITE_RECO_MODE ?? env.VITE_API_MODE) === 'real' ? 'real' : 'mock',
   // URL du microservice RECO (FastAPI). En dev natif : http://localhost:8088.
   baseUrl: env.VITE_RECO_BASE_URL || 'http://localhost:8088',
 };

@@ -1,0 +1,15 @@
+# Hébergement statique (Étage 1, mode mock) de la PWA agent « Souscription auto ».
+# Monorepo : régler « Base directory » = modules/souscription-auto dans Netlify.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

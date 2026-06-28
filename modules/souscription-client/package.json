@@ -6,6 +6,8 @@
   "description": "PWA cliente de souscription auto GAM — le client remplit à distance (lien + double facteur), offline-first.",
   "scripts": {
     "dev": "vite",
+    "dev:host": "vite --host",
+    "dev:tunnel": "cloudflared tunnel --url http://localhost:5176",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run"

@@ -1,0 +1,19 @@
+# Hébergement statique (Étage 1, mode mock) de la PWA cliente « Déclaration de sinistre ».
+# Monorepo : régler « Base directory » = modules/declarations-sinistre dans Netlify (le dépôt entier
+# reste cloné, donc l'alias ../../shared est résolu au build).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Service worker non mis en cache (mise à jour immédiate de la PWA).
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Fallback SPA (React Router) : les fichiers existants (assets, manifest, sw.js) sont servis EN
+# PRIORITÉ ; seules les routes inexistantes retombent sur index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

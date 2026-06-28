@@ -6,6 +6,8 @@
   "description": "PWA agent de souscription auto GAM — offline-first (capture + enregistrement).",
   "scripts": {
     "dev": "vite",
+    "dev:host": "vite --host",
+    "dev:tunnel": "cloudflared tunnel --url http://localhost:5175",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run"
