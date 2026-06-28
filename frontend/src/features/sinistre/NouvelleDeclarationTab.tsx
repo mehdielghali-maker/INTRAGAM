@@ -7,8 +7,18 @@ type Mode = 'saisie' | 'lien';
 
 const URL_CLIENT = (import.meta.env.VITE_CLIENT_URL as string) || 'http://localhost:5174';
 
-/** Onglet « Nouvelle déclaration » : recherche du contrat, puis saisie guidée ou envoi de lien. */
-export default function NouvelleDeclarationTab() {
+/**
+ * Onglet « Nouvelle déclaration ». PRÉSENTIEL par défaut : l'AGA saisit le dossier en agence
+ * (avec brouillon possible). L'envoi d'un LIEN au client est l'EXCEPTION (client qui ne peut pas
+ * se déplacer). Sait aussi REPRENDRE un brouillon existant (prop `brouillonInitial`).
+ */
+export default function NouvelleDeclarationTab({
+  brouillonInitial,
+  onFini,
+}: {
+  brouillonInitial?: Declaration | null;
+  onFini?: () => void;
+} = {}) {
   const { contexte } = useAgence();
   const consolide = contexte?.consolideActif ?? false;
 
@@ -41,6 +51,27 @@ export default function NouvelleDeclarationTab() {
     setMessage(msg);
     setVehicule(null);
     setImmat('');
+    onFini?.();
+  }
+
+  // --- REPRISE d'un brouillon : ouvre directement le stepper pré-rempli ------------------------
+  if (brouillonInitial) {
+    const vehiculeBrouillon: Vehicule = {
+      id: identifiant('v'),
+      immatriculation: brouillonInitial.immatriculation,
+      marque: brouillonInitial.marque,
+      numPolice: brouillonInitial.numPolice,
+      conducteur: brouillonInitial.conducteur,
+    };
+    return (
+      <div className="form-card">
+        <div className="sec-head">
+          <h3>Reprise du brouillon {brouillonInitial.code}</h3>
+          <button type="button" className="btn-ghost" onClick={() => onFini?.()}>Annuler la reprise</button>
+        </div>
+        <DeclarationCaptureStepper vehicule={vehiculeBrouillon} brouillon={brouillonInitial} onTermine={terminer} />
+      </div>
+    );
   }
 
   async function genererLien(e: FormEvent) {
@@ -90,9 +121,14 @@ export default function NouvelleDeclarationTab() {
 
           <div className="sec-head"><h3>Mode de déclaration</h3></div>
           <div className="seg">
-            <button type="button" className={mode === 'saisie' ? 'active' : ''} onClick={() => setMode('saisie')}>Je saisis la déclaration</button>
-            <button type="button" className={mode === 'lien' ? 'active' : ''} onClick={() => setMode('lien')}>Envoyer le lien au client</button>
+            <button type="button" className={mode === 'saisie' ? 'active' : ''} onClick={() => setMode('saisie')}>Je saisis (présentiel)</button>
+            <button type="button" className={mode === 'lien' ? 'active' : ''} onClick={() => setMode('lien')}>Envoyer un lien (à distance)</button>
           </div>
+          <p className="hint" style={{ marginTop: -2 }}>
+            {mode === 'saisie'
+              ? 'Cas normal : le client est en agence, vous saisissez et pouvez enregistrer en brouillon.'
+              : 'Exception : seulement si le client ne peut pas se déplacer.'}
+          </p>
 
           {mode === 'saisie' ? (
             consolide ? (

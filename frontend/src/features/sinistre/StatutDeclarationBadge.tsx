@@ -1,10 +1,11 @@
 import { LIBELLES_STATUT, StatutDeclaration } from '@decsin';
 
 const CLASSE: Record<StatutDeclaration, string> = {
+  BROUILLON: 'st-brouillon',
   LIEN_ENVOYE: 'st-lien',
   A_VALIDER: 'st-avalider',
+  RELANCE: 'st-relance',
   VALIDEE: 'st-validee',
-  INCOMPLETE: 'st-incomplete',
 };
 
 /** Pastille de statut d'une déclaration (mêmes couleurs que la maquette). */

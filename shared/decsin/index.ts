@@ -35,6 +35,7 @@ export * from './pieces';
 export * from './media';
 export { config, LIBELLES_STATUT } from './config';
 export { CODE_OTP_DEMO, genererCode } from './decsinMock';
+export { brouillonsLocaux } from './brouillonsLocaux';
 export type { DecsinPort } from './decsinPort';
 export { catalogueDeclaration } from './catalogue';
 export type { ContexteDeclaration } from './catalogue';

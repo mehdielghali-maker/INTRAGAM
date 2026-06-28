@@ -35,6 +35,8 @@ export default defineConfig({
       '@sinistre-ui': fileURLToPath(new URL('../shared/sinistre-ui', import.meta.url)),
       // Domaine souscription auto (adaptateur GAM mock↔réel + catalogue de capture).
       '@souscription': fileURLToPath(new URL('../shared/souscription', import.meta.url)),
+      // Socle « dossier en cours » (machine à états brouillon/validation + auto-save).
+      '@dossier': fileURLToPath(new URL('../shared/dossier', import.meta.url)),
     },
   },
   server: {

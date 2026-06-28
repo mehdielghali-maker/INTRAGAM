@@ -34,10 +34,11 @@ export const config: DecsinConfig = {
   codePrefixe: env.VITE_CODE_PREFIXE || 'DEC',
 };
 
-/** Libellés métier des statuts (centralisés ; configurables au besoin). */
+/** Libellés métier des statuts (machine à états unifiée du socle @dossier). */
 export const LIBELLES_STATUT: Record<string, string> = {
+  BROUILLON: 'Brouillon',
   LIEN_ENVOYE: 'Lien envoyé',
   A_VALIDER: 'À valider',
+  RELANCE: 'Relancé',
   VALIDEE: 'Validée',
-  INCOMPLETE: 'Incomplète',
 };

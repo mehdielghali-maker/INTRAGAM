@@ -75,7 +75,7 @@ function declarationsDemo(): Declaration[] {
       observations: 'Rayure sur parking.', blesses: false, pieces: [], numSinistre: 'SIN-2026-118324', dateSaisie: '2026-06-10',
     },
     {
-      idLocal: identifiant('d'), code: 'DEC-9B57-2026', origine: 'CLIENT', statut: 'INCOMPLETE',
+      idLocal: identifiant('d'), code: 'DEC-9B57-2026', origine: 'CLIENT', statut: 'RELANCE',
       immatriculation: '12345-114-31', marque: 'Peugeot 208', numPolice: 'P-2023-04412', conducteur: 'Sofiane Brahimi',
       dateSinistre: '2026-06-18', heureSinistre: '17:45', lieuSinistre: 'Autoroute Est, Boumerdès',
       observations: 'Collision avec un tiers.', blesses: false, compagnieAdverse: 'CAAR', vehiculeAdverse: '55512-110-35',
@@ -147,9 +147,9 @@ export const decsinMock: DecsinPort = {
       const ref = references.find((r) => r.type === p.type);
       return ref ? { ...p, reference: ref.reference } : p;
     });
-    // Une déclaration remplie passe « À valider » (sauf si déjà validée).
-    const statut = declaration.statut === 'VALIDEE' ? 'VALIDEE' : 'A_VALIDER';
-    const enregistree: Declaration = { ...declaration, pieces, statut };
+    // Le statut est porté par le front (machine à états du socle @dossier) ; l'adapter ne le force PAS
+    // (un brouillon n'est de toute façon jamais envoyé ici : il vit dans brouillonsLocaux).
+    const enregistree: Declaration = { ...declaration, pieces };
     const i = all.findIndex((d) => d.idLocal === declaration.idLocal || d.code === declaration.code);
     if (i >= 0) {
       all[i] = enregistree;

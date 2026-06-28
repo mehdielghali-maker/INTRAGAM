@@ -113,6 +113,8 @@
 .sinistre .st-avalider { background: #f5e9cf; color: #8a6d1f; } .sinistre .st-avalider .dt { background: var(--or); }
 .sinistre .st-validee { background: var(--vert); color: #fff; } .sinistre .st-validee .dt { background: var(--menthe); }
 .sinistre .st-incomplete { background: #f3ddd9; color: var(--terra); } .sinistre .st-incomplete .dt { background: var(--terra); }
+.sinistre .st-brouillon { background: #ece7da; color: #6a6354; } .sinistre .st-brouillon .dt { background: #9b927d; }
+.sinistre .st-relance { background: #f3ddd9; color: var(--terra); } .sinistre .st-relance .dt { background: var(--terra); }
 .sinistre .act-btn { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 12px; padding: 6px 11px; border-radius: 8px; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; }
 .sinistre .act-valider { background: var(--vert); color: #fff; }
 .sinistre .act-sec { background: var(--menthe); color: var(--vert-fonce); border: 1px solid #aedccc; }

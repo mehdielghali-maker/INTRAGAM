@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { catalogueDeclaration, decsin, Declaration, peutEnvoyer } from '@decsin';
+import { brouillonsLocaux, catalogueDeclaration, decsin, Declaration, peutEnvoyer } from '@decsin';
 import { ApercusControle, VerificationPlaque } from '@sinistre-ui';
 import StatutDeclarationBadge from './StatutDeclarationBadge';
 import './sinistre.css';
@@ -16,8 +16,9 @@ export default function DetailControlePage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
-    const liste = await decsin.getDeclarations();
-    setDecl(liste.find((d) => d.idLocal === idLocal) ?? null);
+    // Un brouillon présentiel vit en local ; les autres dans DECSIN.
+    const [brouillons, envoyees] = await Promise.all([brouillonsLocaux.lister(), decsin.getDeclarations()]);
+    setDecl([...brouillons, ...envoyees].find((d) => d.idLocal === idLocal) ?? null);
   }, [idLocal]);
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function DetailControlePage() {
 
   async function renvoyer() {
     if (!decl) return;
-    await decsin.creerDeclaration({ ...decl, statut: 'INCOMPLETE' });
+    await decsin.creerDeclaration({ ...decl, statut: 'RELANCE' });
     setMessage('Renvoyée au client pour correction.');
     await charger();
   }
@@ -81,7 +82,16 @@ export default function DetailControlePage() {
 
       <VerificationPlaque pieces={decl.pieces} immatriculation={decl.immatriculation} />
 
-      {decl.statut !== 'VALIDEE' && (
+      {decl.statut === 'BROUILLON' && (
+        <div className="form-actions">
+          <button className="btn-primary" onClick={() => navigate(`/declaration-sinistre?reprendre=${encodeURIComponent(decl.idLocal)}`)}>
+            Reprendre la saisie
+          </button>
+          <span className="hint">Brouillon présentiel — non envoyé à PROASSUR tant qu'il n'est pas validé.</span>
+        </div>
+      )}
+
+      {decl.statut === 'A_VALIDER' && (
         <div className="form-actions">
           <button className="btn-primary" disabled={!complet} onClick={valider}>Valider → PROASSUR</button>
           <button className="btn-ghost" onClick={renvoyer}>Renvoyer au client</button>

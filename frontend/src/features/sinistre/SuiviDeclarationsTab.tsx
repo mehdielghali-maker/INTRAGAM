@@ -1,25 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { decsin, Declaration, LIBELLES_STATUT, StatutDeclaration } from '@decsin';
+import { brouillonsLocaux, decsin, Declaration, LIBELLES_STATUT, StatutDeclaration } from '@decsin';
 import StatutDeclarationBadge from './StatutDeclarationBadge';
 
 const CHECK = 'M5 12l5 5L20 6';
 const RELANCE = 'M21 12a9 9 0 1 1-3-6.7M21 4v5h-5';
+const PEN = 'M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z';
 
 type Filtre = 'TOUS' | StatutDeclaration;
-const FILTRES: Filtre[] = ['TOUS', 'LIEN_ENVOYE', 'A_VALIDER', 'VALIDEE', 'INCOMPLETE'];
+const FILTRES: Filtre[] = ['TOUS', 'BROUILLON', 'LIEN_ENVOYE', 'A_VALIDER', 'RELANCE', 'VALIDEE'];
 
-/** Onglet « Suivi des déclarations » : liste, filtres, et action Valider → PROASSUR. */
+/**
+ * Onglet « Suivi des déclarations » : liste les brouillons présentiel (locaux) ET les déclarations
+ * envoyées (DECSIN), avec filtres par statut. Un brouillon se « Reprend » (édition) ; « À valider »
+ * se contrôle (→ PROASSUR) ou se renvoie au client (RELANCE).
+ */
 export default function SuiviDeclarationsTab() {
   const navigate = useNavigate();
   const [declarations, setDeclarations] = useState<Declaration[]>([]);
   const [filtre, setFiltre] = useState<Filtre>('TOUS');
   const [message, setMessage] = useState<string | null>(null);
 
-  const ouvrir = (d: Declaration) => navigate(`/declaration-sinistre/${d.idLocal}`);
+  const reprendre = (d: Declaration) => navigate(`/declaration-sinistre?reprendre=${encodeURIComponent(d.idLocal)}`);
+  const ouvrir = (d: Declaration) =>
+    d.statut === 'BROUILLON' ? reprendre(d) : navigate(`/declaration-sinistre/${d.idLocal}`);
 
   const recharger = useCallback(async () => {
-    setDeclarations(await decsin.getDeclarations());
+    // Brouillons présentiel (locaux, jamais envoyés) + déclarations DECSIN (envoyées/validées).
+    const [brouillons, envoyees] = await Promise.all([brouillonsLocaux.lister(), decsin.getDeclarations()]);
+    setDeclarations([...brouillons, ...envoyees]);
   }, []);
 
   useEffect(() => {
@@ -28,8 +37,8 @@ export default function SuiviDeclarationsTab() {
 
   const liste = filtre === 'TOUS' ? declarations : declarations.filter((d) => d.statut === filtre);
 
-  async function marquerIncomplete(d: Declaration) {
-    await decsin.creerDeclaration({ ...d, statut: 'INCOMPLETE' });
+  async function renvoyerAuClient(d: Declaration) {
+    await decsin.creerDeclaration({ ...d, statut: 'RELANCE' });
     setMessage(`Déclaration ${d.code} renvoyée au client pour correction.`);
     await recharger();
   }
@@ -40,6 +49,14 @@ export default function SuiviDeclarationsTab() {
 
   function actions(d: Declaration) {
     const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
+    if (d.statut === 'BROUILLON') {
+      return (
+        <button className="act-btn act-valider" onClick={stop(() => reprendre(d))}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={PEN} /></svg>
+          Reprendre
+        </button>
+      );
+    }
     if (d.statut === 'A_VALIDER') {
       return (
         <>
@@ -47,23 +64,15 @@ export default function SuiviDeclarationsTab() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}><path d={CHECK} /></svg>
             Contrôler
           </button>{' '}
-          <button className="act-btn act-sec" onClick={stop(() => marquerIncomplete(d))}>Incomplète</button>
+          <button className="act-btn act-sec" onClick={stop(() => renvoyerAuClient(d))}>Renvoyer</button>
         </>
       );
     }
-    if (d.statut === 'LIEN_ENVOYE') {
+    if (d.statut === 'LIEN_ENVOYE' || d.statut === 'RELANCE') {
       return (
         <button className="act-btn act-sec" onClick={stop(() => relancer(d))}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={RELANCE} /></svg>
           Relancer le client
-        </button>
-      );
-    }
-    if (d.statut === 'INCOMPLETE') {
-      return (
-        <button className="act-btn act-sec" onClick={stop(() => relancer(d))}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={RELANCE} /></svg>
-          Renvoyer au client
         </button>
       );
     }

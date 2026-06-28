@@ -1,44 +1,104 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import {
+  brouillonsLocaux,
   catalogueDeclaration,
   decsin,
   Declaration,
   genererCode,
   identifiant,
   peutEnvoyer,
+  piecesManquantes,
   Piece,
   Vehicule,
 } from '@decsin';
-import { ApercusControle, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { ApercusControle, definition, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { creerAutoEnregistrement } from '@dossier';
 
 type Etape = 1 | 2 | 3;
 
 /**
- * Parcours guidé de capture AGA (poste + mobile) : détails → pièces (socle partagé) →
- * contrôle/validation. L'AGA étant authentifié (SSO + agence), pas d'identification par code.
- * En ligne, « Valider → PROASSUR » rattache et renvoie le N° ; hors-ligne, on enregistre
- * « À valider » (validation différée à la reconnexion).
+ * Parcours de saisie AGA (PRÉSENTIEL, par défaut) : détails → pièces (socle partagé) → contrôle.
+ * Le dossier est enregistrable EN BROUILLON à tout moment (même incomplet) et AUTO-ENREGISTRÉ en
+ * continu (anti-perte). La VALIDATION (rattachement PROASSUR) n'est possible qu'une fois complet ;
+ * elle seule envoie le dossier (un brouillon reste LOCAL). Reprise possible via la prop `brouillon`.
  */
 export default function DeclarationCaptureStepper({
   vehicule,
   onTermine,
+  brouillon,
 }: {
   vehicule: Vehicule;
   onTermine: (message: string) => void;
+  brouillon?: Declaration;
 }) {
   const [etape, setEtape] = useState<Etape>(1);
-  const [dateSinistre, setDate] = useState('');
-  const [heureSinistre, setHeure] = useState('');
-  const [lieuSinistre, setLieu] = useState('');
-  const [observations, setObs] = useState('');
-  const [blesses, setBlesses] = useState(false);
-  const [telAssure, setTel] = useState('');
-  const [compagnieAdverse, setCompagnie] = useState('');
-  const [vehiculeAdverse, setVehAdverse] = useState('');
-  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [dateSinistre, setDate] = useState(brouillon?.dateSinistre ?? '');
+  const [heureSinistre, setHeure] = useState(brouillon?.heureSinistre ?? '');
+  const [lieuSinistre, setLieu] = useState(brouillon?.lieuSinistre ?? '');
+  const [observations, setObs] = useState(brouillon?.observations ?? '');
+  const [blesses, setBlesses] = useState(brouillon?.blesses ?? false);
+  const [telAssure, setTel] = useState(brouillon?.telAssure ?? '');
+  const [compagnieAdverse, setCompagnie] = useState(brouillon?.compagnieAdverse ?? '');
+  const [vehiculeAdverse, setVehAdverse] = useState(brouillon?.vehiculeAdverse ?? '');
+  const [pieces, setPieces] = useState<Piece[]>(brouillon?.pieces ?? []);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [enregistre, setEnregistre] = useState(false);
+
+  // Identité STABLE du dossier : reprise d'un brouillon existant, ou nouvelle générée une seule fois.
+  const idLocalRef = useRef(brouillon?.idLocal ?? identifiant('d'));
+  const codeRef = useRef(brouillon?.code ?? genererCode());
 
   const tiers = Boolean(compagnieAdverse.trim() || vehiculeAdverse.trim());
+  const complet = peutEnvoyer({ pieces, compagnieAdverse, vehiculeAdverse });
+  const manquantes = piecesManquantes({ pieces, compagnieAdverse, vehiculeAdverse });
+
+  function declarationCourante(statut: Declaration['statut']): Declaration {
+    return {
+      idLocal: idLocalRef.current,
+      code: codeRef.current,
+      origine: 'AGA',
+      statut,
+      immatriculation: vehicule.immatriculation,
+      marque: vehicule.marque,
+      numPolice: vehicule.numPolice,
+      conducteur: vehicule.conducteur,
+      dateSinistre,
+      heureSinistre,
+      lieuSinistre,
+      observations,
+      blesses,
+      telAssure,
+      compagnieAdverse: compagnieAdverse || undefined,
+      vehiculeAdverse: vehiculeAdverse || undefined,
+      pieces,
+      dateSaisie: brouillon?.dateSaisie ?? new Date().toISOString().slice(0, 10),
+    };
+  }
+
+  // Auto-enregistrement DÉBOUNCÉ (anti-perte) : sauvegarde le brouillon LOCAL à chaque modification.
+  const autoRef = useRef(
+    creerAutoEnregistrement<Declaration>(async (d) => {
+      await brouillonsLocaux.enregistrer(d);
+      setEnregistre(true);
+    }, 800),
+  );
+  useEffect(() => {
+    const aDuContenu =
+      Boolean(brouillon) ||
+      Boolean(
+        dateSinistre || heureSinistre || lieuSinistre.trim() || observations.trim() ||
+          telAssure.trim() || compagnieAdverse.trim() || vehiculeAdverse.trim() || pieces.length,
+      );
+    if (!aDuContenu) return; // ne crée pas un brouillon vide à l'ouverture
+    setEnregistre(false);
+    autoRef.current.planifier(declarationCourante('BROUILLON'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateSinistre, heureSinistre, lieuSinistre, observations, blesses, telAssure, compagnieAdverse, vehiculeAdverse, pieces]);
+  // Sauvegarde finale au démontage (navigation hors du stepper).
+  useEffect(() => {
+    const auto = autoRef.current;
+    return () => auto.flush();
+  }, []);
 
   function ajouter(p: PieceCapturee) {
     setPieces((prev) => [...prev.filter((x) => x.type !== p.type), p as Piece]);
@@ -57,40 +117,33 @@ export default function DeclarationCaptureStepper({
     setEtape(2);
   }
 
-  function declarationCourante(statut: Declaration['statut']): Declaration {
-    return {
-      idLocal: identifiant('d'),
-      code: genererCode(),
-      origine: 'AGA',
-      statut,
-      immatriculation: vehicule.immatriculation,
-      marque: vehicule.marque,
-      numPolice: vehicule.numPolice,
-      conducteur: vehicule.conducteur,
-      dateSinistre,
-      heureSinistre,
-      lieuSinistre,
-      observations,
-      blesses,
-      telAssure,
-      compagnieAdverse: compagnieAdverse || undefined,
-      vehiculeAdverse: vehiculeAdverse || undefined,
-      pieces,
-    };
+  async function enregistrerBrouillon() {
+    autoRef.current.annuler();
+    await brouillonsLocaux.enregistrer(declarationCourante('BROUILLON'));
+    onTermine(`Brouillon ${codeRef.current} enregistré — vous pourrez le reprendre depuis le suivi.`);
   }
 
   async function valider() {
+    autoRef.current.annuler();
     if (!navigator.onLine) {
-      // Capture OK hors-ligne ; le rattachement PROASSUR (validation) est différé à la reconnexion.
-      const enAttente = await decsin.creerDeclaration({ ...declarationCourante('A_VALIDER'), aRattacher: true });
-      onTermine(`Déclaration ${enAttente.code} enregistrée hors-ligne — validée automatiquement à la reconnexion.`);
+      // Capture OK hors-ligne ; rattachement PROASSUR (validation) différé à la reconnexion.
+      await decsin.creerDeclaration({ ...declarationCourante('A_VALIDER'), aRattacher: true });
+      await brouillonsLocaux.supprimer(idLocalRef.current);
+      onTermine(`Déclaration ${codeRef.current} enregistrée hors-ligne — validée à la reconnexion.`);
       return;
     }
     const decl = await decsin.creerDeclaration(declarationCourante('A_VALIDER'));
     const { numSinistre, idDossierSinistre } = await decsin.rattacherDeclaration(decl);
     await decsin.creerDeclaration({ ...decl, statut: 'VALIDEE', numSinistre, idDossierSinistre });
+    await brouillonsLocaux.supprimer(idLocalRef.current);
     onTermine(`Déclaration ${decl.code} validée — N° sinistre ${numSinistre}.`);
   }
+
+  const boutonBrouillon = (
+    <button type="button" className="btn-ghost" onClick={enregistrerBrouillon}>
+      Enregistrer en brouillon
+    </button>
+  );
 
   return (
     <div>
@@ -99,6 +152,9 @@ export default function DeclarationCaptureStepper({
           <span key={n} className={`sin-pdot ${etape >= (n as Etape) ? 'on' : ''}`} />
         ))}
       </div>
+      <p className="hint" style={{ marginTop: -6 }}>
+        Saisie par l'AGA (présentiel). {enregistre ? 'Brouillon enregistré automatiquement ✓' : 'Enregistrement automatique anti-perte.'}
+      </p>
 
       {etape === 1 && (
         <form onSubmit={versPieces}>
@@ -121,7 +177,10 @@ export default function DeclarationCaptureStepper({
           <label className="checkline" style={{ marginTop: 14 }}>
             <input type="checkbox" checked={blesses} onChange={(e) => setBlesses(e.target.checked)} /> Blessés à déclarer
           </label>
-          <div className="form-actions"><button type="submit" className="btn-primary">Continuer vers les photos</button></div>
+          <div className="form-actions">
+            {boutonBrouillon}
+            <button type="submit" className="btn-primary">Continuer vers les photos</button>
+          </div>
         </form>
       )}
 
@@ -131,7 +190,8 @@ export default function DeclarationCaptureStepper({
           <PiecesCapture catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={pieces} layout="grille" onAjouter={ajouter} onSupprimer={supprimer} />
           <div className="form-actions">
             <button className="btn-ghost" onClick={() => setEtape(1)}>Retour</button>
-            <button className="btn-primary" onClick={() => setEtape(3)}>Contrôler et valider</button>
+            {boutonBrouillon}
+            <button className="btn-primary" onClick={() => setEtape(3)}>Contrôler</button>
           </div>
         </div>
       )}
@@ -142,10 +202,17 @@ export default function DeclarationCaptureStepper({
           <ApercusControle catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={pieces} />
           <div className="form-actions">
             <button className="btn-ghost" onClick={() => setEtape(2)}>Retour aux pièces</button>
-            <button className="btn-primary" disabled={!peutEnvoyer({ pieces, compagnieAdverse, vehiculeAdverse })} onClick={valider}>
+            {boutonBrouillon}
+            <button className="btn-primary" disabled={!complet} onClick={valider}>
               Valider → PROASSUR
             </button>
           </div>
+          {!complet && (
+            <p className="hint" style={{ marginTop: 6 }}>
+              Validation impossible — pièces obligatoires manquantes :{' '}
+              {manquantes.map((t) => definition(catalogueDeclaration, t)?.libelle ?? t).join(', ')}.
+            </p>
+          )}
         </div>
       )}
     </div>

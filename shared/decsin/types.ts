@@ -1,6 +1,8 @@
 // Contrats partagés de la fonction « Déclaration de sinistre » (faces AGA + client).
 // Système de référence du sinistre : PROASSUR. Backend de déclaration : DECSIN (externe).
 
+import type { StatutDossier } from '../dossier/etats';
+
 /** Type documentaire d'une pièce — conservé pour le rattachement PROASSUR et l'instruction. */
 export type TypePiece =
   | 'recto_constat'
@@ -23,8 +25,13 @@ export type GroupePiece = 'constat' | 'vehicule' | 'documents';
 /** Origine de la déclaration : saisie par l'AGA, ou remplie par le client via le lien. */
 export type Origine = 'AGA' | 'CLIENT';
 
-/** Machine à états métier (libellés configurables côté UI). */
-export type StatutDeclaration = 'LIEN_ENVOYE' | 'A_VALIDER' | 'VALIDEE' | 'INCOMPLETE';
+/**
+ * Machine à états métier UNIFIÉE (socle @dossier) : présentiel par défaut.
+ * BROUILLON (AGA en agence, enregistrable même incomplet) · LIEN_ENVOYE (exception : client à
+ * distance) · A_VALIDER (prêt pour contrôle AGA) · RELANCE (renvoyé au client) · VALIDEE (rattachée
+ * PROASSUR, verrouillée). Rattachement PROASSUR UNIQUEMENT à la validation.
+ */
+export type StatutDeclaration = StatutDossier;
 
 /** Statut de synchronisation d'une déclaration locale (face client hors-ligne).
  * brouillon = en cours de saisie (hors file) ; en_attente = à envoyer ; synchronise ; erreur. */

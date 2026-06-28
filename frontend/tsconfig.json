@@ -23,11 +23,13 @@
       "@sinistre-ui/*": ["../shared/sinistre-ui/*"],
       "@souscription": ["../shared/souscription/index.ts"],
       "@souscription/*": ["../shared/souscription/*"],
+      "@dossier": ["../shared/dossier/index.ts"],
+      "@dossier/*": ["../shared/dossier/*"],
       "react": ["node_modules/@types/react"],
       "react/*": ["node_modules/@types/react/*"],
       "react-dom": ["node_modules/@types/react-dom"],
       "react-dom/*": ["node_modules/@types/react-dom/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "../shared/decsin", "../shared/sinistre-ui", "../shared/souscription"]
+  "include": ["src", "vite.config.ts", "../shared/decsin", "../shared/sinistre-ui", "../shared/souscription", "../shared/dossier"]
 }
