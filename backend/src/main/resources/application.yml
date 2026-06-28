@@ -179,6 +179,15 @@ poste:
       delai-decision-ms: 5000
       decision: VALIDE      # VALIDE | REJETE (simulation du contrôle BPM)
 
+# Reconnaissance véhicule + lecture de plaque (ANPR, ADR 0011). Capacité INDÉPENDANTE
+# et REMPLAÇABLE : le poste ne parle qu'au port. En dev/tests, mode mock (aucun service
+# externe). En prod, mode http vers le microservice RECO auto-hébergé (services/reco/).
+# Clés à plat (reco.*) lues par les adapters (@ConditionalOnProperty / @Value).
+reco:
+  mode: mock                            # mock (défaut) | http
+  base-url: http://reco-service:8088    # microservice RECO (utilisé si mode=http)
+  bloque-non-conforme: false            # true = non-concordance plaque bloquante côté AGA (anti-fraude)
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

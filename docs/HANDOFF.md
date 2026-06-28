@@ -52,6 +52,22 @@ port + mock/http `/SecGam/*`, bascule `VITE_SOUSCRIPTION_MODE`).
   (login agent démo + **OTP `0000`**), offline-first. Pièces oblig. : CNI r/v + permis + carte grise + 4 faces.
 - Tests : `cd modules/souscription-auto && npm test`. Détails : `modules/souscription-auto/README.md`.
 
+## Reconnaissance véhicule + plaque (nouveau — ADR 0011)
+Capacité **indépendante et remplaçable** : lire la plaque sur les photos véhicule et la comparer à
+l'immatriculation du contrat (anti-fraude). **Microservice autonome** `services/reco/` (FastAPI/YOLO/
+fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte hexagonal
+`dz.gam.poste.reconnaissance` (port + adapter mock/http par `@ConditionalOnProperty`, clés `reco.*`).
+- **Endpoint** : `POST /api/reconnaissance/analyser` (multipart `photo`, `vue` facultatif,
+  `immatriculation`, session requise) → `{statut, plaqueLue, typeVehicule, confiance, estVehicule, bloquant}`.
+  Statut = `CONFORME|NON_CONFORME|NON_LUE|PAS_UN_VEHICULE|VUE_SANS_PLAQUE`.
+- **Config** (`application.yml`) : `reco.mode` (mock défaut | http), `reco.base-url`, `reco.bloque-non-conforme`.
+- **Tester le mode http** : `docker-compose --profile reco up -d reco-service` (1re fois : build + modèles ML).
+  Backend en natif → mettre `reco.base-url=http://localhost:8088`.
+- **Panne RECO = jamais bloquante** (résultat neutre). Tests : unitaires purs (`VerificationPlaqueServiceTest`,
+  `ReconnaissanceServiceTest`), pas d'IT (capacité synchrone, sans boucle fermée).
+- **Reste à faire** : câbler le front (statut dans `DetailControlePage`/`DetailSouscriptionPage`, mapping
+  vues souscription `veh_*`→`avant/arriere/...`). Détails : `services/reco/README.md`.
+
 ## Lancer l'app (3 process, à relancer chaque session)
 Outillage hors PATH — exporter d'abord :
 ```bash

@@ -98,6 +98,22 @@ produit/assuré → capture → contrôle → enregistrer) et **PWA agent autono
 (`getOcrData`, mock figé). Auth = monde **agent** (login/mdp + OTP), distinct du monde client. **Rien en
 dur** (`.env`). Détails : `modules/souscription-auto/README.md`.
 
+## Reconnaissance véhicule + lecture de plaque (ANPR — ADR 0011)
+Capacité **INDÉPENDANTE et REMPLAÇABLE** : vérifier qu'une photo est bien un véhicule et **lire la
+plaque**, puis la comparer à l'**immatriculation du contrat** (PROASSUR) — aide qualité + garde-fou
+anti-fraude. **Microservice autonome** `services/reco/` (Python/FastAPI, YOLO + fast-alpr, `POST
+/analyser`, `GET /health`, `:8088`), Docker derrière le **profil compose `reco`** (opt-in). Le poste ne
+parle qu'au **port** `dz.gam.poste.reconnaissance` (hexagonal) : `ReconnaissancePort` (mock par défaut
+`reco.mode=mock` / réel `reco.mode=http` via `@ConditionalOnProperty`, clés à plat `reco.*` dans
+`application.yml`, **rien en dur**). Une **panne du service ne bloque jamais** (résultat neutre).
+Comparaison côté domaine `VerificationPlaqueService` → `CONFORME/NON_CONFORME/NON_LUE/PAS_UN_VEHICULE/
+VUE_SANS_PLAQUE` (plaque attendue seulement sur `avant`/`arriere`). Endpoint `POST
+/api/reconnaissance/analyser` (multipart `photo`+`vue`+`immatriculation`, session requise) ; anti-fraude
+bloquante optionnelle (`reco.bloque-non-conforme`). Pas de boucle fermée (capacité synchrone) → tests
+**unitaires purs** (pas d'IT Testcontainers). **Pas encore câblé au front** (affichage du statut dans
+`DetailControlePage`/`DetailSouscriptionPage` + mapping vues `veh_*`→`avant…` = tranche suivante).
+Détails : `services/reco/README.md`.
+
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)
 Les KPI de l'accueil et la situation mensuelle du versement proviennent du module
 `dz.gam.poste.indicateursmock` : un **store persistant** (tables `mock_mesures_agence` /
