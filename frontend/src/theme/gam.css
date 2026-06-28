@@ -113,6 +113,36 @@ body {
     display: none;
   }
 }
+
+/* Bouton hamburger (topbar) — masqué en desktop, affiché < 1080px via le media plus bas. */
+.menu-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f3efe2;
+  cursor: pointer;
+}
+.menu-burger svg {
+  width: 22px;
+  height: 22px;
+}
+.menu-burger:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+/* Fond sombre derrière le tiroir de navigation (mobile) — rendu seulement menu ouvert. */
+.nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 30, 20, 0.42);
+  z-index: 40;
+}
 /* commutateur « Agence active » (remplace l'ancien sélecteur Période/YTD) */
 .switcher {
   position: relative;
@@ -828,7 +858,28 @@ table.repartition tbody td:first-child {
   .row2 {
     grid-template-columns: 1fr;
   }
+  /* La sidebar devient un tiroir glissant ouvert par le hamburger (au lieu d'être masquée). */
+  .menu-burger {
+    display: inline-flex;
+  }
+  .nav-backdrop {
+    display: block;
+  }
   .side {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    width: min(82vw, 300px);
+    border-right: 1px solid #ece4d2;
+    box-shadow: 2px 0 18px rgba(0, 0, 0, 0.18);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 50;
+  }
+  .side.ouvert {
+    transform: translateX(0);
   }
 }

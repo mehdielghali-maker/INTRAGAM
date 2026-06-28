@@ -9,7 +9,15 @@ import { CompteursNavigation } from '../features/accueil/types';
  * Sidebar de navigation selon le rôle : l'ADMIN ne voit que l'administration ; l'AGA voit
  * l'accueil + les lots filtrés selon les modules autorisés de son profil (pas d'administration).
  */
-export default function Sidebar({ badges }: { badges: CompteursNavigation | null }) {
+export default function Sidebar({
+  badges,
+  ouvert = false,
+  onNaviguer,
+}: {
+  badges: CompteursNavigation | null;
+  ouvert?: boolean;
+  onNaviguer?: () => void;
+}) {
   const { contexte } = useAgence();
   const principal = useAuth();
   const estAdmin = principal.role === 'ADMIN';
@@ -40,6 +48,7 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
         key={item.id}
         to={item.route}
         end={item.route === '/'}
+        onClick={onNaviguer}
         className={({ isActive }) =>
           `nav-item ${isActive ? 'active' : ''} ${item.soon ? 'soon' : ''}`
         }
@@ -53,7 +62,7 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
 
   if (estAdmin) {
     return (
-      <nav className="side">
+      <nav className={`side ${ouvert ? 'ouvert' : ''}`}>
         <div className="nav-group">Administration</div>
         {renderItem(ADMIN)}
       </nav>
@@ -61,7 +70,7 @@ export default function Sidebar({ badges }: { badges: CompteursNavigation | null
   }
 
   return (
-    <nav className="side">
+    <nav className={`side ${ouvert ? 'ouvert' : ''}`}>
       {renderItem(ACCUEIL)}
       {lot1.length > 0 && (
         <>

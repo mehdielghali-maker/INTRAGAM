@@ -32,6 +32,8 @@ function CoquilleApp() {
   const [tableauBord, setTableauBord] = useState<TableauBord | null>(null);
   const [badges, setBadges] = useState<CompteursNavigation | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Menu mobile : la sidebar est masquée en dessous de 1080px et s'ouvre en tiroir.
+  const [menuOuvert, setMenuOuvert] = useState(false);
 
   // Clé de sélection : l'agence active, ou « CONSOLIDE » en vue d'ensemble.
   const selection = contexte
@@ -55,9 +57,17 @@ function CoquilleApp() {
 
   return (
     <div>
-      <Topbar contexte={contexte} principal={principal} onChanger={changer} />
+      <Topbar
+        contexte={contexte}
+        principal={principal}
+        onChanger={changer}
+        onOuvrirMenu={() => setMenuOuvert(true)}
+      />
       <div className="shell">
-        <Sidebar badges={badges} />
+        <Sidebar badges={badges} ouvert={menuOuvert} onNaviguer={() => setMenuOuvert(false)} />
+        {menuOuvert && (
+          <div className="nav-backdrop" onClick={() => setMenuOuvert(false)} aria-hidden="true" />
+        )}
         <main className="main">
           <Outlet context={{ tableauBord, erreur } satisfies ContexteApp} />
         </main>

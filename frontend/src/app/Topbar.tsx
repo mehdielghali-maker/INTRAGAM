@@ -26,6 +26,17 @@ function LogoutButton() {
   );
 }
 
+/** Bouton hamburger (visible uniquement en mobile/tablette < 1080px) : ouvre la sidebar en tiroir. */
+function MenuButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button type="button" className="menu-burger" onClick={onClick} aria-label="Ouvrir le menu de navigation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} aria-hidden="true">
+        <path d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+    </button>
+  );
+}
+
 function PinIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} aria-hidden="true">
@@ -64,10 +75,12 @@ export default function Topbar({
   contexte,
   principal,
   onChanger,
+  onOuvrirMenu,
 }: {
   contexte: ContexteAgence | null;
   principal: Principal;
   onChanger: (code: string) => void;
+  onOuvrirMenu: () => void;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -85,6 +98,7 @@ export default function Topbar({
     return (
       <header className="topbar">
         <div className="brandblock">
+          <MenuButton onClick={onOuvrirMenu} />
           <span className="logo-tile">
             <img src="/logo-gam.webp" alt="GAM Assurances" />
           </span>
@@ -126,6 +140,7 @@ export default function Topbar({
   return (
     <header className="topbar">
       <div className="brandblock">
+        <MenuButton onClick={onOuvrirMenu} />
         <span className="logo-tile">
           <img src="/logo-gam.webp" alt="GAM Assurances" />
         </span>
