@@ -34,6 +34,7 @@ export default defineConfig({
       '@dossier': fileURLToPath(new URL('../../shared/dossier', import.meta.url)),
     },
   },
-  server: { port: 5174 },
+  // allowedHosts : autorise les domaines de TUNNEL HTTPS (dev:tunnel) pour tester sur téléphone.
+  server: { port: 5174, allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io'] },
   test: { environment: 'jsdom' },
 });

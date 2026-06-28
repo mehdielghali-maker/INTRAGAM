@@ -41,6 +41,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // allowedHosts : autorise les domaines de TUNNEL HTTPS (dev:tunnel) pour tester sur téléphone.
+    allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ngrok.io'],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
