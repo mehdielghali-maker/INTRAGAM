@@ -68,6 +68,10 @@ fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte
 - **Front câblé** : composant partagé `@sinistre-ui/VerificationPlaque` affiche CONFORME/NON_CONFORME/NON_LUE
   sous le contrôle de complétude dans `DetailControlePage` (sinistre) + `DetailSouscriptionPage` (sélection
   face avant/arrière + mapping `face_*`/`veh_*`→vues RECO + appel `POST /api/reconnaissance/analyser`).
+- **PWA `modules/declarations-sinistre/`** (offline, indépendante du Java) : RECO câblé à l'étape « Vérification »
+  via la couche partagée **`@reco`** (`shared/reco/`, appel DIRECT au microservice, mock/http `VITE_RECO_MODE`,
+  comparaison côté client `verifierPlaque`). Bandeau `VerificationPlaque` à analyseur injecté. CORS microservice
+  (`RECO_CORS_ORIGINS`). Tests : `modules/declarations-sinistre` 20 verts (dont `@reco`).
 - **Reste optionnel** : si `reco.bloque-non-conforme=true`, griser le bouton de validation côté front quand
   `bloquant` (aujourd'hui le statut est affiché mais le bouton reste actif). Détails : `services/reco/README.md`.
 

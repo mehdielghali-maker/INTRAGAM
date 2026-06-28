@@ -29,6 +29,7 @@ import numpy as np
 from PIL import Image
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("reco")
@@ -46,6 +47,16 @@ OCR_MODEL = os.getenv("RECO_OCR_MODEL", "cct-xs-v2-global-model")
 COCO_VEHICULE = {2: "voiture", 3: "moto", 5: "bus", 7: "camion"}
 
 app = FastAPI(title="Service RECO — INTRAGAM", version="1.0")
+
+# CORS : les fronts (PWA declaration, poste) appellent /analyser depuis le NAVIGATEUR. Origines
+# autorisees par variable d'environnement (rien en dur) ; "*" en dev.
+_cors_origins = [o.strip() for o in os.getenv("RECO_CORS_ORIGINS", "*").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins or ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _yolo = None  # modele detection vehicule
 _alpr = None  # pipeline plaque

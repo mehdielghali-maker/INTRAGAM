@@ -52,6 +52,8 @@ services:
       FAST_ALPR_HOME: /models/fast-alpr
       RECO_SEUIL_VEHICULE: "0.45"
       RECO_SEUIL_PLAQUE: "0.35"
+      # Origines autorisées pour l'appel navigateur direct (PWA déclaration, poste). "*" en dev.
+      RECO_CORS_ORIGINS: "*"
     volumes:
       - reco-models:/models          # persiste les poids des modèles entre redémarrages
     healthcheck:

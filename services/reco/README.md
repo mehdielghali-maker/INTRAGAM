@@ -86,10 +86,21 @@ Réponse :
 | `RECO_YOLO_MODEL` | `yolov8n.pt` | Modèle détection véhicule (n=rapide) |
 | `RECO_DET_MODEL` | `yolo-v9-t-384-license-plate-end2end` | Détecteur de plaque |
 | `RECO_OCR_MODEL` | `cct-xs-v2-global-model` | OCR de plaque |
+| `RECO_CORS_ORIGINS` | `*` | Origines autorisées pour l'appel **navigateur direct** (PWA), séparées par des virgules |
 
 ---
 
-## 4. Branchement INTRAGAM (Spring Boot) — contexte `dz.gam.poste.reconnaissance`
+## 4. Deux façons d'appeler RECO
+
+- **Poste AGA (back-end)** — via le contexte Spring `dz.gam.poste.reconnaissance` (section 5) :
+  la comparaison plaque ↔ contrat est faite **côté serveur** (anti-fraude).
+- **PWA client « Déclaration de sinistre »** (`modules/declarations-sinistre/`) — appelle le
+  microservice **directement** depuis le navigateur via la couche partagée **`@reco`**
+  (`shared/reco/`, mock dev / http réel selon `VITE_RECO_MODE`) ; la comparaison plaque ↔ contrat
+  se fait **côté client** (`verifierPlaque`, portage TS du service Java). Nécessite le CORS
+  (`RECO_CORS_ORIGINS`). Le bandeau `@sinistre-ui/VerificationPlaque` est mutualisé (analyseur injecté).
+
+## 5. Branchement poste (Spring Boot) — contexte `dz.gam.poste.reconnaissance`
 
 Le branchement vit dans le backend (`backend/src/main/java/dz/gam/poste/reconnaissance/`),
 en architecture hexagonale (ADR 0011) :
@@ -124,16 +135,16 @@ reco:
 
 ---
 
-## 5. En ligne / hors-ligne
+## 6. En ligne / hors-ligne
 
-La reconnaissance tourne **côté serveur**. En ligne : analyse à la prise,
+La reconnaissance tourne **côté serveur** (poste) ou via le microservice indépendant (PWA). En ligne : analyse à la prise,
 résultat affiché. Hors-ligne : la photo est capturée et stockée normalement,
 l'analyse + la comparaison se font **à la synchronisation**. L'absence de réseau
 (ou du service) ne bloque **jamais** la capture ni la déclaration.
 
 ---
 
-## 6. Précision sur les plaques algériennes
+## 7. Précision sur les plaques algériennes
 
 Format numérique `NNNNN NNN NN` (série · type/année · code wilaya). La
 normalisation (`VerificationPlaqueService`) retire espaces/tirets des deux côtés

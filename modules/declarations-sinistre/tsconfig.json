@@ -21,11 +21,13 @@
       "@decsin/*": ["../../shared/decsin/*"],
       "@sinistre-ui": ["../../shared/sinistre-ui/index.ts"],
       "@sinistre-ui/*": ["../../shared/sinistre-ui/*"],
+      "@reco": ["../../shared/reco/index.ts"],
+      "@reco/*": ["../../shared/reco/*"],
       "react": ["node_modules/@types/react"],
       "react/*": ["node_modules/@types/react/*"],
       "react-dom": ["node_modules/@types/react-dom"],
       "react-dom/*": ["node_modules/@types/react-dom/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "../../shared/decsin", "../../shared/sinistre-ui"]
+  "include": ["src", "vite.config.ts", "../../shared/decsin", "../../shared/sinistre-ui", "../../shared/reco"]
 }

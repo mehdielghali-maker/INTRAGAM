@@ -41,6 +41,15 @@ bascule possible vers Plate Recognizer sans toucher au reste).
 6. **Anti-fraude configurable** (`reco.bloque-non-conforme`, défaut `false`) : si activé, une
    non-concordance plaque côté AGA rend la validation **bloquante** (`bloquant=true`) — sinon simple
    avertissement. Décision portée par `bloqueValidation(statut, estAga, bloqueNonConforme)`.
+7. **Deux voies d'appel selon la face** (le service reste UNIQUE et indépendant) :
+   - **Poste AGA** → backend Java (point 5), comparaison **côté serveur** (anti-fraude).
+   - **PWA client « Déclaration de sinistre »** (`modules/declarations-sinistre/`, offline-first,
+     indépendante du backend Java) → **microservice RECO directement** via la couche partagée
+     **`@reco`** (`shared/reco/` : port + mock/http, bascule `VITE_RECO_MODE`, base URL `.env`).
+     La comparaison plaque ↔ contrat se fait **côté client** (`verifierPlaque`, **portage TS fidèle**
+     de `VerificationPlaqueService`). Le microservice expose le **CORS** (`RECO_CORS_ORIGINS`). Le
+     bandeau `@sinistre-ui/VerificationPlaque` est **mutualisé** (analyseur **injecté** : défaut poste,
+     ou `@reco` pour la PWA), surfacé à l'étape « Vérification » (détection véhicule + plaque lue).
 
 ## Conséquences
 - **+** Capacité indépendante et remplaçable : changer de moteur ANPR (fast-alpr → Plate Recognizer, ou

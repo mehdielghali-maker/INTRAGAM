@@ -113,7 +113,11 @@ bloquante optionnelle (`reco.bloque-non-conforme`). Pas de boucle fermée (capac
 **unitaires purs** (pas d'IT Testcontainers). **Câblé au front** : composant partagé
 `@sinistre-ui/VerificationPlaque` affiche le statut sous le contrôle de complétude dans
 `DetailControlePage` (sinistre) et `DetailSouscriptionPage` (mapping vues `face_*`/`veh_*`→`avant…`).
-Détails : `services/reco/README.md`.
+**Deux voies d'appel** (service unique) : le **poste** passe par le backend Java (compare côté serveur,
+défaut du bandeau) ; la **PWA `modules/declarations-sinistre/`** (offline, indépendante du Java) appelle
+le **microservice directement** via la couche partagée **`@reco`** (`shared/reco/`, port + mock/http,
+`VITE_RECO_MODE`) + comparaison côté client (`verifierPlaque`, portage TS) ; CORS sur le microservice
+(`RECO_CORS_ORIGINS`). Le bandeau prend un **analyseur injecté**. Détails : `services/reco/README.md`.
 
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)
 Les KPI de l'accueil et la situation mensuelle du versement proviennent du module

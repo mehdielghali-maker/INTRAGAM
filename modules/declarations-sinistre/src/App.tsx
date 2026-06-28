@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { catalogueDeclaration, CODE_OTP_DEMO, decsin, Declaration, peutEnvoyer, Piece } from '@decsin';
-import { ApercusControle, PieceCapturee, PiecesCapture } from '@sinistre-ui';
+import { ApercusControle, PieceCapturee, PiecesCapture, VerificationPlaque } from '@sinistre-ui';
+import { analyseurReco } from './reco';
 import { ajouterPiece, enregistrerDeclaration, getDeclarationLocale, piecesDe, supprimerPiece } from './offline/db';
 import { demanderPersistance } from './offline/persist';
 import { activerSyncAuto, synchroniser } from './offline/sync';
@@ -272,6 +273,7 @@ export default function App() {
           <div className="s-title">Vérification</div>
           <div className="s-sub">Contrôlez vos pièces avant l'envoi. Touchez une vignette pour l'agrandir.</div>
           <ApercusControle catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={pieces} />
+          <VerificationPlaque pieces={pieces} immatriculation={declaration.immatriculation} analyser={analyseurReco} />
           <button className="btn btn-primary" disabled={!envoiPossible} onClick={envoyer}>
             Envoyer ma déclaration
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={ENVOI} /></svg>

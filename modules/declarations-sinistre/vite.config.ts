@@ -30,6 +30,7 @@ export default defineConfig({
     alias: {
       '@decsin': fileURLToPath(new URL('../../shared/decsin', import.meta.url)),
       '@sinistre-ui': fileURLToPath(new URL('../../shared/sinistre-ui', import.meta.url)),
+      '@reco': fileURLToPath(new URL('../../shared/reco', import.meta.url)),
     },
   },
   server: { port: 5174 },
