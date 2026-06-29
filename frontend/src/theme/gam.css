@@ -361,6 +361,33 @@ body {
 .nav-item.soon {
   color: var(--gris);
 }
+/* Fonctions PHARES (souscription / déclaration de sinistre) : code couleur OR distinct, en tête de menu. */
+.nav-item.principal {
+  background: #faf2dd;
+  border: 1px solid #ecdcae;
+  color: var(--vert-fonce);
+  font-weight: 600;
+}
+.nav-item.principal .ic {
+  color: var(--or);
+}
+.nav-item.principal:hover {
+  background: #f4e8c6;
+}
+.nav-item.principal.active {
+  background: var(--vert);
+  color: #fff;
+  border-color: var(--vert);
+}
+.nav-item.principal.active .ic {
+  color: var(--or);
+}
+/* Séparateur discret entre les fonctions phares et le reste (remplace les libellés « Lot 1/2 »). */
+.nav-sep {
+  height: 1px;
+  background: #ece4d2;
+  margin: 12px 8px;
+}
 .ic {
   width: 20px;
   height: 20px;

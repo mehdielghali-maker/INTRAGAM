@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Catalogue, PieceCapturee, vuesVehicule } from './catalogue';
 import { preparerPiece } from './media';
+import { useEstMobile } from './useEstMobile';
 import { AnalyseurPlaque, ResultatVerification, analyseurPoste } from './VerificationPlaque';
 
 const CHECK = 'M5 12l5 5L20 6';
@@ -38,6 +39,7 @@ export default function CaptureVehicule({
   analyser?: AnalyseurPlaque;
 }) {
   const vues = vuesVehicule(catalogue);
+  const mobile = useEstMobile(); // caméra seulement sur téléphone/tablette ; PC = import de fichier
   const [vue, setVue] = useState<string>(vues[0]?.type ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraKo, setCameraKo] = useState(false);
@@ -46,6 +48,7 @@ export default function CaptureVehicule({
   const [recoParVue, setRecoParVue] = useState<Record<string, ResultatVerification>>({});
 
   useEffect(() => {
+    if (!mobile) return; // PC : pas de webcam, on n'ouvre pas le flux caméra
     let flux: MediaStream | null = null;
     navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
@@ -57,7 +60,7 @@ export default function CaptureVehicule({
       })
       .catch(() => setCameraKo(true));
     return () => flux?.getTracks().forEach((t) => t.stop());
-  }, []);
+  }, [mobile]);
 
   const prise = (type: string) => pieces.some((p) => p.type === type);
   const def = vues.find((v) => v.type === vue) ?? vues[0];
@@ -122,18 +125,28 @@ export default function CaptureVehicule({
 
   return (
     <div className="sui-frame">
-      <div className="sui-viewfinder">
-        <video ref={videoRef} autoPlay playsInline muted />
+      <div className={`sui-viewfinder ${mobile ? '' : 'pc'}`}>
+        {mobile && <video ref={videoRef} autoPlay playsInline muted />}
         <span className="sui-corner sui-tl" />
         <span className="sui-corner sui-tr" />
         <span className="sui-corner sui-bl" />
         <span className="sui-corner sui-br" />
         <span className="sui-tag">Vue : {def?.libelle ?? ''}</span>
         <div className="sui-guide" dangerouslySetInnerHTML={{ __html: catalogue.silhouettes[vue] ?? '' }} />
-        {cameraKo && <span className="sui-vf-err">Caméra indisponible — utilisez « Galerie ».</span>}
-        <button type="button" className="sui-cam" onClick={capturer} disabled={cameraKo} title="Prendre la photo">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="13" r="4" /><path d={CAM} /></svg>
-        </button>
+        {mobile ? (
+          <>
+            {cameraKo && <span className="sui-vf-err">Caméra indisponible — utilisez « Galerie ».</span>}
+            <button type="button" className="sui-cam" onClick={capturer} disabled={cameraKo} title="Prendre la photo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="13" r="4" /><path d={CAM} /></svg>
+            </button>
+          </>
+        ) : (
+          // Sur ordinateur : pas de webcam, on importe un fichier (la photo vient du téléphone).
+          <button type="button" className="sui-import-pc" onClick={galerie}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="13" r="4" /><path d={CAM} /></svg>
+            Choisir une photo
+          </button>
+        )}
       </div>
 
       {vues.map((v) => {
@@ -180,8 +193,17 @@ export default function CaptureVehicule({
       </div>
 
       <div className="sui-cap">
-        Choisissez la vue, cadrez le véhicule puis prenez la photo — ou{' '}
-        <span className="sui-link" onClick={galerie}>importez depuis la galerie</span>.
+        {mobile ? (
+          <>
+            Choisissez la vue, cadrez le véhicule puis prenez la photo — ou{' '}
+            <span className="sui-link" onClick={galerie}>importez depuis la galerie</span>.
+          </>
+        ) : (
+          <>
+            Choisissez la vue puis{' '}
+            <span className="sui-link" onClick={galerie}>importez la photo</span> (prise depuis un téléphone).
+          </>
+        )}
         {prise(vue) && (
           <> · <span className="sui-link" onClick={() => retirer(vue)}>retirer cette vue</span></>
         )}

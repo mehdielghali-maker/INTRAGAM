@@ -1,5 +1,6 @@
 import { Catalogue, PieceCapturee, piecesDuGroupe } from './catalogue';
 import { preparerPiece } from './media';
+import { useEstMobile } from './useEstMobile';
 
 const CAM = 'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z';
 const CHECK = 'M5 12l5 5L20 6';
@@ -35,6 +36,8 @@ export default function CaptureDocuments({
   onAjouter: (piece: PieceCapturee, blob: Blob) => void;
   onSupprimer: (type: string) => void;
 }) {
+  const mobile = useEstMobile(); // caméra (« Prendre ») seulement sur téléphone/tablette
+
   async function ajouter(file: File, type: string) {
     const { piece, blob } = await preparerPiece(file, type);
     onAjouter(piece, blob);
@@ -76,11 +79,14 @@ export default function CaptureDocuments({
             <div className="sui-acts">
               {piece ? (
                 <button type="button" className="sup" onClick={() => onSupprimer(def.type)}>Supprimer</button>
-              ) : (
+              ) : mobile ? (
                 <>
                   <button type="button" onClick={() => choisir(def.type, 'camera')}>Prendre</button>
                   <button type="button" onClick={() => choisir(def.type, 'galerie')}>Galerie</button>
                 </>
+              ) : (
+                // Ordinateur : pas de caméra, seulement l'import de fichier.
+                <button type="button" onClick={() => choisir(def.type, 'galerie')}>Importer</button>
               )}
             </div>
           </div>

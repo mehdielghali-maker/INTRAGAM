@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { Icon } from './icons';
 import { useAgence } from './AgencyContext';
 import { useAuth } from './AuthContext';
-import { ACCUEIL, ADMIN, LOT1, LOT2, NavItem } from './navigation';
+import { ACCUEIL, ADMIN, LOT1, LOT2, PRINCIPAUX, NavItem } from './navigation';
 import { CompteursNavigation } from '../features/accueil/types';
 
 /**
@@ -27,6 +27,7 @@ export default function Sidebar({
   const autorise = (item: NavItem) =>
     item.id === 'sinistre' || item.id === 'souscription' || modules.includes(item.id);
 
+  const principaux = PRINCIPAUX.filter(autorise);
   const lot1 = LOT1.filter(autorise);
   const lot2 = LOT2.filter(autorise);
 
@@ -42,7 +43,7 @@ export default function Sidebar({
     return null;
   }
 
-  function renderItem(item: NavItem) {
+  function renderItem(item: NavItem, principal = false) {
     return (
       <NavLink
         key={item.id}
@@ -50,7 +51,7 @@ export default function Sidebar({
         end={item.route === '/'}
         onClick={onNaviguer}
         className={({ isActive }) =>
-          `nav-item ${isActive ? 'active' : ''} ${item.soon ? 'soon' : ''}`
+          `nav-item ${isActive ? 'active' : ''} ${item.soon ? 'soon' : ''} ${principal ? 'principal' : ''}`
         }
       >
         <Icon name={item.icon} className="ic" />
@@ -72,18 +73,10 @@ export default function Sidebar({
   return (
     <nav className={`side ${ouvert ? 'ouvert' : ''}`}>
       {renderItem(ACCUEIL)}
-      {lot1.length > 0 && (
-        <>
-          <div className="nav-group">Lot 1 &middot; Workflows &amp; demandes</div>
-          {lot1.map(renderItem)}
-        </>
-      )}
-      {lot2.length > 0 && (
-        <>
-          <div className="nav-group">Lot 2 &middot; Recouvrement</div>
-          {lot2.map(renderItem)}
-        </>
-      )}
+      {principaux.map((item) => renderItem(item, true))}
+      {(lot1.length > 0 || lot2.length > 0) && <div className="nav-sep" />}
+      {lot1.map((item) => renderItem(item))}
+      {lot2.map((item) => renderItem(item))}
     </nav>
   );
 }
