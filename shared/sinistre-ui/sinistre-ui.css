@@ -35,11 +35,13 @@
 .sui-cap { font-size: 12px; color: var(--gris); margin-top: 8px; line-height: 1.35; }
 .sui-link { color: var(--or); font-weight: 600; cursor: pointer; text-decoration: underline; }
 
-/* Avertissement "pas un véhicule" à la capture (non bloquant, juste une incitation à reprendre). */
-.sui-noveh { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0 4px; padding: 10px 12px;
-  border-radius: 11px; background: #fbeae7; border: 1px solid #e8c8c2; color: var(--terra);
-  font-size: 12.5px; line-height: 1.38; }
-.sui-noveh svg { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; }
+/* Retour RECO à la capture, par vue (non bloquant) : alerte non-véhicule / plaque lue / plaque non lue. */
+.sui-reco { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0 4px; padding: 10px 12px;
+  border-radius: 11px; border: 1px solid; font-size: 12.5px; line-height: 1.38; }
+.sui-reco svg { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 1px; }
+.sui-reco.ok { background: #eef6f1; border-color: #cfe7da; color: var(--vert); }
+.sui-reco.ko { background: #fbeae7; border-color: #e8c8c2; color: var(--terra); }
+.sui-reco.neutre { background: #f3f1ea; border-color: #e2dccc; color: var(--gris); }
 
 /* tuiles pièces (constat / documents) — grille (poste) ou liste (mobile/client) */
 .sui-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }

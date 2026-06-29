@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Catalogue, PieceCapturee, vuesVehicule } from './catalogue';
 import { preparerPiece } from './media';
-import { AnalyseurPlaque, analyseurPoste } from './VerificationPlaque';
+import { AnalyseurPlaque, ResultatVerification, analyseurPoste } from './VerificationPlaque';
 
 const CHECK = 'M5 12l5 5L20 6';
 const CAM = 'M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z';
 const WARN = 'M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01';
+const INFO = 'M12 16v-5M12 8h.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z';
 
 /** Mappe un type de slot (face_avant, veh_arriere, veh_gauche…) vers la vue attendue par le service
  * RECO. La détection « est-ce un véhicule ? » est indépendante de la vue ; seul avant/arrière lit une
@@ -40,8 +41,9 @@ export default function CaptureVehicule({
   const [vue, setVue] = useState<string>(vues[0]?.type ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraKo, setCameraKo] = useState(false);
-  // Vues dont la photo prise NE semble PAS être un véhicule (avertissement, jamais bloquant).
-  const [nonVehicule, setNonVehicule] = useState<Record<string, boolean>>({});
+  // Résultat RECO par vue capturée : non-véhicule (alerte) / plaque lue (confirmation). Best-effort,
+  // jamais bloquant (la pièce est ajoutée avant l'analyse ; panne/hors-ligne = silencieux).
+  const [recoParVue, setRecoParVue] = useState<Record<string, ResultatVerification>>({});
 
   useEffect(() => {
     let flux: MediaStream | null = null;
@@ -75,14 +77,14 @@ export default function CaptureVehicule({
     // est déjà ajoutée ; une panne/refus/hors-ligne du service est avalé silencieusement (pas d'alerte).
     if (analyser) {
       analyser(blob, vueReco(type), '')
-        .then((res) => setNonVehicule((m) => ({ ...m, [type]: res.estVehicule === false })))
+        .then((res) => setRecoParVue((m) => ({ ...m, [type]: res })))
         .catch(() => undefined);
     }
   }
 
   function retirer(type: string) {
     onSupprimer(type);
-    setNonVehicule((m) => {
+    setRecoParVue((m) => {
       const n = { ...m };
       delete n[type];
       return n;
@@ -134,15 +136,33 @@ export default function CaptureVehicule({
         </button>
       </div>
 
-      {vues.some((v) => nonVehicule[v.type]) && (
-        <div className="sui-noveh" role="alert">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={WARN} /></svg>
-          <span>
-            <b>{vues.filter((v) => nonVehicule[v.type]).map((v) => v.libelle).join(', ')}</b> : cette photo
-            ne semble pas montrer un véhicule — reprenez la prise de vue.
-          </span>
-        </div>
-      )}
+      {vues.map((v) => {
+        const r = recoParVue[v.type];
+        if (!r) return null;
+        let variante: 'ok' | 'ko' | 'neutre' | null = null;
+        let icone = INFO;
+        let texte = '';
+        if (r.estVehicule === false) {
+          variante = 'ko';
+          icone = WARN;
+          texte = 'cette photo ne semble pas montrer un véhicule — reprenez la prise de vue.';
+        } else if (r.plaqueLue) {
+          variante = 'ok';
+          icone = CHECK;
+          texte = `véhicule détecté · plaque lue « ${r.plaqueLue} ».`;
+        } else if (vueReco(v.type) === 'avant' || vueReco(v.type) === 'arriere') {
+          variante = 'neutre';
+          icone = INFO;
+          texte = 'véhicule détecté, mais plaque non lue — rapprochez-vous puis reprenez la photo.';
+        }
+        if (!variante) return null; // véhicule sur une vue sans plaque attendue → rien à signaler
+        return (
+          <div key={v.type} className={`sui-reco ${variante}`} role={variante === 'ko' ? 'alert' : undefined}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={icone} /></svg>
+            <span><b>{v.libelle}</b> : {texte}</span>
+          </div>
+        );
+      })}
 
       <div className="sui-chips">
         {vues.map((v) => (
