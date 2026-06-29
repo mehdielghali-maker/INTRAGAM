@@ -104,6 +104,20 @@ def _normaliser_plaque(txt: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", (txt or "").upper())
 
 
+def _coerce_conf(c) -> Optional[float]:
+    """Confiance robuste. Selon la version de fast-alpr, `confidence` peut etre un float OU une
+    LISTE de confiances par caractere (auquel cas on prend la moyenne). None si inexploitable."""
+    if c is None:
+        return None
+    if isinstance(c, (list, tuple)):
+        vals = [float(x) for x in c if isinstance(x, (int, float))]
+        return sum(vals) / len(vals) if vals else None
+    try:
+        return float(c)
+    except (TypeError, ValueError):
+        return None
+
+
 def _lire_plaque(arr: np.ndarray):
     """Retourne (plaque_normalisee | None, confiance) via fast-alpr."""
     results = _alpr.predict(arr)
@@ -111,12 +125,12 @@ def _lire_plaque(arr: np.ndarray):
     for r in results:
         ocr = getattr(r, "ocr", None)
         txt = getattr(ocr, "text", None) if ocr else None
-        conf = getattr(ocr, "confidence", None) if ocr else None
+        conf = _coerce_conf(getattr(ocr, "confidence", None) if ocr else None)
         if conf is None:  # repli sur la confiance du detecteur
             det = getattr(r, "detection", None)
-            conf = getattr(det, "confidence", 0.0) if det else 0.0
-        if txt and (meilleur is None or float(conf) > meilleur[1]):
-            meilleur = (txt, float(conf))
+            conf = _coerce_conf(getattr(det, "confidence", None) if det else None) or 0.0
+        if txt and (meilleur is None or conf > meilleur[1]):
+            meilleur = (txt, conf)
     if not meilleur:
         return None, 0.0
     return _normaliser_plaque(meilleur[0]), meilleur[1]
