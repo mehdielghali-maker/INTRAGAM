@@ -56,8 +56,9 @@ function dataUrlVersBlob(dataUrl: string): Blob {
   return new Blob([octets], { type: mime });
 }
 
-/** Analyseur par défaut : backend Java du poste (`/api/reconnaissance/analyser`, session AGA). */
-const analyseurPoste: AnalyseurPlaque = async (photo, vue, immatriculation) => {
+/** Analyseur par défaut : backend Java du poste (`/api/reconnaissance/analyser`, session AGA).
+ * Exporté pour être réutilisé par le socle de capture (vérification « est-ce un véhicule ? »). */
+export const analyseurPoste: AnalyseurPlaque = async (photo, vue, immatriculation) => {
   const form = new FormData();
   form.append('photo', photo, 'photo.jpg');
   form.append('vue', vue);
@@ -90,11 +91,14 @@ export default function VerificationPlaque({
   const [res, setRes] = useState<ResultatVerification | null>(null);
 
   useEffect(() => {
-    if (!face || !immatriculation) return;
+    // L'analyse se lance dès qu'il y a une face exploitable : la détection « pas un véhicule »
+    // ne dépend PAS de l'immatriculation (testée en premier côté domaine). Sans immat, le service
+    // renvoie PAS_UN_VEHICULE / NON_LUE — jamais un faux CONFORME (normaliser(null) ≠ plaque).
+    if (!face) return;
     let annule = false;
     setEtat('chargement');
     setRes(null);
-    analyser(dataUrlVersBlob(face.dataUrl), face.vue, immatriculation)
+    analyser(dataUrlVersBlob(face.dataUrl), face.vue, immatriculation ?? '')
       .then((r) => {
         if (!annule) {
           setRes(r);
@@ -109,8 +113,8 @@ export default function VerificationPlaque({
     };
   }, [face, immatriculation, analyser]);
 
-  // Pas de face avant/arrière exploitable ou pas d'immatriculation → pas de contrôle de plaque.
-  if (!face || !immatriculation) return null;
+  // Pas de face avant/arrière exploitable → rien à analyser.
+  if (!face) return null;
 
   const vehic = res?.typeVehicule ? `Véhicule détecté (${res.typeVehicule})` : 'Véhicule détecté';
 
@@ -123,6 +127,11 @@ export default function VerificationPlaque({
     titre = 'Reconnaissance indisponible';
     sous = 'Le service de reconnaissance n’a pas répondu — contrôle manuel.';
   } else if (etat === 'ok' && res) {
+    // Sans immatriculation de contrat, un verdict de conformité n'a pas de sens : on n'affiche que la
+    // détection véhicule / non-lecture, pas CONFORME/NON_CONFORME (qui exigent une plaque attendue).
+    if (!immatriculation && (res.statut === 'CONFORME' || res.statut === 'NON_CONFORME')) {
+      return null;
+    }
     switch (res.statut) {
       case 'CONFORME':
         variante = 'ok';

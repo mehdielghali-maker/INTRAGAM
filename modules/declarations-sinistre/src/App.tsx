@@ -283,7 +283,7 @@ export default function App() {
         <div className="screen">
           <div className="s-title">Photos &amp; documents</div>
           <div className="s-sub">Ajoutez les pièces. Les pièces obligatoires (*) sont nécessaires pour envoyer.</div>
-          <PiecesCapture catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={pieces} layout="liste" onAjouter={ajouterPieceLocale} onSupprimer={retirerPiece} />
+          <PiecesCapture catalogue={catalogueDeclaration} contexte={{ tiers }} pieces={pieces} layout="liste" onAjouter={ajouterPieceLocale} onSupprimer={retirerPiece} analyser={analyseurReco} />
           <div className="save-note">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={CHECK} /></svg>
             Vos photos sont enregistrées sur votre téléphone, dans l'application. Rien n'est perdu même sans réseau.

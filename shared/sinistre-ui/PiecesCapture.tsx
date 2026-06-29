@@ -1,6 +1,7 @@
 import { Catalogue, PieceCapturee } from './catalogue';
 import CaptureDocuments from './CaptureDocuments';
 import CaptureVehicule from './CaptureVehicule';
+import { AnalyseurPlaque } from './VerificationPlaque';
 import './sinistre-ui.css';
 
 /**
@@ -18,6 +19,7 @@ export default function PiecesCapture({
   layout = 'grille',
   onAjouter,
   onSupprimer,
+  analyser,
 }: {
   catalogue: Catalogue;
   contexte: unknown;
@@ -25,6 +27,8 @@ export default function PiecesCapture({
   layout?: 'grille' | 'liste';
   onAjouter: (piece: PieceCapturee, blob: Blob) => void;
   onSupprimer: (type: string) => void;
+  /** Analyseur RECO « est-ce un véhicule ? » transmis au socle véhicule (défaut = backend poste). */
+  analyser?: AnalyseurPlaque;
 }) {
   const estObligatoire = (type: string) => catalogue.estObligatoire(type, contexte);
 
@@ -37,7 +41,7 @@ export default function PiecesCapture({
               {g.libelle}
               {g.hint && <span className="cnt"> {g.hint}</span>}
             </div>
-            <CaptureVehicule catalogue={catalogue} pieces={pieces} onAjouter={onAjouter} onSupprimer={onSupprimer} />
+            <CaptureVehicule catalogue={catalogue} pieces={pieces} onAjouter={onAjouter} onSupprimer={onSupprimer} analyser={analyser} />
           </div>
         ) : (
           <div key={g.id}>

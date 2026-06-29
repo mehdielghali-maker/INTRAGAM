@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Catalogue, PieceCapturee, vuesVehicule } from './catalogue';
 import { preparerPiece } from './media';
+import { AnalyseurPlaque, analyseurPoste } from './VerificationPlaque';
 
 const CHECK = 'M5 12l5 5L20 6';
 const CAM = 'M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z';
+const WARN = 'M10.3 3.9l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01';
+
+/** Mappe un type de slot (face_avant, veh_arriere, veh_gauche…) vers la vue attendue par le service
+ * RECO. La détection « est-ce un véhicule ? » est indépendante de la vue ; seul avant/arrière lit une
+ * plaque. */
+function vueReco(type: string): string {
+  if (type.endsWith('avant')) return 'avant';
+  if (type.endsWith('arriere')) return 'arriere';
+  return 'autre';
+}
 
 /**
  * Socle de capture VÉHICULE partagé, piloté par le CATALOGUE : sélecteur de vues (chips) +
@@ -16,16 +27,21 @@ export default function CaptureVehicule({
   pieces,
   onAjouter,
   onSupprimer,
+  analyser = analyseurPoste,
 }: {
   catalogue: Catalogue;
   pieces: PieceCapturee[];
   onAjouter: (piece: PieceCapturee, blob: Blob) => void;
   onSupprimer: (type: string) => void;
+  /** Reconnaissance « est-ce un véhicule ? » lancée à la capture (défaut = backend poste). */
+  analyser?: AnalyseurPlaque;
 }) {
   const vues = vuesVehicule(catalogue);
   const [vue, setVue] = useState<string>(vues[0]?.type ?? '');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraKo, setCameraKo] = useState(false);
+  // Vues dont la photo prise NE semble PAS être un véhicule (avertissement, jamais bloquant).
+  const [nonVehicule, setNonVehicule] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let flux: MediaStream | null = null;
@@ -55,6 +71,22 @@ export default function CaptureVehicule({
     const { piece, blob } = await preparerPiece(file, type);
     onAjouter(piece, blob);
     vueSuivante(type);
+    // Vérification « est-ce un véhicule ? » DÈS la capture — best-effort, JAMAIS bloquante : la pièce
+    // est déjà ajoutée ; une panne/refus/hors-ligne du service est avalé silencieusement (pas d'alerte).
+    if (analyser) {
+      analyser(blob, vueReco(type), '')
+        .then((res) => setNonVehicule((m) => ({ ...m, [type]: res.estVehicule === false })))
+        .catch(() => undefined);
+    }
+  }
+
+  function retirer(type: string) {
+    onSupprimer(type);
+    setNonVehicule((m) => {
+      const n = { ...m };
+      delete n[type];
+      return n;
+    });
   }
 
   function capturer() {
@@ -102,6 +134,16 @@ export default function CaptureVehicule({
         </button>
       </div>
 
+      {vues.some((v) => nonVehicule[v.type]) && (
+        <div className="sui-noveh" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d={WARN} /></svg>
+          <span>
+            <b>{vues.filter((v) => nonVehicule[v.type]).map((v) => v.libelle).join(', ')}</b> : cette photo
+            ne semble pas montrer un véhicule — reprenez la prise de vue.
+          </span>
+        </div>
+      )}
+
       <div className="sui-chips">
         {vues.map((v) => (
           <button
@@ -121,7 +163,7 @@ export default function CaptureVehicule({
         Choisissez la vue, cadrez le véhicule puis prenez la photo — ou{' '}
         <span className="sui-link" onClick={galerie}>importez depuis la galerie</span>.
         {prise(vue) && (
-          <> · <span className="sui-link" onClick={() => onSupprimer(vue)}>retirer cette vue</span></>
+          <> · <span className="sui-link" onClick={() => retirer(vue)}>retirer cette vue</span></>
         )}
       </div>
     </div>
