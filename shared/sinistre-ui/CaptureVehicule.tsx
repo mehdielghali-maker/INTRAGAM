@@ -50,8 +50,13 @@ export default function CaptureVehicule({
   useEffect(() => {
     if (!mobile) return; // PC : pas de webcam, on n'ouvre pas le flux caméra
     let flux: MediaStream | null = null;
+    // Résolution BORNÉE (~720p) : sur mobile, un flux/canvas pleine résolution (1080p/4K) sature la
+    // mémoire à la capture et fait RECHARGER l'onglet (perte de la saisie). 720p suffit largement.
     navigator.mediaDevices
-      ?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+      ?.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      })
       .then((s) => {
         flux = s;
         if (videoRef.current) {
@@ -99,15 +104,24 @@ export default function CaptureVehicule({
     if (!video || !video.videoWidth) {
       return;
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return;
+    try {
+      // Canvas BORNÉ à 1280px (mémoire mobile) : on ne crée jamais un canvas pleine résolution.
+      const ratio = Math.min(1, 1280 / video.videoWidth);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(video.videoWidth * ratio);
+      canvas.height = Math.round(video.videoHeight * ratio);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        return;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((b) => {
+        if (b) void ajouter(new File([b], `${vue}.jpg`, { type: 'image/jpeg' }), vue);
+        canvas.width = canvas.height = 0; // libère immédiatement la mémoire du canvas (mobile)
+      }, 'image/jpeg', 0.9);
+    } catch {
+      /* échec de capture : on n'interrompt JAMAIS le parcours (pas de crash) */
     }
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // image entière (pas de rognage)
-    canvas.toBlob((b) => b && void ajouter(new File([b], `${vue}.jpg`, { type: 'image/jpeg' }), vue), 'image/jpeg', 0.9);
   }
 
   function galerie() {
