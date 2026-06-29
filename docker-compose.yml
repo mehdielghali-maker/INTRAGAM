@@ -52,6 +52,10 @@ services:
       FAST_ALPR_HOME: /models/fast-alpr
       RECO_SEUIL_VEHICULE: "0.45"
       RECO_SEUIL_PLAQUE: "0.35"
+      # Modèle OCR : "s" (small) plus précis que le "xs" par défaut. NB : tous les modèles fast-plate-ocr
+      # plafonnent à max_plate_slots=10 → une plaque algérienne de 11 chiffres ne peut être lue ENTIÈRE
+      # qu'avec un modèle ENTRAÎNÉ sur les plaques DZ (max_plate_slots>=11). Voir services/reco/README.
+      RECO_OCR_MODEL: "cct-s-v2-global-model"
       # Origines autorisées pour l'appel navigateur direct (PWA déclaration, poste). "*" en dev.
       RECO_CORS_ORIGINS: "*"
     volumes:
