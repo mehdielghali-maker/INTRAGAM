@@ -42,6 +42,10 @@ SEUIL_PLAQUE = float(os.getenv("RECO_SEUIL_PLAQUE", "0.35"))      # conf. mini l
 YOLO_MODEL = os.getenv("RECO_YOLO_MODEL", "yolov8n.pt")           # nano = rapide CPU
 DET_MODEL = os.getenv("RECO_DET_MODEL", "yolo-v9-t-384-license-plate-end2end")
 OCR_MODEL = os.getenv("RECO_OCR_MODEL", "cct-xs-v2-global-model")
+# Plaques purement NUMERIQUES (Algerie) : masque les lettres dans la sortie OCR -> l'argmax ne peut
+# plus sortir une lettre (ex. "L" lu au lieu de "4"). true par defaut (cible DZ). NB : ne change PAS
+# la capacite du modele (toujours <= max_plate_slots) ; corrige seulement les confusions lettre/chiffre.
+PLAQUE_NUMERIQUE = os.getenv("RECO_PLAQUE_NUMERIQUE", "true").lower() in ("1", "true", "yes", "on")
 
 # Classes COCO considerees comme "vehicule"
 COCO_VEHICULE = {2: "voiture", 3: "moto", 5: "bus", 7: "camion"}
@@ -62,6 +66,29 @@ _yolo = None  # modele detection vehicule
 _alpr = None  # pipeline plaque
 
 
+def _forcer_sortie_numerique(alpr) -> None:
+    """Force la lecture OCR a ne produire que des CHIFFRES (plaques DZ numeriques).
+
+    On enrobe la session ONNX du modele OCR pour ANNULER les probabilites des classes non-chiffres
+    dans la sortie "plaque" : l'argmax (fait ensuite par fast-plate-ocr) ne peut donc choisir qu'un
+    chiffre (ou le pad). Aucune copie/reentrainement : seules les confusions lettre/chiffre (ex. "L"
+    pour "4", "O" pour "0") sont eliminees. La limite des slots (longueur max) reste inchangee.
+    """
+    rec = alpr.ocr.ocr_model
+    alphabet = rec.config.alphabet
+    autorise = set("0123456789" + (rec.config.pad_char or ""))
+    masque = np.array([1.0 if c in autorise else 0.0 for c in alphabet], dtype=np.float32)
+    nom_plaque = rec.plate_output_name
+    run_origine = rec.model.run
+
+    def run_masque(output_names, input_feed, *args, **kwargs):
+        sorties = run_origine(output_names, input_feed, *args, **kwargs)
+        noms = output_names if output_names else rec.output_names
+        return [s * masque if n == nom_plaque else s for n, s in zip(noms, sorties)]
+
+    rec.model.run = run_masque
+
+
 @app.on_event("startup")
 def _charger_modeles() -> None:
     """Charge les modeles UNE fois au demarrage (et non a chaque requete)."""
@@ -73,6 +100,9 @@ def _charger_modeles() -> None:
     _yolo = YOLO(YOLO_MODEL)
     log.info("Chargement ALPR (det=%s, ocr=%s)...", DET_MODEL, OCR_MODEL)
     _alpr = ALPR(detector_model=DET_MODEL, ocr_model=OCR_MODEL)
+    if PLAQUE_NUMERIQUE:
+        _forcer_sortie_numerique(_alpr)
+        log.info("OCR contraint aux CHIFFRES (plaques numeriques, ex. Algerie).")
     log.info("Modeles charges.")
 
 

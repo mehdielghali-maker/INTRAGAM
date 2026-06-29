@@ -86,6 +86,7 @@ Réponse :
 | `RECO_YOLO_MODEL` | `yolov8n.pt` | Modèle détection véhicule (n=rapide) |
 | `RECO_DET_MODEL` | `yolo-v9-t-384-license-plate-end2end` | Détecteur de plaque |
 | `RECO_OCR_MODEL` | `cct-xs-v2-global-model` | OCR de plaque (voir ⚠️ ci-dessous) |
+| `RECO_PLAQUE_NUMERIQUE` | `true` | Force la lecture en **chiffres uniquement** (plaques DZ) — masque les lettres dans la sortie OCR, supprime les confusions type « L » lu pour « 4 ». Mettre `false` pour un pays à plaques alphanumériques |
 | `RECO_CORS_ORIGINS` | `*` | Origines autorisées pour l'appel **navigateur direct** (PWA), séparées par des virgules |
 
 > ⚠️ **Plaques algériennes de 11 chiffres — limite des modèles sur étagère.** Tous les modèles
