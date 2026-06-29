@@ -13,6 +13,8 @@ public interface VersementJpaRepository extends JpaRepository<VersementJpaEntity
 
     Optional<VersementJpaEntity> findByReference(String reference);
 
+    boolean existsByCodeAgence(String codeAgence);
+
     long countByReferenceIsNotNull();
 
     long countByStatutIn(List<StatutVersement> statuts);

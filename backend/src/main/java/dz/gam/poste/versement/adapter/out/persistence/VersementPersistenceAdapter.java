@@ -39,6 +39,11 @@ public class VersementPersistenceAdapter implements VersementRepository {
     }
 
     @Override
+    public boolean existsByCodeAgence(String codeAgence) {
+        return jpa.existsByCodeAgence(codeAgence);
+    }
+
+    @Override
     public List<Versement> lister(FiltreVersement filtre) {
         return jpa.rechercher(filtre.codeAgence(), filtre.statut()).stream().map(this::versDomaine).toList();
     }

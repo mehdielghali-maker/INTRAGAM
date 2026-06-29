@@ -16,6 +16,42 @@ const ENTITES: Entite[] = [
   { numeroPolice: 'AUTO-2026-00457', nomClient: 'Sofiane Brahimi', codeBranche: '13', libelleBranche: 'Automobile', codeSousBranche: '131', libelleSousBranche: 'Auto particulier', marque: 'Peugeot 208', immatriculation: '12345-114-31' },
 ];
 
+/**
+ * Souscriptions de DÉMO pour la session de l'AGA (statuts VARIÉS, polices existant déjà dans
+ * ENTITES). Idempotent par construction : références déterministes (SCR-DEMO-*) ; le seed n'a
+ * lieu qu'une fois (store vide), jamais en doublon (cf. lireStore + upsert sur reference).
+ * NB : mock GLOBAL (non filtré par agence), normal en mode mock front.
+ */
+export function souscriptionsDemo(): Souscription[] {
+  return [
+    {
+      idLocal: identifiant('s'), reference: 'SCR-DEMO-0001', typeProduit: 'AUTO', codeBranche: '13',
+      libelleBranche: 'Automobile', codeSousBranche: '131', libelleSousBranche: 'Auto particulier',
+      numeroPolice: 'AUTO-2026-00123', nomClient: 'Karim Meziane', statut: 'A_VALIDER', origine: 'AGA',
+      assure: { prenom: 'Karim', nom: 'Meziane', numeroCni: '109876543', sexe: 'M', adresse: 'Cité 200 Logts, Bab Ezzouar, Alger', telephone: '0550 12 34 56' },
+      vehicule: { immatriculation: '09876-116-16', marque: 'Renault', modele: 'Clio', energie: 'Essence', numeroChassis: 'VF1RJ000067123456' },
+      pieces: [], dateSaisie: '2026-06-24', agence: { code: '00101', nom: 'Agence Alger Centre' },
+    },
+    {
+      idLocal: identifiant('s'), reference: 'SCR-DEMO-0002', typeProduit: 'AUTO', codeBranche: '13',
+      libelleBranche: 'Automobile', codeSousBranche: '131', libelleSousBranche: 'Auto particulier',
+      numeroPolice: 'AUTO-2026-00457', nomClient: 'Sofiane Brahimi', statut: 'VALIDEE', origine: 'AGA',
+      assure: { prenom: 'Sofiane', nom: 'Brahimi', numeroCni: '204451220', sexe: 'M', adresse: 'Rue Larbi Ben Mhidi, Oran', telephone: '0661 22 33 44' },
+      vehicule: { immatriculation: '12345-114-31', marque: 'Peugeot', modele: '208', energie: 'Diesel', numeroChassis: 'VF3CC000088654321' },
+      pieces: [], dateSaisie: '2026-06-18', agence: { code: '00207', nom: 'Agence Oran Es-Sénia' },
+    },
+    {
+      idLocal: identifiant('s'), reference: 'SCR-DEMO-0003', typeProduit: 'AUTO', codeBranche: '13',
+      libelleBranche: 'Automobile', codeSousBranche: '131', libelleSousBranche: 'Auto particulier',
+      numeroPolice: 'AUTO-2026-00123', nomClient: 'Karim Meziane', statut: 'LIEN_ENVOYE', origine: 'CLIENT',
+      assure: { prenom: 'Karim', nom: 'Meziane', telephone: '0550 12 34 56' },
+      vehicule: { immatriculation: '09876-116-16', marque: 'Renault', modele: 'Clio' },
+      pieces: [], agence: { code: '00101', nom: 'Agence Alger Centre' },
+      client: { nom: 'Karim Meziane', telephone: '0550 12 34 56', email: 'karim.meziane@example.dz' },
+    },
+  ];
+}
+
 function lireStore(): Souscription[] {
   try {
     const brut = localStorage.getItem(CLE);
@@ -23,9 +59,12 @@ function lireStore(): Souscription[] {
       return JSON.parse(brut) as Souscription[];
     }
   } catch {
-    /* indisponible */
+    /* indisponible : on retombe sur les données de démo */
   }
-  return [];
+  // Store vide (1re visite ou localStorage indisponible) : on sème les démos de l'AGA.
+  const demo = souscriptionsDemo();
+  ecrireStore(demo);
+  return demo;
 }
 
 function ecrireStore(liste: Souscription[]): void {
