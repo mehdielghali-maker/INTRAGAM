@@ -15,7 +15,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Réseau PyPI parfois instable (coupures DNS / SSL EOF observées) : les --retries internes de pip
+# rejouent trop vite pour des coupures TLS, donc on ENVELOPPE pip dans une boucle avec pauses.
+# Torch CPU-only d'abord : ultralytics tire torch, dont la build CUDA par défaut télécharge plusieurs
+# Go de wheels nvidia_* INUTILES (YOLO-nano tourne sur CPU) → image plus légère + build plus robuste.
+RUN for i in 1 2 3 4 5 6; do \
+      pip install --no-cache-dir --retries 8 --timeout 180 \
+        torch torchvision --index-url https://download.pytorch.org/whl/cpu && break; \
+      echo "torch: tentative $i échouée, pause 15s"; sleep 15; \
+    done
+RUN for i in 1 2 3 4 5 6; do \
+      pip install --no-cache-dir --retries 8 --timeout 180 -r requirements.txt && break; \
+      echo "requirements: tentative $i échouée, pause 15s"; sleep 15; \
+    done; \
+    python -c "import fastapi, numpy, cv2, onnxruntime, ultralytics, fast_alpr" \
+      || { echo 'ECHEC: dépendances incomplètes après retries'; exit 1; }
 
 COPY app.py .
 
