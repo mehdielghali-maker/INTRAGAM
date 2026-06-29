@@ -46,6 +46,10 @@ OCR_MODEL = os.getenv("RECO_OCR_MODEL", "cct-xs-v2-global-model")
 # plus sortir une lettre (ex. "L" lu au lieu de "4"). true par defaut (cible DZ). NB : ne change PAS
 # la capacite du modele (toujours <= max_plate_slots) ; corrige seulement les confusions lettre/chiffre.
 PLAQUE_NUMERIQUE = os.getenv("RECO_PLAQUE_NUMERIQUE", "true").lower() in ("1", "true", "yes", "on")
+# Longueur cible de la plaque (Algerie = 11) : les chiffres NON LUS (modele tronque a max_plate_slots)
+# sont completes par des "*" pour atteindre cette longueur. 0 = desactive. Le "*" est IGNORE par la
+# comparaison plaque<->contrat (normalisation cote poste : seuls [A-Z0-9] comptent).
+PLAQUE_LONGUEUR = int(os.getenv("RECO_PLAQUE_LONGUEUR", "0") or "0")
 
 # Classes COCO considerees comme "vehicule"
 COCO_VEHICULE = {2: "voiture", 3: "moto", 5: "bus", 7: "camion"}
@@ -134,6 +138,17 @@ def _normaliser_plaque(txt: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", (txt or "").upper())
 
 
+def _completer_plaque(plaque):
+    """Complete les chiffres NON LUS par des '*' jusqu'a PLAQUE_LONGUEUR (ex. 11 pour DZ).
+
+    Le modele lit un prefixe puis s'arrete (cap a max_plate_slots) : on marque visuellement les
+    positions manquantes. Le '*' est ignore par la comparaison plaque<->contrat cote poste.
+    """
+    if plaque and PLAQUE_LONGUEUR and len(plaque) < PLAQUE_LONGUEUR:
+        return plaque + "*" * (PLAQUE_LONGUEUR - len(plaque))
+    return plaque
+
+
 def _coerce_conf(c) -> Optional[float]:
     """Confiance robuste. Selon la version de fast-alpr, `confidence` peut etre un float OU une
     LISTE de confiances par caractere (auquel cas on prend la moyenne). None si inexploitable."""
@@ -195,7 +210,7 @@ async def analyser(photo: UploadFile = File(...), vue: Optional[str] = Form(None
     return JSONResponse({
         "estVehicule": bool(est_vehicule),
         "typeVehicule": type_vehicule,
-        "plaque": plaque,                       # None si non lue / vue sans plaque
+        "plaque": _completer_plaque(plaque),    # None si non lue ; sinon complete par "*" jusqu'a 11
         "confiance": round(conf_plaque, 3),     # confiance de la lecture de plaque
         "confianceVehicule": round(conf_veh, 3),
         "vue": vue,

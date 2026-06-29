@@ -87,14 +87,17 @@ Réponse :
 | `RECO_DET_MODEL` | `yolo-v9-t-384-license-plate-end2end` | Détecteur de plaque |
 | `RECO_OCR_MODEL` | `cct-xs-v2-global-model` | OCR de plaque (voir ⚠️ ci-dessous) |
 | `RECO_PLAQUE_NUMERIQUE` | `true` | Force la lecture en **chiffres uniquement** (plaques DZ) — masque les lettres dans la sortie OCR, supprime les confusions type « L » lu pour « 4 ». Mettre `false` pour un pays à plaques alphanumériques |
+| `RECO_PLAQUE_LONGUEUR` | `0` | Longueur cible : les chiffres **non lus** (modèle tronqué) sont complétés par des `*` jusqu'à cette longueur (mettre **`11`** pour les plaques DZ → ex. `5034471****`). `0` = désactivé. Le `*` est ignoré par la comparaison au contrat |
 | `RECO_CORS_ORIGINS` | `*` | Origines autorisées pour l'appel **navigateur direct** (PWA), séparées par des virgules |
 
 > ⚠️ **Plaques algériennes de 11 chiffres — limite des modèles sur étagère.** Tous les modèles
 > `fast-plate-ocr` disponibles plafonnent à **`max_plate_slots` = 10** (`cct-xs-v2`/`cct-s-v2` = 10,
 > mobile-vit = 9). Une plaque DZ de **11 caractères** (ex. `503447 126 25`) ne peut donc **pas** être
-> lue intégralement, quel que soit le modèle pré-entraîné. Le compose pousse `RECO_OCR_MODEL=`
-> **`cct-s-v2-global-model`** (small, plus précis que le `xs` par défaut → lit davantage de chiffres),
-> mais la lecture **100 % fiable des 11 chiffres exige un modèle ENTRAÎNÉ sur des plaques DZ**
+> lue intégralement, quel que soit le modèle pré-entraîné. **Atténuations appliquées par défaut**
+> (compose) : `RECO_OCR_MODEL=cct-xs-v2-global-model` (lit un **préfixe fidèle** — chiffres justes puis
+> s'arrête, préféré au `s` qui invente des caractères) + `RECO_PLAQUE_NUMERIQUE=true` (chiffres only) +
+> `RECO_PLAQUE_LONGUEUR=11` (complète les positions non lues par des `*`, ex. `5034471****`).
+> Mais la lecture **100 % fiable des 11 chiffres exige un modèle ENTRAÎNÉ sur des plaques DZ**
 > (`max_plate_slots ≥ 11`). `fast_plate_ocr` fournit un CLI d'entraînement (`fast_plate_ocr.cli.train`) ;
 > brancher ensuite ce modèle via `RECO_OCR_MODEL` (capacité **remplaçable**, ADR 0011) — aucun impact
 > sur le reste du poste. Modèles dispo : `cct-{xs,s}-v{1,2}-global-model`, `*-relu-*`,
