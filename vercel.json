@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "_commentaire": "Déploiement Vercel depuis la RACINE du repo (Root Directory = racine) : on build la PWA souscription-client en se plaçant dans son dossier — shared/ (au-dessus) est donc inclus automatiquement, sans avoir à régler Root Directory ni « include files outside root ». Pour servir une AUTRE PWA, pointer ces chemins vers modules/declarations-sinistre ou modules/souscription-auto (ou créer un projet Vercel par PWA avec Root Directory = ce module).",
+  "installCommand": "cd modules/souscription-client && npm install",
+  "buildCommand": "cd modules/souscription-client && npm run build",
+  "outputDirectory": "modules/souscription-client/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    { "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+  ]
+}
