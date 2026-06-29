@@ -79,6 +79,12 @@ fast-alpr, `:8088`), opt-in via le profil compose `reco`. Côté back : contexte
   Pour la **PWA** `declarations-sinistre` : `VITE_RECO_MODE=real` + `VITE_RECO_BASE_URL=<url reco>`
   (appel navigateur direct → CORS `RECO_CORS_ORIGINS`). En Étage 2 (`docker-compose.full.yml`),
   `RECO_MODE=http` est déjà câblé → RECO réel en prod.
+- **✅ Vrai service VALIDÉ en réel le 2026-06-28** (Docker) + **2 bugs réels corrigés** (le mode mock
+  les masquait) : (1) `services/reco/Dockerfile` ne buildait pas (réseau PyPI + wheels CUDA inutiles) →
+  **torch CPU-only + boucle de retries** (`d0d0ce5`) ; (2) `app.py` plantait en **HTTP 500 dès qu'une
+  plaque était détectée** car `fast-alpr` renvoie `ocr.confidence` en **liste** et le code faisait
+  `float(liste)` → helper `_coerce_conf` + `test_app.py` (`e545b86`). Preuves live : `bus.jpg` →
+  `estVehicule:true/bus/0.873` ; `zidane.jpg` → `estVehicule:false` ; plaque synthétique → lue sans 500.
 - **Panne RECO = jamais bloquante** (résultat neutre). Tests : unitaires purs (`VerificationPlaqueServiceTest`,
   `ReconnaissanceServiceTest`), pas d'IT (capacité synchrone, sans boucle fermée).
 - **Front câblé** : composant partagé `@sinistre-ui/VerificationPlaque` affiche CONFORME/NON_CONFORME/NON_LUE
