@@ -21,9 +21,11 @@ Package backend : `dz.gam.poste`. Group : `dz.gam`.
 
 ## Structure
 - `backend/src/main/java/dz/gam/poste/<contexte>/` — un contexte hexagonal par fonction
-  (`cheque`, `tableaubord`, `cotation`, `dpd`) : `domain/{model,event,port/in,port/out,service}`,
+  (`cheque`, `tableaubord`, `cotation`, `dpd`, `versement`, `contexte`, `reconnaissance`,
+  `indicateursmock`, `proassurmock`) : `domain/{model,event,port/in,port/out,service}`,
   `adapter/{in/web,in/messaging,out/persistence,out/messaging,out/...mock}`, `config`.
-- `frontend/src/` — `app/` (shell : AppShell, Topbar, Sidebar, navigation.ts), `theme/gam.css`
+- `frontend/src/` — `app/` (shell : AppShell, Topbar, Sidebar, navigation.ts — groupe `PRINCIPAUX`
+  = souscription + déclaration en tête du menu, style or, sans libellés « Lot »), `theme/gam.css`
   (charte GAM, design system partagé), `features/<fonction>/`.
 - `contracts/` (schémas d'événements + OpenAPI), `docs/adr/`, `docker-compose.yml`.
 - Bus : exchange topic unique `gam.poste.events` ; chaque contexte déclare ses queues/bindings.
@@ -49,7 +51,11 @@ cd frontend && npm run dev         # UI  :5173
 Les `*IT` s'auto-ignorent sans Docker. ⚠️ curl sous Git Bash : éviter les accents dans le
 JSON (corrompus → HTTP 400).
 
-## Pattern pour une nouvelle fonction (les 5 restantes)
+**Déploiement** : 3 PWA mock publiées en continu sur **GitHub Pages** (workflow `deploy-pages.yml`,
+auto à chaque push) ; stack complète conteneurisée `docker-compose.full.yml` (poste `:8081`, RECO
+réel). Procédures : `README_DEPLOIEMENT.md` ; état courant : `docs/HANDOFF.md`.
+
+## Pattern pour une nouvelle fonction (les 6 restantes)
 Maquette HTML fournie dans `~/Downloads/Maquette_*.html` (à reproduire FIDÈLEMENT, design GAM ;
 réutiliser `theme/gam.css`). Pour chaque fonction : (1) machine à états + contrats de ports +
 mapping champ→source ; (2) contexte backend hexagonal (domaine, ports, service, **adapters mock**
@@ -71,13 +77,16 @@ couche partagée **`shared/decsin/`** (alias Vite `@decsin`) : port + **mock** (
 (URL, clé d'API, paramètres → `.env`). Règle de pièces UNIQUE dans `shared/decsin/pieces.ts`
 (`peutEnvoyer`) : recto+verso constat + 4 faces ; assurance adverse si tiers. **Flux d'envoi 2 temps**
 (pièce→référence, puis déclaration) = base de la synchro offline (Dexie + Workbox côté client).
-**Deux mondes d'auth à NE PAS mélanger** : AGA = SSO/contexte (interne) ; client = lien + double
+**Deux mondes d'auth à NE PAS mélanger** : AGA = session interne (login/mdp, ADR 0008 ; SSO Entra ID
+plus tard) ; client = lien + double
 facteur (téléphone + code), session locale persistée, déconnexion = purge du local. Le poste et la
 PWA client sont **installables** (vite-plugin-pwa). Détails : `modules/declarations-sinistre/README.md`.
 **Socle de capture PARTAGÉ** (`shared/sinistre-ui/`, alias `@sinistre-ui`) réutilisé par les 3 usages
 (AGA poste, AGA mobile, client) : véhicule = **5 vues** (sélecteur + silhouettes SVG en overlay,
 verbatim des maquettes ; toit FACULTATIF), capture caméra/galerie, écran de **contrôle** (complétude
-calculée + vignettes + lightbox). Côté AGA : page détail `/declaration-sinistre/:idLocal` (Valider →
+calculée + vignettes + lightbox). **Caméra réservée au MOBILE** (hook `useEstMobile` : pointeur
+grossier OU tactile + écran ≤1024px — le simple `hover:none` ratait les Samsung S-Pen) ; sur
+ordinateur = import de fichier seul. Caméra bornée ~720p (mémoire mobile, sinon rechargement d'onglet). Côté AGA : page détail `/declaration-sinistre/:idLocal` (Valider →
 PROASSUR si complet / Renvoyer). **Validation différée** : capture hors-ligne, rattachement PROASSUR
 auto à la reconnexion (`aRattacher`). OCR : seam prévu (non implémenté).
 
@@ -131,7 +140,15 @@ bloquante optionnelle (`reco.bloque-non-conforme`). Pas de boucle fermée (capac
 défaut du bandeau) ; la **PWA `modules/declarations-sinistre/`** (offline, indépendante du Java) appelle
 le **microservice directement** via la couche partagée **`@reco`** (`shared/reco/`, port + mock/http,
 `VITE_RECO_MODE`) + comparaison côté client (`verifierPlaque`, portage TS) ; CORS sur le microservice
-(`RECO_CORS_ORIGINS`). Le bandeau prend un **analyseur injecté**. Détails : `services/reco/README.md`.
+(`RECO_CORS_ORIGINS`). Le bandeau prend un **analyseur injecté**. La reconnaissance est AUSSI lancée
+**dès la capture** (`CaptureVehicule`, best-effort JAMAIS bloquant : pièce ajoutée d'abord, panne
+silencieuse) → bandeau par vue « pas un véhicule » / « plaque lue » ; `VerificationPlaque` est
+**découplé de l'immatriculation** (PAS_UN_VEHICULE s'affiche sans immat ; CONFORME/NON_CONFORME l'exigent).
+**Plaques DZ (11 chiffres)** : tous les modèles fast-plate-ocr plafonnent à 10 slots → atténuations par
+env (`RECO_OCR_MODEL=cct-xs-v2`, `RECO_PLAQUE_NUMERIQUE=true` chiffres-only, `RECO_PLAQUE_LONGUEUR=11`
+complète par `*`, ignoré à la normalisation mais PAS un joker) ; vrai fix = modèle **entraîné DZ**
+(`fast_plate_ocr.cli.train`). ⚠️ Le **mock ment** (plaque figée `0987611616`, toujours « voiture ») :
+NON_CONFORME quasi systématique en dev = normal, pas un bug. Détails : `services/reco/README.md`.
 
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)
 Les KPI de l'accueil et la situation mensuelle du versement proviennent du module
@@ -156,15 +173,18 @@ uniquement** (pas de modules métier).
 et **gérables via une page Admin** (`/api/admin/profils` CRUD ; UI `/admin`). « Activer » un
 profil = **aperçu admin / impersonation** (`POST /api/admin/identite/actif`, ADMIN seul). À
 l'enregistrement d'un profil, un événement
-`AgencesDeclareesEvent` est publié → les mocks sèment les chiffres (indicateurs) et chèques de
-démo des nouvelles agences (découplage, pas de cycle entre modules).
+`AgencesDeclareesEvent` est publié (aussi à chaque démarrage) → les mocks sèment PAR AGENCE les
+données de démo : chiffres (indicateurs), chèques, **cotations, accords DPD, versements** (listeners
+**idempotents** par référence déterministe — découplage, pas de cycle entre modules). Côté front,
+le mock souscription sème 3 démos dans son store local (`souscription.mock`) quand il est vide.
 **Accès par module** : chaque profil porte la liste des modules autorisés (`contexte_profil_module`).
 Le menu est filtré côté front ET l'accès est appliqué côté back (`AccesModuleInterceptor` →
 HTTP 403 sur `/api/{cheques|cotation|dpd|versement}` non autorisé ; l'accueil reste toujours
 accessible). Config sans `modules` = accès complet (`Modules.TOUS`, résolu au seeding).
 
 **Contexte d'agence (brique transverse `dz.gam.poste.contexte`, ADR 0005)** : l'identité fournit
-un **périmètre d'agences** (mock `poste.contexte` : AGA M. Benzerga + 3 agences). L'**agence active**
+un **périmètre d'agences** (profils semés : `benzerga` 5 agences, `saidi` 1, `cherif` 2 — gérés
+dans `/admin`). L'**agence active**
 est portée par la **session serveur** (HttpSession via `RequestContextHolder` ; repli vide hors
 requête), jamais par le navigateur. Toutes les fonctions (accueil, versement, cotation, DPD,
 chèques) lisent l'agence active via `AgenceCouranteQuery` et **ne redemandent jamais** l'agence :
