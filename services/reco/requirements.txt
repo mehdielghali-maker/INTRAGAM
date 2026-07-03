@@ -2,7 +2,9 @@ fastapi>=0.110
 uvicorn[standard]>=0.29
 python-multipart>=0.0.9
 pillow>=10.0
-numpy>=1.26
+# numpy MAINTENU EN 1.x : paddlepaddle 2.6 / paddleocr 2.7 sont compilés contre l'ABI numpy 1
+# (numpy 2.x → « module compiled against ABI version 0x1000009 », échec de build constaté).
+numpy>=1.26,<2
 opencv-python-headless>=4.9
 ultralytics>=8.2
 fast-alpr>=0.1.0
