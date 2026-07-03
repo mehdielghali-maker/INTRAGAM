@@ -98,6 +98,55 @@ def test_confiance_ocr_basse_donne_a_verifier_malgre_concordance():
     assert r["statut"] == "a_verifier"
 
 
+# Mise en page du DOCUMENT RÉEL (photo GAM fournie par l'utilisateur) : le numéro de police
+# est AU-DESSUS du libellé arabe (RTL) et, sur la quittance, EN FACE d'« Assuré : » ; le libellé
+# « Police N° : » y est VIDE, suivi de la ligne de dates (piège de la fenêtre).
+ATTESTATION_REELLE = _lignes(
+    "407020091260200",
+    "رقم عقد التأمين",
+    "صالحة من 04/05/2026 إلى 03/07/2026",
+    "N° 06681933",
+    "QUITTANCE DE PRIME",
+    "N° : pb zoui 40013-",
+    "Assuré : 407020091260200",
+    "Police N° :",
+    "Effet du 04/05/2026 Au 03/07/2026",
+    "Prime TTC : 2400,97DA",
+    "Code Agence : 40. AR.0105",
+    "502000-114-16",
+)
+
+
+def test_document_reel_police_concordante_malgre_la_mise_en_page():
+    r = extraire_attestation(ATTESTATION_REELLE)
+    # Deux occurrences RÉELLES (au-dessus du libellé arabe + en face d'« Assuré ») → concordance.
+    assert r["numeroPolice"] == "407020091260200"
+    assert r["statut"] == "lu"
+
+
+def test_document_reel_champs_annexes():
+    r = extraire_attestation(ATTESTATION_REELLE)
+    assert r["numeroQuittance"] == "06681933"
+    assert r["immatriculation"] == "50200011416"       # séparateurs tirets tolérés
+    assert r["codeAgence"] == "40.AR.0105"             # espaces du tampon normalisés
+    assert r["primeTTC"] == "2400,97"
+    assert r["valideDu"] == "04/05/2026"
+    assert r["valideAu"] == "03/07/2026"
+    # « Assuré : » est suivi du numéro de police (pas d'un nom) et la ligne suivante est un
+    # libellé : aucun nom inventé.
+    assert r["assure"] is None
+
+
+def test_document_reel_la_ligne_de_dates_ne_pollue_pas_la_fenetre():
+    # « Police N° : » vide suivi d'« Effet du ... » : la fenêtre ne doit PAS concaténer les dates.
+    r = extraire_attestation(_lignes(
+        "Police N° :",
+        "Effet du 04/05/2026 Au 03/07/2026",
+        "Prime TTC : 2400,97DA",
+    ))
+    assert r["numeroPolice"] is None
+
+
 def test_entree_vide_neutre():
     r = extraire_attestation([])
     assert r["numeroPolice"] is None
