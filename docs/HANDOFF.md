@@ -14,9 +14,11 @@
 - **⚠️ `main` est 54 commits EN RETARD** (au 2026-07-02) : tout le travail vit sur `feat/IntraGAM250626EGM`. Le
   harnais de l'agent **refuse de pousser sur `main`** (protection branche par défaut, même avec accord
   verbal) → le merge doit être fait PAR L'UTILISATEUR (PR GitHub ou `git push origin feat/IntraGAM250626EGM:main`).
-- **Tests** : back `mvn verify` vert (unitaires — dont 11 des seeders de démo, unitaires purs — + IT
-  Testcontainers) ; front verts (déclaration 32, qui **incluent** les 8 du socle `@dossier` ;
-  souscription-auto 12 dont 6 démo) ; microservice : `services/reco/test_app.py`.
+- **Tests** : back `mvn test` vert — **113** unitaires (dont 15 du contexte attestation) + IT
+  Testcontainers via `mvn verify` ; front verts (poste **22** — logique attestation ; déclaration 32,
+  qui **incluent** les 8 du socle `@dossier` ; souscription-auto 12 dont 6 démo) ; microservice :
+  `services/reco/test_app.py` + `test_attestation_regles.py` (**8**, purs — exécutables dans un
+  conteneur `python:3.11-slim` avec pytest seul).
 - **Au moment de la passation, RIEN ne tourne** (Docker arrêté, tunnels morts). Les 3 PWA restent
   servies en permanence par GitHub Pages (cf. Liens). Pour la démo du poste : section « Lancer l'app ».
 - **Sessions 2026-06-28/29** (tout commité + poussé) : déploiement (Pages permanent + tunnels),
@@ -149,6 +151,25 @@ profil compose `reco`) ; côté back contexte hexagonal `dz.gam.poste.reconnaiss
 - Stores locaux : `shared/{decsin,souscription}/brouillonsLocaux.ts` (localStorage poste, Dexie PWA).
 - Complétude (catalogue) → conditionne la **validation** seulement. **[DSI à confirmer]** : brouillon serveur.
 
+## Attestations — relevé mensuel + OCR local (NOUVEAU — ADR 0013, session 2026-07-02)
+Fonction « Attestations » livrée (nav réelle, plus un placeholder) : l'AGA choisit un **mois de
+production**, **photographie** chaque attestation, l'**OCR local** pré-remplit (mode assisté :
+confirmer/corriger), chaque lecture ajoute une ligne au **relevé du mois** — un lot par
+**agence active + mois**, ouvert aux ajouts jusqu'à **« Valider le relevé du mois »**, puis verrouillé.
+- **Service OCR-DOC** : mutualisé dans `services/reco/` (PaddleOCR fr+arabic, `POST /lire-attestation`,
+  100 % local — modèles baked au build ; `OCR_DOC_ACTIF=false` pour s'en passer). Règles d'extraction
+  **pures** dans `attestation_regles.py` (police **15 chiffres en double occurrence concordante**,
+  quittance 8 chiffres = repère négatif, tout env-configurable) — tests : `pytest test_attestation_regles.py`.
+  ⚠️ L'image reco grossit (~2 Go) → **rebuild nécessaire** : `docker compose --profile reco up -d --build reco-service`.
+- **Backend** : contexte `dz.gam.poste.attestation` — `POST /api/attestations/lire` (multipart),
+  `POST/GET /api/attestations/releves` ; `ocr.mode` mock (défaut) / http ; panne OCR → neutre non
+  bloquant ; re-soumission (agence, mois) → 409 ; module `attestations` câblé dans l'interceptor.
+- **Front** : `frontend/src/features/attestation/` (maquette reproduite) + **Dexie `gam-attestations`**
+  (photos/lignes hors-ligne, `persist()`, file OCR idempotente rejouée au retour du réseau ;
+  validation hors-ligne → `A_VALIDER`, soumise à la reconnexion). Doublon de police signalé.
+- **Arbitrages utilisateur** : collecte seule (seam de vérif PROASSUR par police prévu, non branché) ;
+  endpoint réel de soumission **[À CONFIRMER DSI]** (mock « production validée » en place).
+
 ## UI & capture mobile (session 2026-06-29)
 - **Menu** (`935907c`) : **Souscription auto + Déclaration de sinistre en tête** (groupe `PRINCIPAUX`
   dans `navigation.ts`, style or `.nav-item.principal`), libellés « Lot 1/2 » **supprimés** (séparateur
@@ -236,7 +257,9 @@ Chaque module développé est peuplé PAR AGENCE (même mécanisme que les chèq
 - **Mettre le poste en ligne** (Étage 2 sur Railway/Render/Fly, compte client) → URL permanente
   avec login + RECO réel, à ajouter à la page d'accueil Pages.
 - **Merger vers `main`** (par l'utilisateur) et **supprimer le projet Vercel** `intragam`.
-- Implémenter les **fonctions placeholder** restantes (6) : Dépôt Situation Financière, Attestations,
+- Implémenter les **fonctions placeholder** restantes (5) : Dépôt Situation Financière,
   Envois bureau d'ordre, Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
+- Attestations : brancher l'endpoint réel de soumission (DSI) + le seam de vérification PROASSUR
+  par police ; tester l'OCR réel sur de vraies attestations (rebuild reco avec PaddleOCR).
 - Brancher l'**adapter Power BI** réel (mêmes ports qu'`indicateursmock`).
 - **Auth Entra ID** réelle ; chiffres par agence gérés dans le dashboard Admin ; couche IA **GAMIA**.

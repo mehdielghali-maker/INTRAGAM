@@ -7,3 +7,6 @@ opencv-python-headless>=4.9
 ultralytics>=8.2
 fast-alpr>=0.1.0
 onnxruntime>=1.17
+# OCR-DOC (attestations, bilingue fr/ar) — bornes majeures épinglées : l'API de PaddleOCR 3.x change.
+paddleocr>=2.7,<3.0
+paddlepaddle>=2.6,<3.0

@@ -1,0 +1,504 @@
+/* Attestations — relevé mensuel de production. Design GAM, MOBILE-FIRST.
+   Transposition FIDÈLE de la maquette Maquette_Attestation_OCR_Mobile.html (classes préfixées
+   att- pour éviter les collisions ; tokens repris de theme/gam.css, aucun renommage). */
+
+.page-h {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--vert-fonce);
+}
+.page-sub {
+  font-size: 13.5px;
+  color: var(--gris);
+  margin: 3px 0 18px;
+  max-width: 880px;
+}
+
+/* Colonne « app » : parcours mobile-first, borné comme l'écran de la maquette. */
+.att-colonne {
+  max-width: 560px;
+}
+
+/* ===== BARRE DE MOIS (fond vert foncé, sélecteur or) ===== */
+.att-month-bar {
+  background: var(--vert-fonce);
+  color: #fff;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 13px;
+  margin-bottom: 14px;
+}
+.att-month-bar .att-ml {
+  font-size: 11px;
+  color: var(--menthe);
+}
+.att-month-bar .att-mv {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.att-month-bar select {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--vert-fonce);
+  background: var(--or);
+  border: none;
+  border-radius: 9px;
+  padding: 7px 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Bandeau relevé verrouillé (validé / en attente de réseau) */
+.att-bandeau {
+  border-radius: 10px;
+  padding: 11px 15px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.att-bandeau.ok {
+  background: #eef6f1;
+  border: 1px solid #cfe7da;
+  border-left: 4px solid var(--vert);
+  color: var(--vert-fonce);
+}
+.att-bandeau.attente {
+  background: #fdf5e8;
+  border: 1px solid #f0dcb4;
+  border-left: 4px solid var(--or);
+  color: #6b5417;
+}
+
+.att-s-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--vert-fonce);
+}
+.att-s-sub {
+  font-size: 12.5px;
+  color: var(--gris);
+  margin: 4px 0 14px;
+}
+
+/* ===== ZONE CAPTURE (pointillés, icône caméra menthe) ===== */
+.att-capture {
+  background: var(--blanc);
+  border: 1px dashed #cdbf9a;
+  border-radius: 15px;
+  padding: 18px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+.att-capture .att-cam {
+  width: 56px;
+  height: 56px;
+  border-radius: 15px;
+  background: var(--menthe);
+  color: var(--vert);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+.att-capture .att-cam svg {
+  width: 28px;
+  height: 28px;
+}
+.att-capture p {
+  font-size: 12.5px;
+  color: var(--gris);
+  margin: 0 0 13px;
+}
+
+/* Boutons (styles maquette : plein vert, or, ghost) — <label> porteuses d'input fichier. */
+.att-btn {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 14.5px;
+  border: none;
+  border-radius: 11px;
+  padding: 13px 16px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.att-btn input[type='file'] {
+  display: none;
+}
+.att-btn.off {
+  opacity: 0.65;
+  cursor: default;
+}
+.att-btn-p {
+  background: var(--vert);
+  color: #fff;
+}
+.att-btn-o {
+  background: var(--or);
+  color: var(--vert-fonce);
+}
+.att-btn-g {
+  background: var(--blanc);
+  color: var(--vert);
+  border: 1px solid #d9cfb8;
+}
+.att-btn-sm {
+  width: auto;
+  padding: 9px 13px;
+  font-size: 12.5px;
+}
+.att-btn-row {
+  display: flex;
+  gap: 9px;
+  margin-top: 9px;
+}
+.att-btn-row .att-btn {
+  flex: 1;
+}
+.att-btn-row .att-btn-sm {
+  flex: initial;
+}
+
+/* Message transitoire (hors-ligne, PDF refusé…) */
+.att-message {
+  background: #fdf5e8;
+  border: 1px solid #f0dcb4;
+  border-radius: 10px;
+  padding: 10px 13px;
+  font-size: 12.5px;
+  color: #6b5417;
+  margin-bottom: 14px;
+}
+
+/* ===== PANNEAU OCR ASSISTÉ ===== */
+.att-ocr {
+  background: var(--blanc);
+  border: 1px solid #e4dcc8;
+  border-radius: 15px;
+  padding: 15px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(10, 61, 18, 0.1);
+}
+.att-ocr-h {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.att-ocr-h .ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--vert);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+}
+.att-ocr-h .ic svg {
+  width: 17px;
+  height: 17px;
+}
+.att-ocr-h .t {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--vert-fonce);
+}
+.att-ocr-h .s {
+  font-size: 11px;
+  color: var(--gris);
+}
+.att-ocr-h .conf {
+  margin-left: auto;
+  font-family: 'Poppins', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--vert-fonce);
+  background: var(--menthe);
+  padding: 3px 8px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+/* Variante « à vérifier » (terra) */
+.att-ocr.warn .att-ocr-h .ic {
+  background: var(--terra);
+}
+.att-ocr.warn .att-ocr-h .conf {
+  background: #fbe3df;
+  color: var(--terra);
+}
+
+/* Vignette photo (édition / re-scan) */
+.att-vignette {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.att-vignette img {
+  max-height: 84px;
+  max-width: 40%;
+  border-radius: 9px;
+  border: 1px solid #e4dcc8;
+  display: block;
+}
+
+/* Grille de champs (lecture assistée) */
+.att-ex {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 7px 10px;
+  font-size: 13px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+.att-ex .k {
+  color: var(--gris);
+  font-size: 12px;
+}
+.att-ex .v {
+  font-weight: 600;
+  color: var(--noir);
+}
+.att-ex .v.mono {
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0.02em;
+}
+.att-ex .v.flag {
+  color: var(--terra);
+}
+.att-in {
+  font: inherit;
+  font-weight: 600;
+  color: var(--noir);
+  border: 1px solid #d9cfb8;
+  border-radius: 8px;
+  padding: 7px 9px;
+  width: 100%;
+  background: var(--sable-tres-pale);
+}
+.att-in:focus {
+  outline: 2px solid var(--or);
+  border-color: var(--or);
+  background: var(--blanc);
+}
+.att-in.flag {
+  border-color: var(--terra);
+  color: var(--terra);
+}
+
+.att-ocr-note {
+  font-size: 11.5px;
+  color: var(--gris);
+  margin: 9px 0 12px;
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+}
+.att-ocr.warn .att-ocr-note {
+  color: #8a3a30;
+}
+
+/* ===== RÉSUMÉ DU RELEVÉ (2 cartes) ===== */
+.att-sumbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+.att-sumbar .c {
+  flex: 1;
+  background: var(--vert);
+  color: #fff;
+  border-radius: 12px;
+  padding: 11px 13px;
+}
+.att-sumbar .c.alt {
+  background: var(--menthe);
+  color: var(--vert-fonce);
+}
+.att-sumbar .c .n {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1;
+}
+.att-sumbar .c .l {
+  font-size: 10.5px;
+  opacity: 0.9;
+  margin-top: 3px;
+}
+
+/* ===== TABLEAU DU RELEVÉ ===== */
+.att-tbl-wrap {
+  background: var(--blanc);
+  border: 1px solid #ece4d2;
+  border-radius: 14px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+.att-tbl-cap {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--vert);
+  padding: 11px 13px 0;
+}
+.att-tbl-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 360px;
+}
+.att-tbl-wrap thead th {
+  text-align: left;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gris);
+  padding: 9px 10px 7px;
+  border-bottom: 1px solid #efe8d8;
+}
+.att-tbl-wrap thead th.r {
+  text-align: right;
+}
+.att-tbl-wrap thead th.a {
+  width: 62px;
+}
+.att-tbl-wrap tbody td {
+  padding: 10px 10px;
+  border-bottom: 1px solid #f2ecdf;
+  vertical-align: top;
+}
+.att-tbl-wrap tbody tr:last-child td {
+  border-bottom: none;
+}
+.att-pol {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--vert-fonce);
+  letter-spacing: 0.01em;
+}
+.att-meta {
+  font-size: 11px;
+  color: var(--gris);
+  margin-top: 2px;
+}
+.att-qn {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--noir);
+  white-space: nowrap;
+}
+.att-tbl-wrap td.r {
+  text-align: right;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.att-tbl-wrap td.a {
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Chips de statut */
+.att-chip {
+  display: inline-block;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.att-chip-ok {
+  background: #e7f2ea;
+  color: var(--vert);
+}
+.att-chip-warn {
+  background: #fbe3df;
+  color: var(--terra);
+}
+.att-chip-wait {
+  background: var(--sable-pale);
+  color: #6b5417;
+}
+.att-chip-lu {
+  background: var(--menthe);
+  color: var(--vert-fonce);
+}
+
+/* Actions de ligne (modifier / supprimer) */
+.att-act {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #d9cfb8;
+  border-radius: 7px;
+  background: var(--blanc);
+  color: var(--vert);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+}
+.att-act svg {
+  width: 13px;
+  height: 13px;
+}
+.att-act:hover {
+  background: var(--sable-tres-pale);
+}
+.att-act.rm {
+  color: var(--terra);
+}
+
+/* État vide */
+.att-empty {
+  padding: 22px 13px;
+  text-align: center;
+  color: var(--gris);
+  font-size: 12.5px;
+}
+
+/* Validation */
+.att-valider {
+  margin-top: 2px;
+}
+.att-foot-note {
+  font-size: 11px;
+  color: var(--gris);
+  text-align: center;
+  margin-top: 9px;
+}
+
+/* Flash à l'ajout d'une ligne (maquette) */
+.att-flash {
+  animation: att-fl 1.1s ease;
+}
+@keyframes att-fl {
+  0% {
+    background: #fbf6e6;
+  }
+  100% {
+    background: transparent;
+  }
+}

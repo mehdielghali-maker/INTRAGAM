@@ -10,6 +10,7 @@ import ChequeDetailPage from './features/cheques/ChequeDetailPage';
 import CotationPage from './features/cotation/CotationPage';
 import DpdPage from './features/dpd/DpdPage';
 import VersementPage from './features/versement/VersementPage';
+import AttestationPage from './features/attestation/AttestationPage';
 import SinistrePage from './features/sinistre/SinistrePage';
 import DetailControlePage from './features/sinistre/DetailControlePage';
 import SouscriptionPage from './features/souscription/SouscriptionPage';
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
       { path: 'cheques/:id', element: <ChequeDetailPage /> },
       { path: 'cotation', element: <CotationPage /> },
       { path: 'versement', element: <VersementPage /> },
+      { path: 'attestations', element: <AttestationPage /> },
       { path: 'accords-echeancier', element: <DpdPage /> },
       { path: 'declaration-sinistre', element: <SinistrePage /> },
       { path: 'declaration-sinistre/:idLocal', element: <DetailControlePage /> },

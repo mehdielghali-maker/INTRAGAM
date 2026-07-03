@@ -56,6 +56,9 @@ public class AccesModuleInterceptor implements HandlerInterceptor {
         if (uri.startsWith("/api/versement")) {
             return "versement";
         }
+        if (uri.startsWith("/api/attestations")) {
+            return "attestations";
+        }
         return null;
     }
 }

@@ -31,13 +31,16 @@ RUN for i in 1 2 3 4 5 6; do \
     python -c "import fastapi, numpy, cv2, onnxruntime, ultralytics, fast_alpr" \
       || { echo 'ECHEC: dépendances incomplètes après retries'; exit 1; }
 
-COPY app.py .
+COPY app.py attestation_regles.py ./
 
 # Pre-telecharger les poids pour pouvoir demarrer SANS reseau ensuite.
 # (Si le build n'a pas internet, commenter ces lignes : les modeles seront
 #  telecharges au premier demarrage a la place.)
 RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')" || true
 RUN python -c "from fast_alpr import ALPR; ALPR(detector_model='yolo-v9-t-384-license-plate-end2end', ocr_model='cct-xs-v2-global-model')" || true
+# OCR-DOC : modeles PaddleOCR fr + arabic baked dans l'image (~/.paddleocr) → AUCUN appel
+# sortant a l'execution (contrainte : donnees personnelles, OCR strictement local).
+RUN python -c "from paddleocr import PaddleOCR; PaddleOCR(use_angle_cls=True, lang='fr', show_log=False); PaddleOCR(use_angle_cls=True, lang='arabic', show_log=False)" || true
 
 EXPOSE 8088
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8088", "--workers", "1"]

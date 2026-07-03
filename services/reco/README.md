@@ -89,6 +89,32 @@ Réponse :
 | `RECO_PLAQUE_NUMERIQUE` | `true` | Force la lecture en **chiffres uniquement** (plaques DZ) — masque les lettres dans la sortie OCR, supprime les confusions type « L » lu pour « 4 ». Mettre `false` pour un pays à plaques alphanumériques |
 | `RECO_PLAQUE_LONGUEUR` | `0` | Longueur cible : les chiffres **non lus** (modèle tronqué) sont complétés par des `*` jusqu'à cette longueur (mettre **`11`** pour les plaques DZ → ex. `5034471****`). `0` = désactivé. Le `*` est ignoré par la comparaison au contrat |
 | `RECO_CORS_ORIGINS` | `*` | Origines autorisées pour l'appel **navigateur direct** (PWA), séparées par des virgules |
+| `OCR_DOC_ACTIF` | `true` | OCR-DOC (attestations) : `false` = service RECO seul, PaddleOCR non chargé (économise ~2 Go de RAM/image) |
+| `OCR_LANGS` | `fr,arabic` | Langues PaddleOCR chargées (attestation **bilingue** : libellé arabe du n° de police) |
+| `OCR_SEUIL_CONFIANCE` | `0.60` | Sous ce niveau, la lecture passe `a_verifier` (+ `OCR_ANCRES_*`/`OCR_REGEX_*` : toutes les règles de `attestation_regles.py` sont surchargeables par env) |
+
+## OCR-DOC — lecture d'attestations (`POST /lire-attestation`)
+
+Deuxième capacité du service (mutualisée, **100 % locale** — modèles PaddleOCR fr+arabic
+**baked dans l'image au build**, aucun appel sortant à l'exécution : données personnelles).
+Reçoit une image (multipart `photo`), renvoie le contrat :
+`{numeroPolice, numeroQuittance, immatriculation, assure, valideDu, valideAu, primeTTC,
+codeAgence, confiance, statut: "lu"|"a_verifier", texteBrut}`.
+
+- **numeroPolice = exactement 15 chiffres**, ancré sur « Police N° » / « رقم عقد التأمين », lu
+  **deux fois** (certificat + quittance) avec **exigence de concordance** — divergence/hors format →
+  renvoyé quand même (mode assisté) mais `a_verifier` + confiance plafonnée basse.
+- **numeroQuittance = 8 chiffres** après « N° » (grand numéro rouge) — extrait **et** repère
+  **négatif** : jamais renvoyé comme police.
+- Les deux lecteurs (fr + ar) sont **dédoublonnés par position** : une même occurrence physique lue
+  deux fois ne compte pas comme concordance.
+- Règles isolées dans `attestation_regles.py` (**pur**, testable sans PaddleOCR) :
+  `pytest test_attestation_regles.py`. La **comparaison au contrat PROASSUR se fait dans INTRAGAM**,
+  jamais ici. Indisponible/désactivé → **503** (l'adapter INTRAGAM fait un repli neutre non bloquant).
+
+```bash
+curl -X POST http://localhost:8088/lire-attestation -F "photo=@attestation.jpg"
+```
 
 > ⚠️ **Plaques algériennes de 11 chiffres — limite des modèles sur étagère.** Tous les modèles
 > `fast-plate-ocr` disponibles plafonnent à **`max_plate_slots` = 10** (`cct-xs-v2`/`cct-s-v2` = 10,

@@ -55,7 +55,7 @@ JSON (corrompus → HTTP 400).
 auto à chaque push) ; stack complète conteneurisée `docker-compose.full.yml` (poste `:8081`, RECO
 réel). Procédures : `README_DEPLOIEMENT.md` ; état courant : `docs/HANDOFF.md`.
 
-## Pattern pour une nouvelle fonction (les 6 restantes)
+## Pattern pour une nouvelle fonction (les 5 restantes)
 Maquette HTML fournie dans `~/Downloads/Maquette_*.html` (à reproduire FIDÈLEMENT, design GAM ;
 réutiliser `theme/gam.css`). Pour chaque fonction : (1) machine à états + contrats de ports +
 mapping champ→source ; (2) contexte backend hexagonal (domaine, ports, service, **adapters mock**
@@ -63,8 +63,8 @@ PROASSUR/Sage/BPM/GED/SSO, bus, config en `application.yml` jamais en dur) + tes
 1 IT de boucle) ; (3) feature React fidèle ; (4) brancher le **compteur de nav réel**
 (`tableaubord/.../CompteursAgenceAdapter`) ; (5) `mvn verify` puis commits conventionnels.
 Fonctions livrées : Suivi des chèques, Accueil agence, Demande de cotation, Accords d'échéancier (DPD),
-Versement bancaire (preuve de paiement, ADR 0006).
-Restantes (placeholders) : Dépôt Situation Financière, Attestations, Envois bureau d'ordre,
+Versement bancaire (preuve de paiement, ADR 0006), Attestations (relevé mensuel + OCR-DOC, ADR 0013).
+Restantes (placeholders) : Dépôt Situation Financière, Envois bureau d'ordre,
 Demande d'expertise, Suivi des échéanciers, Créances & contentieux.
 
 ## Déclaration de sinistre (front + DECSIN, PWA — ADR 0009)
@@ -149,6 +149,22 @@ env (`RECO_OCR_MODEL=cct-xs-v2`, `RECO_PLAQUE_NUMERIQUE=true` chiffres-only, `RE
 complète par `*`, ignoré à la normalisation mais PAS un joker) ; vrai fix = modèle **entraîné DZ**
 (`fast_plate_ocr.cli.train`). ⚠️ Le **mock ment** (plaque figée `0987611616`, toujours « voiture ») :
 NON_CONFORME quasi systématique en dev = normal, pas un bug. Détails : `services/reco/README.md`.
+
+## Attestations — relevé mensuel de production + OCR-DOC (ADR 0013)
+L'AGA choisit un **mois de production**, photographie chaque attestation, un **OCR 100 % LOCAL**
+(PaddleOCR fr/ar, mutualisé dans `services/reco/`, endpoint `POST /lire-attestation`, désactivable
+`OCR_DOC_ACTIF`) pré-remplit les champs en **mode assisté** (l'agent confirme/corrige, l'OCR ne
+décide jamais), et chaque lecture ajoute une ligne au **relevé du mois** (un lot par **agence+mois**,
+ouvert aux ajouts jusqu'à la **validation** puis verrouillé ; doublon de n° de police signalé).
+Règles d'extraction ISOLÉES (`services/reco/attestation_regles.py`, pur, env-configurable) :
+**police = 15 chiffres exigés en double occurrence concordante** (ancres « Police N° » /
+« رقم عقد التأمين ») ; la **quittance (8 chiffres, grand n° rouge)** est un repère négatif.
+Backend : contexte `dz.gam.poste.attestation` — `LectureDocumentPort` (mock défaut / http `ocr.mode`,
+panne → neutre jamais bloquant), `ProductionPort` (mock ; endpoint réel **[À CONFIRMER DSI]**),
+soumission = `agencePourAction()` (409 consolidé/re-soumission), persistance payloadJson.
+Front : `features/attestation/` + **Dexie `gam-attestations`** (photos + lignes offline, `persist()`),
+capture hors-ligne → ligne `a_lire` + **file OCR idempotente** rejouée à la reconnexion.
+**Collecte seule** (seam de vérification PROASSUR par police prévu, non branché).
 
 ## Source des chiffres (substitut Cube Power BI, ADR 0007)
 Les KPI de l'accueil et la situation mensuelle du versement proviennent du module

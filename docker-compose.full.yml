@@ -37,6 +37,14 @@ services:
       FAST_ALPR_HOME: /models/fast-alpr
       RECO_SEUIL_VEHICULE: ${RECO_SEUIL_VEHICULE:-0.45}
       RECO_SEUIL_PLAQUE: ${RECO_SEUIL_PLAQUE:-0.35}
+      # Plaques DZ : chiffres only + complétion « * » jusqu'à 11 (cf. services/reco/README).
+      RECO_OCR_MODEL: ${RECO_OCR_MODEL:-cct-xs-v2-global-model}
+      RECO_PLAQUE_NUMERIQUE: ${RECO_PLAQUE_NUMERIQUE:-true}
+      RECO_PLAQUE_LONGUEUR: ${RECO_PLAQUE_LONGUEUR:-11}
+      # OCR-DOC (attestations, PaddleOCR fr/ar — RAM en plus ; false = RECO seul).
+      OCR_DOC_ACTIF: ${OCR_DOC_ACTIF:-true}
+      OCR_LANGS: ${OCR_LANGS:-fr,arabic}
+      OCR_SEUIL_CONFIANCE: ${OCR_SEUIL_CONFIANCE:-0.60}
       RECO_CORS_ORIGINS: "*"
     volumes:
       - reco-models:/models           # cache des modèles YOLO/fast-alpr (pas de re-téléchargement)
@@ -67,6 +75,9 @@ services:
       RECO_MODE: ${RECO_MODE:-http}
       RECO_BASE_URL: http://reco:8088  # le backend (et lui seul) appelle reco
       RECO_BLOQUE_NON_CONFORME: ${RECO_BLOQUE_NON_CONFORME:-false}
+      # OCR-DOC (attestations) : même service que reco, endpoint /lire-attestation.
+      OCR_MODE: ${OCR_MODE:-http}
+      OCR_BASE_URL: http://reco:8088
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/auth/config >/dev/null 2>&1 || exit 1"]

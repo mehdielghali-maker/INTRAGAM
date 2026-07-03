@@ -188,6 +188,16 @@ reco:
   base-url: http://reco-service:8088    # microservice RECO (utilisé si mode=http)
   bloque-non-conforme: false            # true = non-concordance plaque bloquante côté AGA (anti-fraude)
 
+# Lecture OCR des attestations (module « Attestations »). Capacité INDÉPENDANTE et
+# REMPLAÇABLE : le poste ne parle qu'au port LectureDocumentPort. En dev/tests, mode mock
+# (aucun service externe). En prod, mode http : l'OCR est MUTUALISÉ dans le conteneur reco
+# (services/reco/), endpoint POST {base-url}/lire-attestation. Une panne de l'OCR ne bloque
+# JAMAIS la collecte (repli neutre, saisie manuelle). Clés à plat (ocr.*) lues par les
+# adapters (@ConditionalOnProperty / @Value) — rien en dur.
+ocr:
+  mode: mock                            # mock (défaut) | http
+  base-url: http://reco-service:8088    # OCR mutualisé avec RECO (utilisé si mode=http)
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

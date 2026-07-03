@@ -31,6 +31,8 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
+from attestation_regles import extraire_attestation  # regles PURES (sans PaddleOCR)
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("reco")
 
@@ -51,6 +53,11 @@ PLAQUE_NUMERIQUE = os.getenv("RECO_PLAQUE_NUMERIQUE", "true").lower() in ("1", "
 # comparaison plaque<->contrat (normalisation cote poste : seuls [A-Z0-9] comptent).
 PLAQUE_LONGUEUR = int(os.getenv("RECO_PLAQUE_LONGUEUR", "0") or "0")
 
+# --- OCR-DOC (attestations) : PaddleOCR, 100 % local, BILINGUE fr/ar ---------------------------
+# OCR_DOC_ACTIF=false permet de faire tourner le service RECO sans charger PaddleOCR (~2 Go).
+OCR_DOC_ACTIF = os.getenv("OCR_DOC_ACTIF", "true").lower() in ("1", "true", "yes", "on")
+OCR_LANGS = [l.strip() for l in os.getenv("OCR_LANGS", "fr,arabic").split(",") if l.strip()]
+
 # Classes COCO considerees comme "vehicule"
 COCO_VEHICULE = {2: "voiture", 3: "moto", 5: "bus", 7: "camion"}
 
@@ -68,6 +75,7 @@ app.add_middleware(
 
 _yolo = None  # modele detection vehicule
 _alpr = None  # pipeline plaque
+_ocr_docs = []  # lecteurs PaddleOCR (un par langue, fr + arabic) — vide si OCR-DOC inactif
 
 
 def _forcer_sortie_numerique(alpr) -> None:
@@ -107,6 +115,19 @@ def _charger_modeles() -> None:
     if PLAQUE_NUMERIQUE:
         _forcer_sortie_numerique(_alpr)
         log.info("OCR contraint aux CHIFFRES (plaques numeriques, ex. Algerie).")
+
+    # OCR-DOC (attestations) : chargement TOLERANT — un echec ici ne doit JAMAIS
+    # empecher /analyser (RECO vehicule/plaque) de fonctionner.
+    if OCR_DOC_ACTIF:
+        try:
+            from paddleocr import PaddleOCR
+            for langue in OCR_LANGS:
+                log.info("Chargement PaddleOCR (%s)...", langue)
+                _ocr_docs.append(PaddleOCR(use_angle_cls=True, lang=langue, show_log=False))
+            log.info("OCR document charge (%s).", ", ".join(OCR_LANGS))
+        except Exception as exc:  # dependance absente / modele indisponible
+            _ocr_docs.clear()
+            log.warning("OCR document indisponible (%s) — /analyser reste operationnel.", exc)
     log.info("Modeles charges.")
 
 
@@ -184,7 +205,11 @@ def _lire_plaque(arr: np.ndarray):
 @app.get("/health")
 def health():
     """Sonde de sante (readiness)."""
-    return {"status": "ok", "modeles_charges": _yolo is not None and _alpr is not None}
+    return {
+        "status": "ok",
+        "modeles_charges": _yolo is not None and _alpr is not None,
+        "ocr_doc": bool(_ocr_docs),
+    }
 
 
 @app.post("/analyser")
@@ -215,3 +240,50 @@ async def analyser(photo: UploadFile = File(...), vue: Optional[str] = Form(None
         "confianceVehicule": round(conf_veh, 3),
         "vue": vue,
     })
+
+
+@app.post("/lire-attestation")
+async def lire_attestation(photo: UploadFile = File(...)):
+    """
+    OCR-DOC : lit une ATTESTATION d'assurance (bilingue fr/ar) et renvoie le contrat
+    {numeroPolice, numeroQuittance, immatriculation, assure, valideDu, valideAu,
+     primeTTC, codeAgence, confiance, statut, texteBrut}.
+    La COMPARAISON au contrat PROASSUR se fait dans INTRAGAM, jamais ici.
+    """
+    if not _ocr_docs:
+        raise HTTPException(status_code=503,
+                            detail="OCR document desactive ou modeles non charges (OCR_DOC_ACTIF)")
+    data = await photo.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Fichier vide")
+    arr = _vers_ndarray(data)
+
+    # Lecture par CHAQUE lecteur (fr + arabic), puis fusion en ordre haut->bas.
+    lignes = []
+    for lecteur in _ocr_docs:
+        try:
+            resultat = lecteur.ocr(arr, cls=True)
+        except Exception as exc:
+            log.warning("Lecture OCR document en echec sur un lecteur : %s", exc)
+            continue
+        for page in resultat or []:
+            for element in page or []:
+                try:
+                    boite, (texte, conf) = element[0], element[1]
+                    y = float(min(p[1] for p in boite))
+                except (TypeError, ValueError, IndexError):
+                    continue
+                if texte and str(texte).strip():
+                    lignes.append({"texte": str(texte), "confiance": float(conf), "y": y})
+
+    # DEDOUBLONNAGE physique : les deux lecteurs relisent les memes chiffres latins. Sans cela,
+    # une SEULE occurrence du numero de police lue par fr ET arabic passerait pour une
+    # « concordance » de deux occurrences (regle des 15 chiffres lus deux fois).
+    dedup = {}
+    for l in lignes:
+        cle = (re.sub(r"\s+", " ", l["texte"].strip().lower()), round(l["y"] / 20))
+        if cle not in dedup or l["confiance"] > dedup[cle]["confiance"]:
+            dedup[cle] = l
+    fusion = sorted(dedup.values(), key=lambda l: l["y"])
+
+    return JSONResponse(extraire_attestation(fusion))

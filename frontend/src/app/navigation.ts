@@ -41,7 +41,7 @@ export const PRINCIPAUX: NavItem[] = [
 export const LOT1: NavItem[] = [
   { id: 'depot', label: 'Dépôt Situation Financière', route: '/depot-situations', icon: 'depot', badgeTodo: 'À faire', soon: true },
   { id: 'versement', label: 'Versement bancaire', route: '/versement', icon: 'versement', badgeKey: 'versementsEnCours' },
-  { id: 'attestations', label: 'Attestations', route: '/attestations', icon: 'attestations', badgeKey: 'attestations', soon: true },
+  { id: 'attestations', label: 'Attestations', route: '/attestations', icon: 'attestations', badgeKey: 'attestations' },
   { id: 'cheques', label: 'Suivi des chèques', route: '/cheques', icon: 'cheques', badgeKey: 'chequesEnAttente', urgent: true },
   { id: 'bureau', label: "Envois bureau d'ordre", route: '/bureau-ordre', icon: 'bureau', badgeKey: 'bureauOrdre', soon: true },
   { id: 'cotation', label: 'Demande de cotation', route: '/cotation', icon: 'cotation', badgeKey: 'cotations' },
