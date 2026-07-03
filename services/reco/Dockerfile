@@ -7,9 +7,10 @@ ENV PIP_NO_CACHE_DIR=1 \
     ULTRALYTICS_DIR=/models \
     FAST_ALPR_HOME=/models/fast-alpr
 
-# Dependances systeme minimales (OpenCV headless + libs ONNX)
+# Dependances systeme : OpenCV/ONNX (libgl) + OUTILS DE BUILD (certaines dependances transitives
+# de la chaine OCR n'ont pas toujours de wheel precompilee -> pip compile depuis les sources).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libglib2.0-0 libgl1 \
+    libglib2.0-0 libgl1 build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
