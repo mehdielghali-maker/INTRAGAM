@@ -63,16 +63,18 @@ function lireStore(): Souscription[] {
   }
   // Store vide (1re visite ou localStorage indisponible) : on sème les démos de l'AGA.
   const demo = souscriptionsDemo();
-  ecrireStore(demo);
+  try {
+    ecrireStore(demo);
+  } catch {
+    /* démo non persistée (mode privé / quota) : on la sert quand même en mémoire */
+  }
   return demo;
 }
 
 function ecrireStore(liste: Souscription[]): void {
-  try {
-    localStorage.setItem(CLE, JSON.stringify(liste));
-  } catch {
-    /* quota / mode privé */
-  }
+  // Ne PAS avaler l'échec (quota atteint avec les photos base64, mode privé…) : un dossier
+  // « enregistré » qui n'est écrit nulle part serait perdu en silence. L'appelant décide.
+  localStorage.setItem(CLE, JSON.stringify(liste));
 }
 
 function upsert(s: Souscription): Souscription {

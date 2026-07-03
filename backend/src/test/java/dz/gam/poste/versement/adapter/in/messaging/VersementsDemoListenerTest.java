@@ -1,25 +1,15 @@
 package dz.gam.poste.versement.adapter.in.messaging;
 
 import dz.gam.poste.contexte.domain.event.AgencesDeclareesEvent;
-import dz.gam.poste.versement.config.VersementProperties;
-import dz.gam.poste.versement.domain.event.VersementBancaireDeposeEvent;
-import dz.gam.poste.versement.domain.model.PieceJustificative;
 import dz.gam.poste.versement.domain.model.StatutVersement;
 import dz.gam.poste.versement.domain.model.Versement;
 import dz.gam.poste.versement.domain.port.in.FiltreVersement;
-import dz.gam.poste.versement.domain.port.out.GedVersementPort;
-import dz.gam.poste.versement.domain.port.out.ProductionEncaissePort;
-import dz.gam.poste.versement.domain.port.out.PublicationVersementPort;
 import dz.gam.poste.versement.domain.port.out.VersementRepository;
-import dz.gam.poste.versement.domain.port.out.VersementsBanquePort;
-import dz.gam.poste.versement.domain.service.VersementService;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,9 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Vérifie que le seed de démo des versements crée 2 entrées DÉPOSÉ par agence avec les valeurs
- * attendues, et qu'il est idempotent (un 2e événement ne duplique pas — garde
- * {@code existsByCodeAgence}).
+ * Vérifie que le seed de démo des versements crée 2 entrées DÉPOSÉ par agence, avec des
+ * références DÉTERMINISTES ({@code VB-DEMO-{agence}-00n}), qu'il est idempotent (le rejeu de
+ * l'événement ne duplique rien — garde par référence) et qu'il ne publie RIEN (agrégat vidé de
+ * ses événements avant persistance : les démos restent DÉPOSÉES, sans boucle BPM).
  */
 class VersementsDemoListenerTest {
 
@@ -40,19 +31,7 @@ class VersementsDemoListenerTest {
     private static final String AGENCE_B = "16.4.D.ALGER";
 
     private final FauxRepository repository = new FauxRepository();
-    private final VersementsDemoListener listener = new VersementsDemoListener(service(), repository);
-
-    private VersementService service() {
-        ProductionEncaissePort production =
-                (agence, mois) -> new ProductionEncaissePort.SituationProduction(BigDecimal.ZERO, BigDecimal.ZERO);
-        VersementsBanquePort banque = (agence, mois) -> BigDecimal.ZERO;
-        GedVersementPort ged = nom -> new PieceJustificative(nom, "GED-" + nom);
-        VersementProperties props = new VersementProperties("VB", 3390,
-                new VersementProperties.SeuilRegularisation(BigDecimal.valueOf(1_000_000), BigDecimal.TEN),
-                List.of("BNA", "BEA"), List.of("2026-05"),
-                new VersementProperties.Mock(0, 0, StatutVersement.VALIDE));
-        return new VersementService(repository, new FauxPublication(), ged, production, banque, props, HORLOGE);
-    }
+    private final VersementsDemoListener listener = new VersementsDemoListener(repository, HORLOGE);
 
     @Test
     void seme_deux_versements_deposes_par_agence_avec_les_valeurs_attendues() {
@@ -63,10 +42,13 @@ class VersementsDemoListenerTest {
         assertThat(agenceA).allSatisfy(v -> {
             assertThat(v.statut()).isEqualTo(StatutVersement.DEPOSE);
             assertThat(v.createur()).isEqualTo("Démo");
-            assertThat(v.reference()).isNotNull();
             assertThat(v.pieces()).hasSize(1);
             assertThat(v.commentaire()).isEqualTo("Versement de démo");
+            // Aucun événement en attente : rien ne doit partir sur le bus pour une donnée de démo.
+            assertThat(v.evenementsNonPublies()).isEmpty();
         });
+        assertThat(agenceA).extracting(Versement::reference)
+                .containsExactlyInAnyOrder("VB-DEMO-" + AGENCE_A + "-001", "VB-DEMO-" + AGENCE_A + "-002");
         assertThat(agenceA).extracting(v -> v.mois().valeur())
                 .containsExactlyInAnyOrder("2026-05", "2026-04");
         assertThat(agenceA).extracting(Versement::banque)
@@ -89,8 +71,28 @@ class VersementsDemoListenerTest {
         assertThat(repository.total()).isEqualTo(2);
     }
 
-    /** Repository en mémoire (mêmes contrats que le port, dont {@code existsByCodeAgence}). */
-    private static final class FauxRepository implements VersementRepository {
+    @Test
+    void un_echec_sur_une_agence_ne_bloque_pas_les_suivantes() {
+        // Repository qui refuse la 1re agence : le listener logge et continue avec la 2e.
+        FauxRepository enPanne = new FauxRepository() {
+            @Override
+            public Versement enregistrer(Versement versement) {
+                if (versement.codeAgence().equals(AGENCE_A)) {
+                    throw new IllegalStateException("panne simulée");
+                }
+                return super.enregistrer(versement);
+            }
+        };
+        VersementsDemoListener resilient = new VersementsDemoListener(enPanne, HORLOGE);
+
+        resilient.surAgencesDeclarees(new AgencesDeclareesEvent(List.of(AGENCE_A, AGENCE_B)));
+
+        assertThat(enPanne.parAgence(AGENCE_A)).isEmpty();
+        assertThat(enPanne.parAgence(AGENCE_B)).hasSize(2);
+    }
+
+    /** Repository en mémoire (mêmes contrats que le port). */
+    private static class FauxRepository implements VersementRepository {
         private final Map<UUID, Versement> parId = new ConcurrentHashMap<>();
 
         @Override
@@ -107,11 +109,6 @@ class VersementsDemoListenerTest {
         @Override
         public Optional<Versement> trouverParReference(String reference) {
             return parId.values().stream().filter(v -> reference.equals(v.reference())).findFirst();
-        }
-
-        @Override
-        public boolean existsByCodeAgence(String codeAgence) {
-            return parId.values().stream().anyMatch(v -> v.codeAgence().equals(codeAgence));
         }
 
         @Override
@@ -138,16 +135,6 @@ class VersementsDemoListenerTest {
 
         long total() {
             return parId.size();
-        }
-    }
-
-    /** Port de publication no-op (les événements ne sont pas vérifiés ici). */
-    private static final class FauxPublication implements PublicationVersementPort {
-        private final List<VersementBancaireDeposeEvent> evenements = new ArrayList<>();
-
-        @Override
-        public void publier(VersementBancaireDeposeEvent evenement) {
-            evenements.add(evenement);
         }
     }
 }

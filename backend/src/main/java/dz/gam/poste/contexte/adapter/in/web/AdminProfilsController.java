@@ -102,8 +102,14 @@ public class AdminProfilsController {
         ContexteProperties.Profil enregistre = store.enregistrer(
                 new ContexteProperties.Profil(r.identifiant(), r.login(), r.nomAffiche(), r.profil(),
                         agences, modules, r.motDePasse()));
-        // Sème les chiffres + chèques de démo des (nouvelles) agences déclarées.
-        evenements.publishEvent(new AgencesDeclareesEvent(agences.stream().map(ContexteProperties.Agence::code).toList()));
+        // Sème les données de démo des (nouvelles) agences déclarées. Un échec du seeding ne doit
+        // pas faire échouer l'enregistrement du profil (les listeners idempotents rattraperont).
+        try {
+            evenements.publishEvent(new AgencesDeclareesEvent(agences.stream().map(ContexteProperties.Agence::code).toList()));
+        } catch (RuntimeException e) {
+            org.slf4j.LoggerFactory.getLogger(AdminProfilsController.class)
+                    .warn("Seeding de démo différé après enregistrement du profil : {}", e.getMessage());
+        }
         return enregistre;
     }
 

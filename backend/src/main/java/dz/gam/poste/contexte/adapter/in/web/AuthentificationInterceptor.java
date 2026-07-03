@@ -6,6 +6,7 @@ import dz.gam.poste.contexte.domain.port.in.ConsulterSessionUseCase;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.Optional;
@@ -28,6 +29,9 @@ public class AuthentificationInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true; // préflight OPTIONS : sans cookie par construction — la politique CORS s'applique ensuite
+        }
         String uri = request.getRequestURI();
         if (uri.startsWith("/api/auth/")) {
             return true; // connexion / état / config : toujours accessibles

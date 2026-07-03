@@ -125,18 +125,26 @@ export default function DeclarationCaptureStepper({
 
   async function valider() {
     autoRef.current.annuler();
-    if (!navigator.onLine) {
-      // Capture OK hors-ligne ; rattachement PROASSUR (validation) différé à la reconnexion.
-      await decsin.creerDeclaration({ ...declarationCourante('A_VALIDER'), aRattacher: true });
-      await brouillonsLocaux.supprimer(idLocalRef.current);
-      onTermine(`Déclaration ${codeRef.current} enregistrée hors-ligne — validée à la reconnexion.`);
+    let confirmation: string;
+    try {
+      if (!navigator.onLine) {
+        // Capture OK hors-ligne ; rattachement PROASSUR (validation) différé à la reconnexion.
+        await decsin.creerDeclaration({ ...declarationCourante('A_VALIDER'), aRattacher: true });
+        confirmation = `Déclaration ${codeRef.current} enregistrée hors-ligne — validée à la reconnexion.`;
+      } else {
+        const decl = await decsin.creerDeclaration(declarationCourante('A_VALIDER'));
+        const { numSinistre, idDossierSinistre } = await decsin.rattacherDeclaration(decl);
+        await decsin.creerDeclaration({ ...decl, statut: 'VALIDEE', numSinistre, idDossierSinistre });
+        confirmation = `Déclaration ${decl.code} validée — N° sinistre ${numSinistre}.`;
+      }
+    } catch {
+      // Échec d'enregistrement (quota localStorage plein avec les photos, service indisponible…) :
+      // on NE SUPPRIME PAS le brouillon — rien n'est perdu, l'AGA peut réessayer.
+      setErreur(`Enregistrement impossible (stockage plein ?). Le brouillon ${codeRef.current} est conservé — rien n'est perdu.`);
       return;
     }
-    const decl = await decsin.creerDeclaration(declarationCourante('A_VALIDER'));
-    const { numSinistre, idDossierSinistre } = await decsin.rattacherDeclaration(decl);
-    await decsin.creerDeclaration({ ...decl, statut: 'VALIDEE', numSinistre, idDossierSinistre });
-    await brouillonsLocaux.supprimer(idLocalRef.current);
-    onTermine(`Déclaration ${decl.code} validée — N° sinistre ${numSinistre}.`);
+    await brouillonsLocaux.supprimer(idLocalRef.current); // seulement APRÈS un enregistrement réussi
+    onTermine(confirmation);
   }
 
   const boutonBrouillon = (

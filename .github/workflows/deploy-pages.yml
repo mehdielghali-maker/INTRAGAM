@@ -34,7 +34,7 @@ jobs:
           mkdir -p site
           for app in declarations-sinistre souscription-auto souscription-client; do
             echo "::group::build $app"
-            ( cd "modules/$app" && npm install && VITE_BASE="$base/$app/" npm run build )
+            ( cd "modules/$app" && npm ci && VITE_BASE="$base/$app/" npm run build )
             mkdir -p "site/$app"
             cp -r "modules/$app/dist/." "site/$app/"
             echo "::endgroup::"

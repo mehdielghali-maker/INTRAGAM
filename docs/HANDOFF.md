@@ -218,7 +218,11 @@ Chaque module développé est peuplé PAR AGENCE (même mécanisme que les chèq
   accords, echeanciers, contentieux` (accueil toujours accessible).
 
 ## Points d'attention
-- **Push vers `main` refusé au harnais de l'agent** (branche par défaut) — merge à faire par l'utilisateur.
+- **Revue de code du 2026-07-02** : 5 bugs corrigés + 5 durcissements ; la **dette assumée** (13 points
+  tolérables pour le POC : upload réel des pièces en mode real, inférence bloquante du microservice,
+  CONFORME inatteignable sur plaque DZ 11 chiffres, etc.) est consignée dans `docs/revue-2026-07-02.md`.
+- **Push vers `main`** : accepté quand l'utilisateur le demande EXPLICITEMENT dans son message (fait le
+  2026-07-02) ; sinon refusé par le harnais de l'agent — à faire faire par l'utilisateur.
 - Profils démo en config (`poste.contexte.profils`) ; un profil de test `a.test` peut exister en base
   (gérable via `/admin`). Données mock en base réinitialisables en recréant la base docker.
 - `BoucleDpdIT` peut flaker (RabbitMQ Testcontainers) : rejoué automatiquement, build vert.

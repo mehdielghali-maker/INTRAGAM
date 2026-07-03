@@ -16,9 +16,6 @@ public interface VersementRepository {
 
     Optional<Versement> trouverParReference(String reference);
 
-    /** Indique si l'agence porte déjà au moins un versement (garde d'idempotence du seed de démo). */
-    boolean existsByCodeAgence(String codeAgence);
-
     List<Versement> lister(FiltreVersement filtre);
 
     /** Nombre de versements en cours côté BPM (déposé ou en contrôle), toutes agences. */

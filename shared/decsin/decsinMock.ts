@@ -28,16 +28,18 @@ function lireStore(): Declaration[] {
     /* localStorage indisponible : on retombe sur les données de démo */
   }
   const demo = declarationsDemo();
-  ecrireStore(demo);
+  try {
+    ecrireStore(demo);
+  } catch {
+    /* démo non persistée (mode privé / quota) : on la sert quand même en mémoire */
+  }
   return demo;
 }
 
 function ecrireStore(declarations: Declaration[]): void {
-  try {
-    localStorage.setItem(CLE_STORE, JSON.stringify(declarations));
-  } catch {
-    /* ignore (mode privé, quota) */
-  }
+  // Ne PAS avaler l'échec (quota atteint avec les photos base64, mode privé…) : une déclaration
+  // « enregistrée » qui n'est écrite nulle part serait perdue en silence. L'appelant décide.
+  localStorage.setItem(CLE_STORE, JSON.stringify(declarations));
 }
 
 function maintenant(): string {

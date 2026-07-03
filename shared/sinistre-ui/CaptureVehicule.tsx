@@ -49,6 +49,7 @@ export default function CaptureVehicule({
 
   useEffect(() => {
     if (!mobile) return; // PC : pas de webcam, on n'ouvre pas le flux caméra
+    let actif = true;
     let flux: MediaStream | null = null;
     // Résolution BORNÉE (~720p) : sur mobile, un flux/canvas pleine résolution (1080p/4K) sature la
     // mémoire à la capture et fait RECHARGER l'onglet (perte de la saisie). 720p suffit largement.
@@ -58,13 +59,24 @@ export default function CaptureVehicule({
         audio: false,
       })
       .then((s) => {
+        // Démonté pendant l'attente (prompt de permission, changement d'étape, StrictMode) :
+        // stopper TOUT DE SUITE, sinon la caméra reste allumée sans que personne ne l'arrête.
+        if (!actif) {
+          s.getTracks().forEach((t) => t.stop());
+          return;
+        }
         flux = s;
         if (videoRef.current) {
           videoRef.current.srcObject = s;
         }
       })
-      .catch(() => setCameraKo(true));
-    return () => flux?.getTracks().forEach((t) => t.stop());
+      .catch(() => {
+        if (actif) setCameraKo(true);
+      });
+    return () => {
+      actif = false;
+      flux?.getTracks().forEach((t) => t.stop());
+    };
   }, [mobile]);
 
   const prise = (type: string) => pieces.some((p) => p.type === type);

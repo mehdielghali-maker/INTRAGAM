@@ -5,6 +5,8 @@ import dz.gam.poste.cotation.domain.model.DemandeCotation;
 import dz.gam.poste.cotation.domain.model.ReferenceDemande;
 import dz.gam.poste.cotation.domain.model.Souscripteur;
 import dz.gam.poste.cotation.domain.port.out.DemandeCotationRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -43,10 +45,17 @@ public class CotationsDemoListener {
         this.horloge = horloge;
     }
 
+    private static final Logger log = LoggerFactory.getLogger(CotationsDemoListener.class);
+
     @EventListener
     public void surAgencesDeclarees(AgencesDeclareesEvent evenement) {
         for (String agence : evenement.codesAgences()) {
-            semerPourAgence(agence);
+            try {
+                semerPourAgence(agence);
+            } catch (RuntimeException e) {
+                // Une donnée de démo ne doit JAMAIS empêcher le démarrage ni bloquer les autres agences.
+                log.warn("Seed de démo des cotations impossible pour l'agence {} : {}", agence, e.getMessage());
+            }
         }
     }
 

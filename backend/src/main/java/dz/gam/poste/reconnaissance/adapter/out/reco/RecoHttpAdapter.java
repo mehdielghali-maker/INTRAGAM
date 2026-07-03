@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.UUID;
 
 /**
@@ -39,9 +40,17 @@ public class RecoHttpAdapter implements ReconnaissancePort {
         // FORCER HTTP/1.1 : le client JDK tente HTTP/2 par défaut, or uvicorn/h11 (le microservice)
         // ne parle que HTTP/1.1 → « Invalid HTTP request received » et appel perdu. C'est la cause
         // réelle (curl, en HTTP/1.1, fonctionnait ; le backend en HTTP/2 échouait).
-        HttpClient jdk = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
+        // TIMEOUTS obligatoires : sans eux, un service qui accepte la connexion mais ne répond pas
+        // (inférence bloquée) gèlerait indéfiniment le thread de requête du poste. À l'échéance,
+        // l'exception tombe dans le catch → repli neutre, la déclaration continue.
+        HttpClient jdk = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(Duration.ofSeconds(3))
+                .build();
+        JdkClientHttpRequestFactory fabrique = new JdkClientHttpRequestFactory(jdk);
+        fabrique.setReadTimeout(Duration.ofSeconds(30)); // inférence CPU : plusieurs secondes possibles
         this.client = RestClient.builder()
-                .requestFactory(new JdkClientHttpRequestFactory(jdk))
+                .requestFactory(fabrique)
                 .baseUrl(baseUrl)
                 .build();
     }

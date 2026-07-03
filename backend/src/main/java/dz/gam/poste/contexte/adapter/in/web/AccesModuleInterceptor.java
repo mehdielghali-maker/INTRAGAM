@@ -4,6 +4,7 @@ import dz.gam.poste.contexte.domain.port.in.ConsulterContexteAgenceUseCase;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
@@ -26,6 +27,9 @@ public class AccesModuleInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true; // préflight OPTIONS : traité par la politique CORS, pas par les modules
+        }
         String module = moduleDe(request.getRequestURI());
         if (module == null) {
             return true; // API non rattachée à un module restreint

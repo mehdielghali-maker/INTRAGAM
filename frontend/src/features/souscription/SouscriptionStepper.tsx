@@ -78,7 +78,20 @@ export default function SouscriptionStepper({
       setEnregistre(true);
     }, 800),
   );
+  // Empreinte de l'état initial : l'auto-save n'écrit qu'après une VRAIE modification. Sans elle,
+  // chaque ouverture du stepper créait un brouillon FANTÔME (immatriculation/marque sont préremplies
+  // depuis l'entité) avec idLocal/référence neufs — et le double montage de React StrictMode
+  // l'écrivait immédiatement en dev.
+  const empreinteInitiale = useRef<string | null>(null);
   useEffect(() => {
+    const actuelle = JSON.stringify(
+      [prenom, nom, numeroCni, telephone, immatriculation, marque, pieces.map((p) => p.id)],
+    );
+    if (empreinteInitiale.current === null) {
+      empreinteInitiale.current = actuelle; // premier passage (montage) : rien à sauvegarder
+      return;
+    }
+    if (actuelle === empreinteInitiale.current) return; // rien de modifié depuis l'ouverture
     const aDuContenu =
       Boolean(brouillon) ||
       Boolean(prenom || numeroCni.trim() || telephone.trim() || immatriculation.trim() || marque.trim() || pieces.length);
@@ -122,15 +135,23 @@ export default function SouscriptionStepper({
   async function valider() {
     autoRef.current.annuler();
     const s = construire('A_VALIDER');
-    if (!navigator.onLine) {
-      await souscription.creerSouscription(s);
-      await brouillonsLocaux.supprimer(idLocalRef.current);
-      onTermine(`Souscription ${s.reference} enregistrée hors-ligne — finalisée à la reconnexion.`);
+    let confirmation: string;
+    try {
+      if (!navigator.onLine) {
+        await souscription.creerSouscription(s);
+        confirmation = `Souscription ${s.reference} enregistrée hors-ligne — finalisée à la reconnexion.`;
+      } else {
+        const enregistree = await souscription.enregistrerSouscription(s, []);
+        confirmation = `Souscription ${enregistree.reference} validée et enregistrée pour ${entite.nomClient}.`;
+      }
+    } catch {
+      // Échec d'enregistrement (quota localStorage plein avec les photos, service indisponible…) :
+      // on NE SUPPRIME PAS le brouillon — rien n'est perdu, l'AGA peut réessayer.
+      setMessage(`Enregistrement impossible (stockage plein ?). Le brouillon ${referenceRef.current} est conservé — rien n'est perdu.`);
       return;
     }
-    const enregistree = await souscription.enregistrerSouscription(s, []);
-    await brouillonsLocaux.supprimer(idLocalRef.current);
-    onTermine(`Souscription ${enregistree.reference} validée et enregistrée pour ${entite.nomClient}.`);
+    await brouillonsLocaux.supprimer(idLocalRef.current); // seulement APRÈS un enregistrement réussi
+    onTermine(confirmation);
   }
 
   const boutonBrouillon = (

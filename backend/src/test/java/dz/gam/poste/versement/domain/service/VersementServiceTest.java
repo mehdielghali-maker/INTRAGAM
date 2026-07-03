@@ -160,11 +160,6 @@ class VersementServiceTest {
         }
 
         @Override
-        public boolean existsByCodeAgence(String codeAgence) {
-            return parId.values().stream().anyMatch(v -> v.codeAgence().equals(codeAgence));
-        }
-
-        @Override
         public List<Versement> lister(FiltreVersement filtre) {
             return parId.values().stream()
                     .filter(v -> v.codeAgence().equals(filtre.codeAgence()))

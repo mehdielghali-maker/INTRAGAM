@@ -6,6 +6,7 @@ import dz.gam.poste.contexte.domain.model.CompteAdmin;
 import dz.gam.poste.contexte.domain.model.Modules;
 import dz.gam.poste.contexte.domain.port.out.CompteAdminStore;
 import dz.gam.poste.contexte.domain.port.out.MotDePasseEncodeur;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationEventPublisher;
@@ -59,7 +60,14 @@ public class ProfilsSeeder implements ApplicationRunner {
         }
         List<String> codes = store.tousLesCodesAgences();
         if (!codes.isEmpty()) {
-            evenements.publishEvent(new AgencesDeclareesEvent(codes));
+            try {
+                evenements.publishEvent(new AgencesDeclareesEvent(codes));
+            } catch (RuntimeException e) {
+                // Le seeding de démo est un CONFORT : il ne doit jamais empêcher le démarrage.
+                // (Les listeners sont idempotents : le rejeu suivant rattrapera le manque.)
+                LoggerFactory.getLogger(ProfilsSeeder.class)
+                        .warn("Seeding des données de démo interrompu : {}", e.getMessage());
+            }
         }
     }
 }

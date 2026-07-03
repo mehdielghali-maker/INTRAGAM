@@ -20,7 +20,8 @@ ENV VITE_API_MODE=$VITE_API_MODE \
     VITE_DECSIN_MODE=$VITE_DECSIN_MODE \
     VITE_SOUSCRIPTION_MODE=$VITE_SOUSCRIPTION_MODE \
     VITE_RECO_MODE=$VITE_RECO_MODE
-RUN npm install && npm run build
+# npm ci : build reproductible depuis le lockfile committé (npm install pourrait le réécrire).
+RUN npm ci && npm run build
 
 # --- runtime (nginx) ---
 FROM nginx:1.27-alpine AS runtime

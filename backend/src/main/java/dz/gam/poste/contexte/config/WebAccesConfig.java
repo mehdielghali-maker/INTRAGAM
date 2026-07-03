@@ -42,9 +42,12 @@ public class WebAccesConfig implements WebMvcConfigurer {
             return; // pas de CORS : front servi en même origine (proxy nginx / proxy Vite)
         }
         registry.addMapping("/api/**")
-                .allowedOrigins(originesAutorisees.split("\\s*,\\s*"))
+                // allowedOriginPatterns (et non allowedOrigins) : tolère « * » AVEC credentials —
+                // Spring renvoie alors l'origine appelante au lieu de lever une erreur 500 sur
+                // chaque requête cross-origin si l'exploitant met CORS_ALLOWED_ORIGINS=*.
+                .allowedOriginPatterns(originesAutorisees.split("\\s*,\\s*"))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
-                .allowCredentials(true); // sessions (cookie) → origines explicites obligatoires
+                .allowCredentials(true); // sessions (cookie) → préférer des origines explicites
     }
 }

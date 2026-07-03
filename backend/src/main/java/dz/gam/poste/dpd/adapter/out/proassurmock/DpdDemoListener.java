@@ -15,6 +15,8 @@ import dz.gam.poste.dpd.domain.port.out.AccordSuiviRepository;
 import dz.gam.poste.dpd.domain.port.out.DemandeDpdRepository;
 import dz.gam.poste.dpd.domain.port.out.GedDpdPort;
 import dz.gam.poste.dpd.domain.port.out.ProassurDpdPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -63,13 +65,20 @@ public class DpdDemoListener {
         this.horloge = horloge;
     }
 
+    private static final Logger log = LoggerFactory.getLogger(DpdDemoListener.class);
+
     @EventListener
     public void surAgencesDeclarees(AgencesDeclareesEvent evenement) {
         for (String agence : evenement.codesAgences()) {
-            // n=1 → ENVOYEE, n=2 → EN_VALIDATION, n=3 → ACCORDEE (+ suivi d'accord).
-            semer(agence, 1, Cible.ENVOYEE);
-            semer(agence, 2, Cible.EN_VALIDATION);
-            semer(agence, 3, Cible.ACCORDEE);
+            try {
+                // n=1 → ENVOYEE, n=2 → EN_VALIDATION, n=3 → ACCORDEE (+ suivi d'accord).
+                semer(agence, 1, Cible.ENVOYEE);
+                semer(agence, 2, Cible.EN_VALIDATION);
+                semer(agence, 3, Cible.ACCORDEE);
+            } catch (RuntimeException e) {
+                // Une donnée de démo ne doit JAMAIS empêcher le démarrage ni bloquer les autres agences.
+                log.warn("Seed de démo des accords DPD impossible pour l'agence {} : {}", agence, e.getMessage());
+            }
         }
     }
 
