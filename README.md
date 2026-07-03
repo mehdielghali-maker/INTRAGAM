@@ -1,5 +1,8 @@
 # Poste de travail unifié — GAM Assurances
 
+> 🚀 **Tester en local en 3 commandes** (Docker seul — OCR et reconnaissance 100 % locaux) :
+> voir **[QUICKSTART.md](QUICKSTART.md)**.
+
 Application web qui consolide sur un seul écran des données aujourd'hui éclatées
 entre **PROASSUR** (core insurance), **OneBase** (BPM/GED) et **Sage** (comptabilité).
 
