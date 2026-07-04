@@ -164,6 +164,35 @@ le front et l'API sont en **même origine** (nginx) → CORS inutile. Valeurs se
   automatique** — voir **`deploy/Caddyfile`** (Caddy, certificat Let's Encrypt auto ; un seul domaine
   suffit, le backend reste interne). Alternative : Traefik (labels) — même principe.
 
+## Mise en production sur UN SERVEUR (pas à pas)
+
+> Scénario recommandé : serveur interne GAM ou VPS Linux — l'OCR et la reconnaissance tournent
+> alors **sur votre serveur**, aucune donnée d'assurance ne sort (contrainte de localité).
+> Prérequis : Ubuntu/Debian, **8-16 Go de RAM**, ports 80/443 ouverts, un nom DNS (ex. `poste.gam.dz`).
+
+```bash
+# 1. Docker (si absent)
+curl -fsSL https://get.docker.com | sh
+# 2. Le projet
+git clone https://github.com/mehdielghali-maker/INTRAGAM.git && cd INTRAGAM
+# 3. Configuration — CHANGER les mots de passe
+cp .env.example .env && nano .env      # POSTGRES_PASSWORD, RABBITMQ_PASSWORD → valeurs fortes
+# 4. Construire et lancer (long la 1re fois : modèles ML, ensuite en cache)
+docker compose -f docker-compose.full.yml up -d --build
+# 5. HTTPS auto : mettre votre domaine dans deploy/Caddyfile puis ajouter le service caddy
+#    au compose (le bloc à copier est EN COMMENTAIRE dans le Caddyfile). Relancer up -d.
+# 6. Vérifier
+curl -s http://localhost:8081/api/auth/config
+```
+
+Checklist production :
+- [ ] changer **admin/admin** à la 1ʳᵉ connexion (`/admin`) et les mots de passe AGA de démo ;
+- [ ] sauvegarde régulière du volume Postgres :
+  `docker run --rm -v intragam_pgdata:/d alpine tar czf - /d > backup-$(date +%F).tgz` ;
+- [ ] ⚠️ internet nécessaire **au premier démarrage** du conteneur reco (téléchargement unique des
+  poids PaddleOCR — correctif « tout au build » en suivi) ; ensuite **zéro appel sortant** ;
+- [ ] mises à jour : `git pull && docker compose -f docker-compose.full.yml up -d --build`.
+
 ## Récap des livrables Étage 2
 `frontend/Dockerfile`, `frontend/nginx.conf`, `backend/Dockerfile`, `docker-compose.full.yml`,
 `.env.example` (racine), `deploy/Caddyfile`, et le CORS configurable (`CORS_ALLOWED_ORIGINS`) côté backend.
