@@ -45,6 +45,7 @@ services:
       OCR_DOC_ACTIF: ${OCR_DOC_ACTIF:-true}
       OCR_LANGS: ${OCR_LANGS:-fr,arabic}
       OCR_SEUIL_CONFIANCE: ${OCR_SEUIL_CONFIANCE:-0.60}
+      OCR_DET_LIMIT: ${OCR_DET_LIMIT:-1600}
       RECO_CORS_ORIGINS: "*"
     volumes:
       - reco-models:/models           # cache des modèles YOLO/fast-alpr (pas de re-téléchargement)

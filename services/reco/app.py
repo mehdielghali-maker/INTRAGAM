@@ -57,6 +57,9 @@ PLAQUE_LONGUEUR = int(os.getenv("RECO_PLAQUE_LONGUEUR", "0") or "0")
 # OCR_DOC_ACTIF=false permet de faire tourner le service RECO sans charger PaddleOCR (~2 Go).
 OCR_DOC_ACTIF = os.getenv("OCR_DOC_ACTIF", "true").lower() in ("1", "true", "yes", "on")
 OCR_LANGS = [l.strip() for l in os.getenv("OCR_LANGS", "fr,arabic").split(",") if l.strip()]
+# Cote max de l'image pour la DETECTION de texte (defaut PaddleOCR : 960 — trop bas pour les
+# petits caracteres d'une attestation photographiee ; 1600 lit mieux sans exploser la RAM).
+OCR_DET_LIMIT = int(os.getenv("OCR_DET_LIMIT", "1600") or "1600")
 
 # Classes COCO considerees comme "vehicule"
 COCO_VEHICULE = {2: "voiture", 3: "moto", 5: "bus", 7: "camion"}
@@ -123,7 +126,8 @@ def _charger_modeles() -> None:
             from paddleocr import PaddleOCR
             for langue in OCR_LANGS:
                 log.info("Chargement PaddleOCR (%s)...", langue)
-                _ocr_docs.append(PaddleOCR(use_angle_cls=True, lang=langue, show_log=False))
+                _ocr_docs.append(PaddleOCR(use_angle_cls=True, lang=langue, show_log=False,
+                                           det_limit_side_len=OCR_DET_LIMIT))
             log.info("OCR document charge (%s).", ", ".join(OCR_LANGS))
         except Exception as exc:  # dependance absente / modele indisponible
             _ocr_docs.clear()

@@ -147,6 +147,45 @@ def test_document_reel_la_ligne_de_dates_ne_pollue_pas_la_fenetre():
     assert r["numeroPolice"] is None
 
 
+# Sortie OCR RÉELLE (PaddleOCR sur la photo de l'utilisateur) : libellés COLLÉS, arabe INVERSÉ,
+# « N° » séparé de son numéro, lectures multiples dont une corrompue (003 au lieu de 009).
+def test_libelles_colles_et_arabe_inverse():
+    r = extraire_attestation(_lignes(
+        "نيمأتلا دقع مقر",              # « رقم عقد التأمين » restitué à l'envers par l'OCR
+        "407020091260200",
+        "PoliceN: 407020091260200",     # libellé collé (sans espace)
+    ))
+    assert r["numeroPolice"] == "407020091260200"
+    assert r["statut"] == "lu"          # 2 lectures identiques de 15 chiffres = concordance
+
+
+def test_lignes_ocr_reelles_quittance_separee_et_divergence():
+    r = extraire_attestation(_lignes(
+        "407020031260200",              # lecture corrompue (003) du certificat
+        "نيمأتلا دع مقر",               # libellé arabe inversé ET tronqué (illisible)
+        "٨٨",
+        "06681933",                     # le grand numéro rouge, SÉPARÉ de son « N° »
+        "NO",
+        "006681933",                    # écho parasite (9 chiffres)
+        "Assure:",                      # libellé coupé de sa valeur
+        "407020091260200",              # la vraie police, ligne suivante
+        "PoliceN:",
+        "Effetdu: 2400,970AAu",         # montant collé (DA lu « 0A »)
+        "19801634-80",                  # décret : ne doit devenir ni quittance ni police
+        conf=0.6))
+    assert r["numeroQuittance"] == "06681933"          # repli « bloc isolé voisin d'une ligne N »
+    # Deux lectures 15 chiffres DIVERGENTES (003 vs 009) : renvoyée pour correction, jamais affirmée.
+    assert r["numeroPolice"] in ("407020031260200", "407020091260200")
+    assert r["statut"] == "a_verifier"
+    assert r["confiance"] <= CONFIG["CONFIANCE_BASSE"]
+    assert r["immatriculation"] is None
+
+
+def test_montant_colle_reste_lisible():
+    r = extraire_attestation(_lignes("PrimeTTC:", "2400,970A"))  # « 2400,97DA » mal lu
+    assert r["primeTTC"] == "2400,97"
+
+
 def test_un_bloc_de_chiffres_contigus_nest_pas_une_immatriculation():
     # « …16 فيفري 1980 » / numéros administratifs : 10 chiffres contigus ne font pas une plaque.
     r = extraire_attestation(_lignes("AUTORISATION N 1980163480 DU 24-1-1984"))

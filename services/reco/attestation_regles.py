@@ -10,18 +10,24 @@ JSON FIGE (/lire-attestation) :
 
 Entree : liste de lignes [{"texte": str, "confiance": float 0..1}, ...]
          (ordre = ordre de lecture haut->bas ; tuples (texte, conf) toleres).
-Sortie : dict au contrat ci-dessus. Champ illisible -> None (on n'invente RIEN).
+Sortie : dict au contrat ci-dessus. Champ illisible -> None (on n'invente RIEN ;
+         seule exception : un numero de police HORS FORMAT est renvoye pour
+         CORRECTION en mode assiste, avec confiance plafonnee basse).
 
-Regles clefs (arbitrages valides) :
-- numeroPolice : EXACTEMENT 15 chiffres, ancre sur « Police N° » (fr) et
-  « رقم عقد التأمين » (ar). Le numero figure DEUX FOIS sur le document
-  (certificat + quittance) : l'extraction exige la CONCORDANCE des lectures.
-  Divergence, longueur != 15 ou lecture unique -> statut "a_verifier",
-  confiance abaissee.
+Regles clefs (calees sur le DOCUMENT REEL et la sortie OCR REELLE) :
+- numeroPolice : EXACTEMENT 15 chiffres, present PLUSIEURS fois (certificat +
+  quittance « en face d'Assuré »). CONCORDANCE PAR MAJORITE : >= 2 lectures
+  identiques de 15 chiffres valent concordance (les lectures parasites d'un
+  OCR bruite n'annulent pas un accord net) ; sinon statut "a_verifier".
 - numeroQuittance : 8 chiffres apres « N° » (grand numero rouge). C'est AUSSI
-  un repere NEGATIF : il n'est JAMAIS renvoye comme numero de police.
-- immatriculation algerienne renvoyee COMPACTEE (chiffres seuls, sans espaces).
-- dates normalisees JJ/MM/AAAA ; primeTTC en decimale a virgule ("2400,97").
+  un repere NEGATIF : il n'est JAMAIS renvoye comme numero de police. L'OCR
+  separe parfois le « N° » du numero -> repli : bloc de 8 chiffres SEUL sur sa
+  ligne, adjacent a une ligne « N »/« N° »/« quittance ».
+- L'OCR COLLE les libelles (« PoliceN: », « Effetdu: », « PrimeTTC: ») -> les
+  espaces des ancres sont OPTIONNELS. L'arabe ressort souvent INVERSE
+  (« نيمأتلا دقع مقر ») -> chaque ancre est aussi testee sur la ligne RETOURNEE.
+- immatriculation algerienne : separateurs OBLIGATOIRES entre les groupes
+  (un bloc de chiffres contigus matcherait n'importe quel numero administratif).
 
 Tous les libelles, regex, fenetres et seuils vivent dans CONFIG ci-dessous,
 surchargeables par variables d'environnement (prefixe OCR_) : rien en dur.
@@ -66,21 +72,25 @@ def _env_entier(nom, defaut):
 
 
 CONFIG = {
-    # --- Numero de POLICE : 15 chiffres exactement, present DEUX fois (certificat + quittance)
+    # --- Numero de POLICE : 15 chiffres exactement, present PLUSIEURS fois sur le document
     "ANCRES_POLICE": _env_liste("OCR_ANCRES_POLICE", ["police n", "رقم عقد التأمين"]),
     "LONGUEUR_POLICE": _env_entier("OCR_LONGUEUR_POLICE", 15),
     "FENETRE_POLICE": _env_entier("OCR_FENETRE_POLICE", 2),  # lignes fouillees autour d'une ancre seule
     # En fenetre, un candidat doit etre un GRAND bloc de chiffres : ecarte les lignes de dates,
     # montants ou petits numeros voisins (« Police N° : » vide suivi d'« Effet du 04/05/2026 »...).
     "LONGUEUR_MIN_FENETRE": _env_entier("OCR_LONGUEUR_MIN_FENETRE", 10),
-    # --- Numero de QUITTANCE : 8 chiffres apres « N° » (grand numero rouge) — repere NEGATIF pour la police.
+    # Candidats STRUCTURELS : une ligne qui n'est QU'un grand bloc de chiffres proche de la
+    # longueur d'une police est une lecture de police meme sans ancre lisible (l'OCR corrompt
+    # souvent les libelles). Bornes en nombre de chiffres autour de LONGUEUR_POLICE.
+    "TOLERANCE_STRUCTURELLE": _env_entier("OCR_TOLERANCE_STRUCTURELLE", 2),
+    # --- Numero de QUITTANCE : 8 chiffres apres « N° » (grand numero rouge) — repere NEGATIF.
     #     Variantes de glyphes OCR tolerees (N°, No, N⁰, №).
-    "REGEX_QUITTANCE": _env_texte("OCR_REGEX_QUITTANCE", r"\bn[°ºo⁰№]?\s*[:.]?\s*(?<!\d)(\d{8})(?!\d)"),
+    "REGEX_QUITTANCE": _env_texte("OCR_REGEX_QUITTANCE", r"\bn[°ºo0⁰№]?\s*[:.]?\s*(?<!\d)(\d{8})(?!\d)"),
     "LONGUEUR_QUITTANCE": _env_entier("OCR_LONGUEUR_QUITTANCE", 8),
-    # --- Immatriculation algerienne : NNNNN(N) NNN NN — separateurs espace/tiret/point OBLIGATOIRES
-    #     entre les groupes (le document porte « 502000-114-16 » / « 502000 114 16 ») : un bloc de
-    #     10 chiffres CONTIGUS matcherait n'importe quelle suite de chiffres du document (dates de
-    #     decrets, numeros administratifs...) — faux positif constate sur la photo reelle.
+    # Repli quand l'OCR separe le « N° » du numero : motif d'une ligne-libelle « N »/« N° »/« NO ».
+    "REGEX_LIGNE_N": _env_texte("OCR_REGEX_LIGNE_N", r"^\s*n[o0°º⁰№]{0,2}\s*[:.]?\s*$"),
+    "FENETRE_QUITTANCE": _env_entier("OCR_FENETRE_QUITTANCE", 2),
+    # --- Immatriculation algerienne : NNNNN(N) NNN NN — separateurs OBLIGATOIRES entre groupes
     "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{5,6}[ .\-]\d{3}[ .\-]\d{2})(?!\d)"),
     # --- Code agence : NN.AA.NNNN — espaces autour des points toleres (tampon « 40. AR.0105 »)
     "REGEX_AGENCE": _env_texte("OCR_REGEX_AGENCE", r"(?<!\d)(\d{2}\s*\.\s*[A-Z]{2}\s*\.\s*\d{4})(?!\d)"),
@@ -88,9 +98,10 @@ CONFIG = {
     "ANCRES_VALIDITE": _env_liste("OCR_ANCRES_VALIDITE", ["effet du", "valable du", "صالحة من"]),
     "REGEX_DATE": _env_texte("OCR_REGEX_DATE", r"(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})"),
     "FENETRE_DATES": _env_entier("OCR_FENETRE_DATES", 2),
-    # --- Prime TTC : montant a virgule PROCHE d'un libelle (ordre de la liste = priorite, TTC d'abord)
+    # --- Prime TTC : montant a virgule PROCHE d'un libelle (ordre de la liste = priorite, TTC d'abord).
+    #     Pas de garde finale : l'OCR colle des suites (« 2400,97DA » lu « 2400,970A »).
     "ANCRES_PRIME": _env_liste("OCR_ANCRES_PRIME", ["ttc", "prime"]),
-    "REGEX_MONTANT": _env_texte("OCR_REGEX_MONTANT", r"(?<!\d)(\d{1,3}(?:[ . ]\d{3})+|\d+),(\d{2})(?!\d)"),
+    "REGEX_MONTANT": _env_texte("OCR_REGEX_MONTANT", r"(?<!\d)(\d{1,3}(?:[ . ]\d{3})+|\d+),(\d{2})"),
     "FENETRE_PRIME": _env_entier("OCR_FENETRE_PRIME", 1),
     # --- Assure (nom) : libelle fr/ar
     "ANCRES_ASSURE": _env_liste("OCR_ANCRES_ASSURE", ["assure", "المؤمن له"]),
@@ -118,26 +129,27 @@ def _normaliser(texte):
 
 
 def _compiler_ancre(ancre, borne_fin=False):
-    """Ancre (libelle) -> regex appliquee au texte NORMALISE.
-    Libelle latin : bornes de mot + espaces souples (« police n » matche
-    « Police N° », « POLICE  No », ...). Libelle arabe : recherche directe
-    (\\b n'est pas fiable en arabe), espaces souples aussi."""
+    """Ancre (libelle) -> regex appliquee au texte NORMALISE. Les ESPACES du libelle
+    deviennent OPTIONNELS (\\s*) : l'OCR colle souvent les mots (« PoliceN: »,
+    « PrimeTTC: »). Libelle latin : borne de mot au debut. Libelle arabe : recherche
+    directe (\\b n'est pas fiable en arabe)."""
     norme = _normaliser(ancre)
-    corps = re.escape(norme).replace("\\ ", " ").replace(" ", r"\s+")
+    corps = re.escape(norme).replace("\\ ", " ").replace(" ", r"\s*")
     if re.search(r"[a-z]", norme):
         return re.compile(r"\b" + corps + (r"\b" if borne_fin else ""))
     return re.compile(corps)
 
 
 RE_QUITTANCE = re.compile(CONFIG["REGEX_QUITTANCE"], re.IGNORECASE)
+RE_LIGNE_N = re.compile(CONFIG["REGEX_LIGNE_N"], re.IGNORECASE)
 RE_IMMAT = re.compile(CONFIG["REGEX_IMMAT"])
 RE_AGENCE = re.compile(CONFIG["REGEX_AGENCE"])
 RE_DATE = re.compile(CONFIG["REGEX_DATE"])
 RE_MONTANT = re.compile(CONFIG["REGEX_MONTANT"])
 RE_ANCRES_POLICE = [_compiler_ancre(a) for a in CONFIG["ANCRES_POLICE"]]
-RE_ANCRES_VALIDITE = [_compiler_ancre(a, borne_fin=True) for a in CONFIG["ANCRES_VALIDITE"]]
-RE_ANCRES_PRIME = [_compiler_ancre(a, borne_fin=True) for a in CONFIG["ANCRES_PRIME"]]
-RE_ANCRES_ASSURE = [_compiler_ancre(a, borne_fin=True) for a in CONFIG["ANCRES_ASSURE"]]
+RE_ANCRES_VALIDITE = [_compiler_ancre(a) for a in CONFIG["ANCRES_VALIDITE"]]
+RE_ANCRES_PRIME = [_compiler_ancre(a) for a in CONFIG["ANCRES_PRIME"]]
+RE_ANCRES_ASSURE = [_compiler_ancre(a) for a in CONFIG["ANCRES_ASSURE"]]
 
 
 # ---------------------------------------------------------------------------
@@ -166,8 +178,14 @@ def _preparer_lignes(lignes):
     return paires
 
 
-def _a_ancre_police(ligne_normee):
-    return any(a.search(ligne_normee) for a in RE_ANCRES_POLICE)
+def _chercher(ancre, norme, norme_inv):
+    """Teste une ancre sur la ligne normalisee ET sur la ligne RETOURNEE :
+    l'OCR restitue souvent l'arabe en ordre visuel inverse (RTL)."""
+    return ancre.search(norme) or ancre.search(norme_inv)
+
+
+def _a_ancre_police(norme, norme_inv):
+    return any(_chercher(a, norme, norme_inv) for a in RE_ANCRES_POLICE)
 
 
 def _candidat_chiffres(texte):
@@ -176,46 +194,70 @@ def _candidat_chiffres(texte):
     return "".join(re.findall(r"\d+", texte or ""))
 
 
+def _est_bloc_numerique(texte):
+    """Vrai si la ligne n'est essentiellement qu'un bloc de chiffres (separateurs
+    espace/point/tiret toleres) — la forme d'un numero de police imprime seul."""
+    return bool(re.fullmatch(r"[\d .\-]+", (texte or "").strip()))
+
+
 # ---------------------------------------------------------------------------
 # Extracteurs de champs (chacun renvoie (valeur, index_ligne) ou (None, None))
 # ---------------------------------------------------------------------------
 
-def _extraire_quittance(textes, normes):
-    """8 chiffres apres « N° ». JAMAIS sur une ligne portant une ancre de
-    police (le N° qui y figure est le numero de POLICE, pas la quittance)."""
+def _extraire_quittance(textes, normes, normes_inv):
+    """8 chiffres apres « N° ». JAMAIS sur une ligne portant une ancre de police
+    (le N° qui y figure est le numero de POLICE, pas la quittance). REPLI : l'OCR
+    separe parfois le libelle du numero -> un bloc de 8 chiffres SEUL sur sa ligne,
+    adjacent (FENETRE_QUITTANCE) a une ligne « N »/« N° »/« quittance », est retenu."""
     for i, brut in enumerate(textes):
-        if _a_ancre_police(normes[i]):
+        if _a_ancre_police(normes[i], normes_inv[i]):
             continue
         m = RE_QUITTANCE.search(brut)
         if m:
             return m.group(1), i
+
+    # Repli : bloc de 8 chiffres isole, voisin d'une ligne-libelle « N »/« quittance ».
+    gabarit = re.compile(r"(?<![\d\-])(\d{%d})(?![\d\-])" % CONFIG["LONGUEUR_QUITTANCE"])
+    for i, brut in enumerate(textes):
+        if not _est_bloc_numerique(brut):
+            continue
+        m = gabarit.fullmatch(brut.strip())
+        if not m:
+            continue
+        debut = max(0, i - CONFIG["FENETRE_QUITTANCE"])
+        fin = min(len(textes), i + 1 + CONFIG["FENETRE_QUITTANCE"])
+        for j in range(debut, fin):
+            if j == i:
+                continue
+            if RE_LIGNE_N.match(textes[j]) or "quittance" in normes[j]:
+                return m.group(1), i
     return None, None
 
 
-def _collecter_occurrences_police(textes, normes, quittance):
-    """Toutes les lectures du numero de police, une par ancre trouvee.
-    Le numero est cherche apres l'ancre, avant l'ancre (meme ligne), puis dans les
-    FENETRE_POLICE lignes SUIVANTES et PRECEDENTES (sur le document reel, le numero
-    est imprime AU-DESSUS du libelle arabe « رقم عقد التأمين » — mise en page RTL).
-    Le grand numero rouge (8 chiffres / egal a la quittance) est un repere NEGATIF :
-    jamais retenu comme police."""
+def _collecter_occurrences_police(textes, normes, normes_inv, quittance):
+    """Toutes les lectures du numero de police. Sources :
+    1) une ANCRE (fr, ou arabe eventuellement inversee) avec le numero sur la ligne,
+       ou dans les FENETRE_POLICE lignes en dessous PUIS au-dessus (mise en page RTL) ;
+    2) le libelle « Assuré : » de la quittance, suivi du numero (meme ligne ou ligne
+       suivante) — c'est la 2e occurrence du document reel ;
+    3) STRUCTUREL : une ligne qui n'est qu'un grand bloc de chiffres proche de
+       LONGUEUR_POLICE (les libelles sont souvent illisibles sur une photo réelle).
+    Deduplication par LIGNE SOURCE des chiffres : une meme occurrence physique captee
+    deux fois ne compte qu'une (pas de fausse concordance). Le numero de quittance est
+    un repere NEGATIF : jamais retenu."""
 
     def _rejete(c):
         return len(c) == CONFIG["LONGUEUR_QUITTANCE"] or (quittance and c == quittance)
 
-    # Cle = index de la LIGNE SOURCE des chiffres (pas de l'ancre) : une meme ligne de
-    # chiffres captee par DEUX ancres voisines ne compte qu'UNE occurrence — sinon une
-    # occurrence physique unique passerait pour une concordance.
     occurrences = {}  # {index_ligne_source: chiffres}
 
     def _fenetre(i, pas):
-        """Premiere ligne de chiffres exploitable au-dessus (pas=-1) ou en dessous (pas=+1)
-        de l'ancre i ; on s'arrete sur une autre ancre (sa zone produira sa propre lecture).
-        Une ligne de DATES ou un petit bloc (< LONGUEUR_MIN_FENETRE) n'est PAS un candidat :
-        sur le document reel, « Police N° : » (vide) est suivi d'« Effet du JJ/MM/AAAA... »."""
+        """Premiere ligne de chiffres exploitable au-dessus (pas=-1) ou en dessous
+        (pas=+1) de l'ancre i ; on s'arrete sur une autre ancre. Une ligne de DATES
+        ou un petit bloc (< LONGUEUR_MIN_FENETRE) n'est pas un candidat."""
         j = i + pas
         for _ in range(CONFIG["FENETRE_POLICE"]):
-            if j < 0 or j >= len(textes) or _a_ancre_police(normes[j]):
+            if j < 0 or j >= len(textes) or _a_ancre_police(normes[j], normes_inv[j]):
                 return None, None
             if not RE_DATE.search(textes[j]):
                 c = _candidat_chiffres(textes[j])
@@ -224,61 +266,81 @@ def _collecter_occurrences_police(textes, normes, quittance):
             j += pas
         return None, None
 
+    # 1) Ancres police (fr / arabe, y compris inversee)
     for i, ligne in enumerate(normes):
         m = None
         for ancre in RE_ANCRES_POLICE:
-            m = ancre.search(ligne)
+            m = _chercher(ancre, ligne, normes_inv[i])
             if m:
                 break
         if not m:
             continue
         brut = textes[i]
-        cand, source = _candidat_chiffres(brut[m.end():]) or _candidat_chiffres(brut[:m.start()]), i
+        cand, source = _candidat_chiffres(brut), i  # chiffres de la ligne (avant/apres l'ancre)
+        if cand and len(cand) < CONFIG["LONGUEUR_MIN_FENETRE"]:
+            cand = ""  # bruit court sur la ligne du libelle : chercher le vrai numero en fenetre
         if not cand:
-            cand, source = _fenetre(i, +1)      # l'ancre est seule : chercher en dessous...
+            cand, source = _fenetre(i, +1)
         if not cand:
-            cand, source = _fenetre(i, -1)      # ...puis AU-DESSUS (document reel : mise en page RTL)
+            cand, source = _fenetre(i, -1)
         if not cand or _rejete(cand):
-            continue  # ne JAMAIS renvoyer le numero de quittance comme police
+            continue
         occurrences.setdefault(source, cand)
 
-    # Sur la QUITTANCE du document reel, la 2e occurrence figure EN FACE du libelle
-    # « Assuré : » (et non d'une ancre police). Une valeur d'assure SANS AUCUNE lettre
-    # (que des chiffres/ponctuation) est donc une lecture de police supplementaire.
+    # 2) « Assuré : » suivi du numero (meme ligne, ou ligne suivante si l'OCR a coupe)
     for i, ligne in enumerate(normes):
         for ancre in RE_ANCRES_ASSURE:
-            m = ancre.search(ligne)
+            m = _chercher(ancre, ligne, normes_inv[i])
             if not m:
                 continue
-            apres = textes[i][m.end():]
-            if not re.search(r"[a-zA-Z؀-ۿ]", apres):
+            apres = textes[i][m.end():] if m.re.search(ligne) else textes[i]
+            if not re.search(r"[a-zA-Z؀-ۿ]", apres or ""):
                 c = _candidat_chiffres(apres)
                 if c and not _rejete(c):
                     occurrences.setdefault(i, c)
+                elif not c and i + 1 < len(textes) and _est_bloc_numerique(textes[i + 1]):
+                    c2 = _candidat_chiffres(textes[i + 1])
+                    if c2 and not _rejete(c2) and len(c2) >= CONFIG["LONGUEUR_MIN_FENETRE"]:
+                        occurrences.setdefault(i + 1, c2)
             break
+
+    # 3) Candidats STRUCTURELS : lignes qui ne sont qu'un grand bloc de chiffres.
+    tolerance = CONFIG["TOLERANCE_STRUCTURELLE"]
+    borne_basse = CONFIG["LONGUEUR_POLICE"] - tolerance
+    borne_haute = CONFIG["LONGUEUR_POLICE"] + 1
+    for i, brut in enumerate(textes):
+        if i in occurrences or not _est_bloc_numerique(brut):
+            continue
+        c = _candidat_chiffres(brut)
+        if c and not _rejete(c) and borne_basse <= len(c) <= borne_haute:
+            occurrences.setdefault(i, c)
+
     return sorted(occurrences.items())  # [(index_ligne_source, chiffres)] en ordre de lecture
 
 
 def _arbitrer_police(candidats):
-    """Applique l'EXIGENCE DE CONCORDANCE. Renvoie (numero|None, ok, degre) :
-    - ok=True  : >= 2 lectures identiques de 15 chiffres, aucune lecture parasite ;
-    - degre "moyen" : une seule lecture exploitable (concordance non verifiable) ;
-    - degre "bas"   : divergence ou longueur != 15.
+    """CONCORDANCE PAR MAJORITE. Renvoie (numero|None, ok, degre) :
+    - ok=True  : >= 2 lectures IDENTIQUES de 15 chiffres (les lectures parasites d'un
+      OCR bruite n'annulent pas un accord net) ;
+    - degre "moyen" : une seule lecture de 15 chiffres (concordance non verifiable) ;
+    - degre "bas"   : lectures divergentes, ou uniquement hors format.
     MODE ASSISTE : des qu'au moins une lecture existe, le numero est RENVOYE (l'agent
     le corrige a l'ecran) — mais ok/degre plafonnent la confiance : on n'affirme rien."""
     valides = [c for c in candidats if len(c) == CONFIG["LONGUEUR_POLICE"]]
     anomalies = [c for c in candidats if len(c) != CONFIG["LONGUEUR_POLICE"]]
-    uniques = set(valides)
-    if len(uniques) == 1 and len(valides) >= 2 and not anomalies:
-        return valides[0], True, "ok"
-    if len(uniques) > 1:
-        return valides[0], False, "bas"    # lectures divergentes : renvoyee pour correction, jamais affirmee
-    if len(uniques) == 1:
-        # Une seule lecture de 15 chiffres : on la garde mais concordance non garantie.
-        return valides[0], False, ("moyen" if not anomalies else "bas")
+    comptes = {}
+    for c in valides:
+        comptes[c] = comptes.get(c, 0) + 1
+    if comptes:
+        majoritaire = max(comptes, key=lambda c: (comptes[c], -valides.index(c)))
+        if comptes[majoritaire] >= 2:
+            return majoritaire, True, "ok"
+        if len(comptes) > 1:
+            return valides[0], False, "bas"    # divergence : renvoyee pour correction, jamais affirmee
+        return valides[0], False, "moyen"      # une seule lecture au bon format
     if anomalies:
-        return anomalies[0], False, "bas"  # hors format (ex. 14 chiffres) : renvoyee a corriger
-    return None, False, "bas"              # introuvable
+        return anomalies[0], False, "bas"      # hors format (ex. 14 chiffres) : renvoyee a corriger
+    return None, False, "bas"                  # introuvable
 
 
 def _extraire_immatriculation(textes):
@@ -302,17 +364,22 @@ def _formater_date(triplet):
     return "%02d/%02d/%s" % (int(jour), int(mois), annee)
 
 
-def _extraire_validite(textes, normes):
-    """« Effet du JJ/MM/AAAA Au JJ/MM/AAAA » (ou libelle arabe). Les deux dates
-    peuvent deborder sur les lignes suivantes (fenetre FENETRE_DATES)."""
+def _extraire_validite(textes, normes, normes_inv):
+    """« Effet du JJ/MM/AAAA Au JJ/MM/AAAA » (ou libelle arabe, eventuellement inverse).
+    Les dates peuvent deborder EN DESSOUS (fenetre) ou AU-DESSUS (impression carbone
+    decalee : les valeurs sont imprimees au-dessus de leur libelle)."""
     for i, ligne in enumerate(normes):
-        if not any(a.search(ligne) for a in RE_ANCRES_VALIDITE):
+        if not any(_chercher(a, ligne, normes_inv[i]) for a in RE_ANCRES_VALIDITE):
             continue
         dates = []
         for j in range(i, min(i + 1 + CONFIG["FENETRE_DATES"], len(textes))):
             dates.extend(RE_DATE.findall(textes[j]))
             if len(dates) >= 2:
                 break
+        if not dates:
+            # Impression decalee : chercher au-dessus, en ordre de lecture du document.
+            for j in range(max(0, i - CONFIG["FENETRE_DATES"]), i):
+                dates.extend(RE_DATE.findall(textes[j]))
         du = _formater_date(dates[0]) if dates else None
         au = _formater_date(dates[1]) if len(dates) >= 2 else None
         if du or au:
@@ -320,32 +387,32 @@ def _extraire_validite(textes, normes):
     return None, None, None
 
 
-def _extraire_prime(textes, normes):
+def _extraire_prime(textes, normes, normes_inv):
     """Montant decimal a virgule proche d'un libelle TTC/Prime. Normalise sans
     separateurs de milliers : « 2 400,97 » -> « 2400,97 »."""
     for ancre in RE_ANCRES_PRIME:  # ordre CONFIG = priorite (TTC avant Prime)
         for i, ligne in enumerate(normes):
-            if not ancre.search(ligne):
+            if not _chercher(ancre, ligne, normes_inv[i]):
                 continue
             for j in range(i, min(i + 1 + CONFIG["FENETRE_PRIME"], len(textes))):
                 montants = RE_MONTANT.findall(textes[j])
                 if montants:
                     entier, centimes = montants[-1]  # le montant suit le libelle
-                    return re.sub(r"[ . ]", "", entier) + "," + centimes, j
+                    return re.sub(r"[ . ]", "", entier) + "," + centimes, j
     return None, None
 
 
-def _extraire_assure(textes, normes):
+def _extraire_assure(textes, normes, normes_inv):
     """Nom de l'assure apres le libelle « Assuré » / « المؤمن له » (meme ligne,
-    sinon ligne suivante). Une valeur SANS lettres est ignoree : sur la quittance
-    reelle, « Assuré : » est suivi du NUMERO DE POLICE, pas du nom."""
+    sinon ligne suivante). Une valeur SANS lettres est ignoree (sur la quittance
+    reelle, « Assuré : » est suivi du NUMERO DE POLICE) ; une ligne-libelle du
+    formulaire n'est jamais un nom."""
     def _est_un_nom(valeur):
         return bool(valeur) and bool(re.search(r"[a-zA-Z؀-ۿ]", valeur))
 
-    def _est_un_libelle(norme):
-        """Une ligne qui porte une ancre connue est un LIBELLE du formulaire, pas un nom."""
+    def _est_un_libelle(norme, norme_inv):
         ancres = RE_ANCRES_POLICE + RE_ANCRES_VALIDITE + RE_ANCRES_PRIME + RE_ANCRES_ASSURE
-        return any(a.search(norme) for a in ancres)
+        return any(_chercher(a, norme, norme_inv) for a in ancres)
 
     for i, ligne in enumerate(normes):
         for ancre in RE_ANCRES_ASSURE:
@@ -355,7 +422,8 @@ def _extraire_assure(textes, normes):
             valeur = textes[i][m.end():]
             # Nettoie les restes de libelle : « (e) », separateurs, espaces.
             valeur = re.sub(r"^\s*(\(e\))?\s*[:.\-–—|]*\s*", "", valeur, flags=re.IGNORECASE).strip()
-            if not _est_un_nom(valeur) and i + 1 < len(textes) and not _est_un_libelle(normes[i + 1]):
+            if (not _est_un_nom(valeur) and i + 1 < len(textes)
+                    and not _est_un_libelle(normes[i + 1], normes_inv[i + 1])):
                 suivant = textes[i + 1].strip()
                 valeur = suivant if _est_un_nom(suivant) else ""
             if _est_un_nom(valeur):
@@ -373,14 +441,15 @@ def extraire_attestation(lignes):
     textes = [t for t, _ in paires]
     confs = [c for _, c in paires]
     normes = [_normaliser(t) for t in textes]
+    normes_inv = [n[::-1] for n in normes]  # l'arabe ressort souvent en ordre inverse
     texte_brut = "\n".join(textes)
     utiles = set()  # index des lignes ayant fourni au moins un champ
 
-    quittance, idx = _extraire_quittance(textes, normes)
+    quittance, idx = _extraire_quittance(textes, normes, normes_inv)
     if idx is not None:
         utiles.add(idx)
 
-    occurrences = _collecter_occurrences_police(textes, normes, quittance)
+    occurrences = _collecter_occurrences_police(textes, normes, normes_inv, quittance)
     utiles.update(i for i, _ in occurrences)
     police, police_ok, degre = _arbitrer_police([c for _, c in occurrences])
 
@@ -390,13 +459,13 @@ def extraire_attestation(lignes):
     code_agence, idx = _extraire_code_agence(textes)
     if idx is not None:
         utiles.add(idx)
-    valide_du, valide_au, idx = _extraire_validite(textes, normes)
+    valide_du, valide_au, idx = _extraire_validite(textes, normes, normes_inv)
     if idx is not None:
         utiles.add(idx)
-    prime_ttc, idx = _extraire_prime(textes, normes)
+    prime_ttc, idx = _extraire_prime(textes, normes, normes_inv)
     if idx is not None:
         utiles.add(idx)
-    assure, idx = _extraire_assure(textes, normes)
+    assure, idx = _extraire_assure(textes, normes, normes_inv)
     if idx is not None:
         utiles.add(idx)
 

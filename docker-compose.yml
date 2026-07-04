@@ -63,6 +63,7 @@ services:
       OCR_DOC_ACTIF: "true"
       OCR_LANGS: "fr,arabic"
       OCR_SEUIL_CONFIANCE: "0.60"
+      OCR_DET_LIMIT: "1600"
       # Origines autorisées pour l'appel navigateur direct (PWA déclaration, poste). "*" en dev.
       RECO_CORS_ORIGINS: "*"
     volumes:

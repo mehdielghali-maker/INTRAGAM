@@ -155,7 +155,7 @@ export default function AttestationPage() {
     setMessage(null);
     setLectureEnCours(true);
     try {
-      const { piece, blob } = await preparerPiece(fichier, 'attestation');
+      const { piece, blob } = await preparerPiece(fichier, 'attestation', 2400, 0.85); // haute résolution : l'OCR doit lire des petits caractères
       if (piece.estPdf) {
         setMessage('Choisissez une image (photo de l’attestation), pas un PDF.');
         return;
@@ -201,7 +201,7 @@ export default function AttestationPage() {
     if (!fichier || !panneau || verrouille || lectureEnCours) return;
     setLectureEnCours(true);
     try {
-      const { piece, blob } = await preparerPiece(fichier, 'attestation');
+      const { piece, blob } = await preparerPiece(fichier, 'attestation', 2400, 0.85); // haute résolution : l'OCR doit lire des petits caractères
       if (piece.estPdf) {
         setMessage('Choisissez une image (photo de l’attestation), pas un PDF.');
         return;
