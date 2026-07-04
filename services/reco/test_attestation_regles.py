@@ -181,6 +181,37 @@ def test_lignes_ocr_reelles_quittance_separee_et_divergence():
     assert r["immatriculation"] is None
 
 
+# 2e DOCUMENT RÉEL (vignette-certificat « وثيقة تأمين السيارة », photographiée SEULE) : le numéro
+# de police n'y figure QU'UNE fois, l'assuré est sous « السيد (ة) », les dates en ordre visuel RTL
+# (fin avant début), l'immatriculation camion en 4-3-2 chiffres.
+ATTESTATION_VIGNETTE = _lignes(
+    "وثيقة تأمين السيارة",
+    "№ 06681843",
+    "مرسوم رقم (80-34 المؤرخ في 16-02-1980)",
+    "ARBAOUI RACHID",
+    "(ة) ديسلا",                    # « السيد (ة) » restitué à l'envers par l'OCR
+    "pb zoui 40013-",
+    "407020091260196",
+    "نيمأتلا دقع مقر",              # « رقم عقد التأمين » inversé
+    "07/05/2027",
+    "08/05/2026",
+    "نم ةحلاص",                     # « صالحة من » inversé
+    "FOTON",
+    "0666 309 40",
+)
+
+
+def test_vignette_certificat_photographiee_seule():
+    r = extraire_attestation(ATTESTATION_VIGNETTE)
+    assert r["numeroPolice"] == "407020091260196"
+    assert r["statut"] == "a_verifier"      # UNE seule occurrence sur ce type de document (honnête)
+    assert r["numeroQuittance"] == "06681843"
+    assert r["assure"] == "ARBAOUI RACHID"  # « السيد » inversé → nom sur la ligne PRÉCÉDENTE
+    assert r["valideDu"] == "08/05/2026"    # ordre CHRONOLOGIQUE, pas l'ordre visuel RTL
+    assert r["valideAu"] == "07/05/2027"
+    assert r["immatriculation"] == "066630940"
+
+
 def test_montant_colle_reste_lisible():
     r = extraire_attestation(_lignes("PrimeTTC:", "2400,970A"))  # « 2400,97DA » mal lu
     assert r["primeTTC"] == "2400,97"

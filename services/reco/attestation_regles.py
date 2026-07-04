@@ -84,14 +84,15 @@ CONFIG = {
     # souvent les libelles). Bornes en nombre de chiffres autour de LONGUEUR_POLICE.
     "TOLERANCE_STRUCTURELLE": _env_entier("OCR_TOLERANCE_STRUCTURELLE", 2),
     # --- Numero de QUITTANCE : 8 chiffres apres « N° » (grand numero rouge) — repere NEGATIF.
-    #     Variantes de glyphes OCR tolerees (N°, No, N⁰, №).
-    "REGEX_QUITTANCE": _env_texte("OCR_REGEX_QUITTANCE", r"\bn[°ºo0⁰№]?\s*[:.]?\s*(?<!\d)(\d{8})(?!\d)"),
+    #     Variantes de glyphes OCR tolerees (N°, No, N⁰) ; « № » est UN caractere a part entiere.
+    "REGEX_QUITTANCE": _env_texte("OCR_REGEX_QUITTANCE", r"(?:\bn[°ºo0⁰]?|№)\s*[:.]?\s*(?<!\d)(\d{8})(?!\d)"),
     "LONGUEUR_QUITTANCE": _env_entier("OCR_LONGUEUR_QUITTANCE", 8),
     # Repli quand l'OCR separe le « N° » du numero : motif d'une ligne-libelle « N »/« N° »/« NO ».
-    "REGEX_LIGNE_N": _env_texte("OCR_REGEX_LIGNE_N", r"^\s*n[o0°º⁰№]{0,2}\s*[:.]?\s*$"),
+    "REGEX_LIGNE_N": _env_texte("OCR_REGEX_LIGNE_N", r"^\s*(?:n[o0°º⁰]{0,2}|№)\s*[:.]?\s*$"),
     "FENETRE_QUITTANCE": _env_entier("OCR_FENETRE_QUITTANCE", 2),
-    # --- Immatriculation algerienne : NNNNN(N) NNN NN — separateurs OBLIGATOIRES entre groupes
-    "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{5,6}[ .\-]\d{3}[ .\-]\d{2})(?!\d)"),
+    # --- Immatriculation algerienne : NNNN(NN) NNN NN — separateurs OBLIGATOIRES entre groupes
+    #     (1er groupe 4 a 6 chiffres : les camions/anciens formats portent « 0666 309 40 »)
+    "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{4,6}[ .\-]\d{3}[ .\-]\d{2})(?!\d)"),
     # --- Code agence : NN.AA.NNNN — espaces autour des points toleres (tampon « 40. AR.0105 »)
     "REGEX_AGENCE": _env_texte("OCR_REGEX_AGENCE", r"(?<!\d)(\d{2}\s*\.\s*[A-Z]{2}\s*\.\s*\d{4})(?!\d)"),
     # --- Periode de validite : « Effet du ... Au ... » / « صالحة من ... إلى »
@@ -103,8 +104,8 @@ CONFIG = {
     "ANCRES_PRIME": _env_liste("OCR_ANCRES_PRIME", ["ttc", "prime"]),
     "REGEX_MONTANT": _env_texte("OCR_REGEX_MONTANT", r"(?<!\d)(\d{1,3}(?:[ . ]\d{3})+|\d+),(\d{2})"),
     "FENETRE_PRIME": _env_entier("OCR_FENETRE_PRIME", 1),
-    # --- Assure (nom) : libelle fr/ar
-    "ANCRES_ASSURE": _env_liste("OCR_ANCRES_ASSURE", ["assure", "المؤمن له"]),
+    # --- Assure (nom) : libelles fr/ar (« السيد (ة) » = « M./Mme » sur la vignette certificat)
+    "ANCRES_ASSURE": _env_liste("OCR_ANCRES_ASSURE", ["assure", "المؤمن له", "السيد"]),
     "LONGUEUR_MAX_ASSURE": _env_entier("OCR_LONGUEUR_MAX_ASSURE", 80),
     # --- Seuils de confiance
     "SEUIL_CONFIANCE": _env_nombre("OCR_SEUIL_CONFIANCE", 0.60),      # sous ce niveau -> "a_verifier"
@@ -359,31 +360,25 @@ def _extraire_code_agence(textes):
     return None, None
 
 
-def _formater_date(triplet):
-    jour, mois, annee = triplet
-    return "%02d/%02d/%s" % (int(jour), int(mois), annee)
-
-
 def _extraire_validite(textes, normes, normes_inv):
     """« Effet du JJ/MM/AAAA Au JJ/MM/AAAA » (ou libelle arabe, eventuellement inverse).
-    Les dates peuvent deborder EN DESSOUS (fenetre) ou AU-DESSUS (impression carbone
-    decalee : les valeurs sont imprimees au-dessus de leur libelle)."""
+    Les dates sont collectees AUTOUR de l'ancre (au-dessus ET en dessous : mise en page RTL,
+    impression carbone decalee), puis classees CHRONOLOGIQUEMENT : du = la plus ancienne,
+    au = la plus recente — l'ordre visuel n'est pas fiable (l'arabe se lit de droite a gauche)."""
     for i, ligne in enumerate(normes):
         if not any(_chercher(a, ligne, normes_inv[i]) for a in RE_ANCRES_VALIDITE):
             continue
-        dates = []
-        for j in range(i, min(i + 1 + CONFIG["FENETRE_DATES"], len(textes))):
-            dates.extend(RE_DATE.findall(textes[j]))
-            if len(dates) >= 2:
-                break
-        if not dates:
-            # Impression decalee : chercher au-dessus, en ordre de lecture du document.
-            for j in range(max(0, i - CONFIG["FENETRE_DATES"]), i):
-                dates.extend(RE_DATE.findall(textes[j]))
-        du = _formater_date(dates[0]) if dates else None
-        au = _formater_date(dates[1]) if len(dates) >= 2 else None
-        if du or au:
-            return du, au, i
+        trouvees = []
+        debut = max(0, i - CONFIG["FENETRE_DATES"])
+        fin = min(len(textes), i + 1 + CONFIG["FENETRE_DATES"])
+        for j in range(debut, fin):
+            trouvees.extend(RE_DATE.findall(textes[j]))
+        if not trouvees:
+            continue
+        cles = sorted({(int(annee), int(mois), int(jour)) for jour, mois, annee in trouvees})
+        du = "%02d/%02d/%d" % (cles[0][2], cles[0][1], cles[0][0])
+        au = "%02d/%02d/%d" % (cles[-1][2], cles[-1][1], cles[-1][0]) if len(cles) >= 2 else None
+        return du, au, i
     return None, None, None
 
 
@@ -414,18 +409,28 @@ def _extraire_assure(textes, normes, normes_inv):
         ancres = RE_ANCRES_POLICE + RE_ANCRES_VALIDITE + RE_ANCRES_PRIME + RE_ANCRES_ASSURE
         return any(_chercher(a, norme, norme_inv) for a in ancres)
 
+    def _nettoyer(valeur):
+        # Nettoie les restes de libelle : « (e) », « (ة) », separateurs, espaces.
+        return re.sub(r"^\s*(\((e|ة)\))?\s*[:.\-–—|]*\s*", "", valeur or "", flags=re.IGNORECASE).strip()
+
     for i, ligne in enumerate(normes):
         for ancre in RE_ANCRES_ASSURE:
-            m = ancre.search(ligne)
-            if not m:
+            direct = ancre.search(ligne)
+            inverse = None if direct else ancre.search(normes_inv[i])
+            if not direct and not inverse:
                 continue
-            valeur = textes[i][m.end():]
-            # Nettoie les restes de libelle : « (e) », separateurs, espaces.
-            valeur = re.sub(r"^\s*(\(e\))?\s*[:.\-–—|]*\s*", "", valeur, flags=re.IGNORECASE).strip()
-            if (not _est_un_nom(valeur) and i + 1 < len(textes)
-                    and not _est_un_libelle(normes[i + 1], normes_inv[i + 1])):
-                suivant = textes[i + 1].strip()
-                valeur = suivant if _est_un_nom(suivant) else ""
+            valeur = _nettoyer(textes[i][direct.end():]) if direct else ""
+            if not _est_un_nom(valeur):
+                # Nom sur une ligne VOISINE : la suivante (OCR coupe libelle/valeur) ; et aussi la
+                # PRECEDENTE quand le libelle est arabe inverse (RTL : le nom sort avant le libelle).
+                voisins = [i + 1] + ([i - 1] if inverse else [])
+                for k in voisins:
+                    if 0 <= k < len(textes) and not _est_un_libelle(normes[k], normes_inv[k]):
+                        candidat = _nettoyer(textes[k])
+                        # Un NOM n'a jamais 4 chiffres d'affilee (ecarte les codes « pb zoui 40013- »).
+                        if _est_un_nom(candidat) and not re.search(r"\d{4}", candidat):
+                            valeur = candidat
+                            break
             if _est_un_nom(valeur):
                 return valeur[:CONFIG["LONGUEUR_MAX_ASSURE"]].strip(), i
     return None, None

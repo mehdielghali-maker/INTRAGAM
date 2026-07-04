@@ -497,9 +497,11 @@ export default function AttestationPage() {
 
                 <div className="att-ocr-note">
                   <span>
-                    {panneauWarn
-                      ? 'Le n° de police lu n’a pas 15 chiffres (ou la lecture est douteuse). Corrigez-le avant l’ajout, ou ajoutez la ligne en « à vérifier ».'
-                      : 'Lecture assistée : l’OCR pré-remplit, vous confirmez ou corrigez avant l’ajout.'}
+                    {!panneauWarn
+                      ? 'Lecture assistée : l’OCR pré-remplit, vous confirmez ou corrigez avant l’ajout.'
+                      : POLICE_VALIDE.test(panneau.champs.numeroPolice.trim())
+                        ? 'N° de police au bon format (15 chiffres) mais lu UNE seule fois ou avec un doute — l’OCR n’a pas pu le recouper sur le document. Vérifiez-le puis ajoutez.'
+                        : 'Le n° de police lu n’a pas 15 chiffres. Corrigez-le avant l’ajout, ou ajoutez la ligne en « à vérifier ».'}
                   </span>
                 </div>
 
