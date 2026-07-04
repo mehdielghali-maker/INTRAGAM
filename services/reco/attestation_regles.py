@@ -93,19 +93,27 @@ CONFIG = {
     # --- Immatriculation algerienne : NNNN(NN) NNN NN — separateurs OBLIGATOIRES entre groupes
     #     (1er groupe 4 a 6 chiffres : les camions/anciens formats portent « 0666 309 40 »)
     "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{4,6}[ .\-]\d{3}[ .\-]\d{2})(?!\d)"),
+    # Repli quand l'OCR COLLE les groupes (« 066630940 ») : bloc de chiffres SEUL sur sa ligne,
+    # de 9 a 11 chiffres, dont les 2 derniers forment un CODE WILAYA plausible (01..58) — c'est
+    # ce qui distingue une plaque d'un numero administratif (le decret ...34-80 finit en 80).
+    "IMMAT_LONGUEUR_MIN": _env_entier("OCR_IMMAT_LONGUEUR_MIN", 9),
+    "IMMAT_LONGUEUR_MAX": _env_entier("OCR_IMMAT_LONGUEUR_MAX", 11),
+    "IMMAT_WILAYA_MAX": _env_entier("OCR_IMMAT_WILAYA_MAX", 58),
     # --- Code agence : NN.AA.NNNN — espaces autour des points toleres (tampon « 40. AR.0105 »)
     "REGEX_AGENCE": _env_texte("OCR_REGEX_AGENCE", r"(?<!\d)(\d{2}\s*\.\s*[A-Z]{2}\s*\.\s*\d{4})(?!\d)"),
     # --- Periode de validite : « Effet du ... Au ... » / « صالحة من ... إلى »
     "ANCRES_VALIDITE": _env_liste("OCR_ANCRES_VALIDITE", ["effet du", "valable du", "صالحة من"]),
     "REGEX_DATE": _env_texte("OCR_REGEX_DATE", r"(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})"),
-    "FENETRE_DATES": _env_entier("OCR_FENETRE_DATES", 2),
+    # Fenetre LARGE : sur le document reel, les dates sont a 3-4 lignes de leur libelle (colonnes
+    # RTL) ; le classement chronologique (du=min, au=max) neutralise les captures excedentaires.
+    "FENETRE_DATES": _env_entier("OCR_FENETRE_DATES", 4),
     # --- Prime TTC : montant a virgule PROCHE d'un libelle (ordre de la liste = priorite, TTC d'abord).
     #     Pas de garde finale : l'OCR colle des suites (« 2400,97DA » lu « 2400,970A »).
     "ANCRES_PRIME": _env_liste("OCR_ANCRES_PRIME", ["ttc", "prime"]),
     "REGEX_MONTANT": _env_texte("OCR_REGEX_MONTANT", r"(?<!\d)(\d{1,3}(?:[ . ]\d{3})+|\d+),(\d{2})"),
     "FENETRE_PRIME": _env_entier("OCR_FENETRE_PRIME", 1),
-    # --- Assure (nom) : libelles fr/ar (« السيد (ة) » = « M./Mme » sur la vignette certificat)
-    "ANCRES_ASSURE": _env_liste("OCR_ANCRES_ASSURE", ["assure", "المؤمن له", "السيد"]),
+    # --- Assure (nom) : libelles fr/ar (« السيد (ة) » = « M./Mme » ; « المؤمن » = « l'assuré »)
+    "ANCRES_ASSURE": _env_liste("OCR_ANCRES_ASSURE", ["assure", "المؤمن", "السيد"]),
     "LONGUEUR_MAX_ASSURE": _env_entier("OCR_LONGUEUR_MAX_ASSURE", 80),
     # --- Seuils de confiance
     "SEUIL_CONFIANCE": _env_nombre("OCR_SEUIL_CONFIANCE", 0.60),      # sous ce niveau -> "a_verifier"
@@ -344,11 +352,26 @@ def _arbitrer_police(candidats):
     return None, False, "bas"                  # introuvable
 
 
-def _extraire_immatriculation(textes):
+def _extraire_immatriculation(textes, quittance=None):
     for i, brut in enumerate(textes):
         m = RE_IMMAT.search(brut)
         if m:
             return re.sub(r"\D", "", m.group(1)), i  # compactee : chiffres seuls
+
+    # Repli : l'OCR a COLLE les groupes (« 066630940 »). Un bloc de chiffres SEUL sur sa ligne,
+    # de la bonne longueur, dont les 2 derniers chiffres forment un CODE WILAYA plausible, est
+    # une plaque — le decret « ...34-80 » (wilaya 80 inexistante) reste exclu.
+    for i, brut in enumerate(textes):
+        if not _est_bloc_numerique(brut):
+            continue
+        c = _candidat_chiffres(brut)
+        if not (CONFIG["IMMAT_LONGUEUR_MIN"] <= len(c) <= CONFIG["IMMAT_LONGUEUR_MAX"]):
+            continue
+        if quittance and quittance in c:
+            continue  # echo du numero de quittance (« 006681933 ») : jamais une plaque
+        wilaya = int(c[-2:])
+        if 1 <= wilaya <= CONFIG["IMMAT_WILAYA_MAX"]:
+            return c, i
     return None, None
 
 
@@ -410,8 +433,22 @@ def _extraire_assure(textes, normes, normes_inv):
         return any(_chercher(a, norme, norme_inv) for a in ancres)
 
     def _nettoyer(valeur):
-        # Nettoie les restes de libelle : « (e) », « (ة) », separateurs, espaces.
-        return re.sub(r"^\s*(\((e|ة)\))?\s*[:.\-–—|]*\s*", "", valeur or "", flags=re.IGNORECASE).strip()
+        # Nettoie les restes de libelle : « (e) », « (ة) », « () », separateurs, espaces.
+        return re.sub(r"^\s*(\([^)]*\))?\s*[:.\-–—|]*\s*", "", valeur or "", flags=re.IGNORECASE).strip()
+
+    def _nom_credible(candidat):
+        """Filtre les dechets OCR : un nom imprime a >= 5 lettres, jamais 4 chiffres d'affilee,
+        et s'il est en latin, il est MAJUSCULAIRE (les noms GAM sont imprimes en capitales —
+        « yuatl » minuscule est du bruit, « ARBAOUIRACHID » est un nom)."""
+        if not _est_un_nom(candidat) or re.search(r"\d{4}", candidat):
+            return False
+        lettres = re.findall(r"[a-zA-Z؀-ۿ]", candidat)
+        if len(lettres) < 5:
+            return False
+        latines = [l for l in lettres if l.isascii()]
+        if latines and sum(1 for l in latines if l.isupper()) / len(latines) < 0.6:
+            return False
+        return True
 
     for i, ligne in enumerate(normes):
         for ancre in RE_ANCRES_ASSURE:
@@ -419,20 +456,21 @@ def _extraire_assure(textes, normes, normes_inv):
             inverse = None if direct else ancre.search(normes_inv[i])
             if not direct and not inverse:
                 continue
-            valeur = _nettoyer(textes[i][direct.end():]) if direct else ""
-            if not _est_un_nom(valeur):
-                # Nom sur une ligne VOISINE : la suivante (OCR coupe libelle/valeur) ; et aussi la
-                # PRECEDENTE quand le libelle est arabe inverse (RTL : le nom sort avant le libelle).
-                voisins = [i + 1] + ([i - 1] if inverse else [])
-                for k in voisins:
-                    if 0 <= k < len(textes) and not _est_un_libelle(normes[k], normes_inv[k]):
-                        candidat = _nettoyer(textes[k])
-                        # Un NOM n'a jamais 4 chiffres d'affilee (ecarte les codes « pb zoui 40013- »).
-                        if _est_un_nom(candidat) and not re.search(r"\d{4}", candidat):
-                            valeur = candidat
-                            break
-            if _est_un_nom(valeur):
-                return valeur[:CONFIG["LONGUEUR_MAX_ASSURE"]].strip(), i
+            # Valeur ANCREE sur la meme ligne (« Assuré : A. Hamdi ») : critere souple —
+            # l'ancrage direct suffit a la credibilite.
+            if direct:
+                valeur = _nettoyer(textes[i][direct.end():])
+                if _est_un_nom(valeur) and not re.search(r"\d{4}", valeur):
+                    return valeur[:CONFIG["LONGUEUR_MAX_ASSURE"]].strip(), i
+            # Nom sur une ligne VOISINE : la suivante (OCR coupe libelle/valeur) ; en RTL
+            # (libelle inverse), le nom sort parfois 2 lignes plus loin ou juste avant.
+            # Critere STRICT (_nom_credible) : c'est ici que naissent les dechets OCR.
+            voisins = [i + 1, i + 2, i - 1] if inverse else [i + 1]
+            for k in voisins:
+                if 0 <= k < len(textes) and not _est_un_libelle(normes[k], normes_inv[k]):
+                    candidat = _nettoyer(textes[k])
+                    if _nom_credible(candidat):
+                        return candidat[:CONFIG["LONGUEUR_MAX_ASSURE"]].strip(), i
     return None, None
 
 
@@ -458,7 +496,7 @@ def extraire_attestation(lignes):
     utiles.update(i for i, _ in occurrences)
     police, police_ok, degre = _arbitrer_police([c for _, c in occurrences])
 
-    immatriculation, idx = _extraire_immatriculation(textes)
+    immatriculation, idx = _extraire_immatriculation(textes, quittance)
     if idx is not None:
         utiles.add(idx)
     code_agence, idx = _extraire_code_agence(textes)

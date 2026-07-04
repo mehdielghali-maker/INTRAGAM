@@ -181,35 +181,43 @@ def test_lignes_ocr_reelles_quittance_separee_et_divergence():
     assert r["immatriculation"] is None
 
 
-# 2e DOCUMENT RÉEL (vignette-certificat « وثيقة تأمين السيارة », photographiée SEULE) : le numéro
-# de police n'y figure QU'UNE fois, l'assuré est sous « السيد (ة) », les dates en ordre visuel RTL
-# (fin avant début), l'immatriculation camion en 4-3-2 chiffres.
+# 2e DOCUMENT RÉEL (vignette-certificat « وثيقة تأمين السيارة », photographiée SEULE) — lignes
+# telles que RÉELLEMENT restituées par PaddleOCR : libellés arabes inversés/mangés, déchet
+# « () yuatl » près du libellé, nom COLLÉ deux lignes plus loin, dates éloignées de l'ancre,
+# immatriculation collée (« 066630940 » — wilaya 40), décret en ...-80 (wilaya inexistante).
 ATTESTATION_VIGNETTE = _lignes(
-    "وثيقة تأمين السيارة",
-    "№ 06681843",
-    "مرسوم رقم (80-34 المؤرخ في 16-02-1980)",
-    "ARBAOUI RACHID",
-    "(ة) ديسلا",                    # « السيد (ة) » restitué à l'envers par l'OCR
-    "pb zoui 40013-",
-    "407020091260196",
+    "ةقيثو",
+    "NO06681843",
+    "مقر مومسرم",
+    "(08910-0861",
+    "نمؤملا",                       # « المؤمن » inversé — libellé, jamais un nom
+    "ديسلا(",                       # « السيد » inversé
+    "() yuatl",                     # déchet OCR minuscule : jamais un nom
+    "ARBAOUIRACHID",                # le vrai nom, collé, 2 lignes sous le libellé
+    "pb zoui 40013",
+    "0702009126016",                # lecture corrompue (13 chiffres)
     "نيمأتلا دقع مقر",              # « رقم عقد التأمين » inversé
-    "07/05/2027",
+    "407020091260196",
     "08/05/2026",
+    "0805/2026",
+    "07/05/2027",
+    "75/2027",
     "نم ةحلاص",                     # « صالحة من » inversé
     "FOTON",
-    "0666 309 40",
+    "066630940",
+    "19801634-80",
 )
 
 
 def test_vignette_certificat_photographiee_seule():
     r = extraire_attestation(ATTESTATION_VIGNETTE)
     assert r["numeroPolice"] == "407020091260196"
-    assert r["statut"] == "a_verifier"      # UNE seule occurrence sur ce type de document (honnête)
+    assert r["statut"] == "a_verifier"       # UNE seule occurrence sur ce type de document (honnête)
     assert r["numeroQuittance"] == "06681843"
-    assert r["assure"] == "ARBAOUI RACHID"  # « السيد » inversé → nom sur la ligne PRÉCÉDENTE
-    assert r["valideDu"] == "08/05/2026"    # ordre CHRONOLOGIQUE, pas l'ordre visuel RTL
+    assert r["assure"] == "ARBAOUIRACHID"    # ni « () yuatl » (minuscules) ni « pb zoui 40013 »
+    assert r["valideDu"] == "08/05/2026"     # ordre CHRONOLOGIQUE, pas l'ordre visuel RTL
     assert r["valideAu"] == "07/05/2027"
-    assert r["immatriculation"] == "066630940"
+    assert r["immatriculation"] == "066630940"  # repli « bloc collé + wilaya plausible (40) »
 
 
 def test_montant_colle_reste_lisible():
