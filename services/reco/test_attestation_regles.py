@@ -147,6 +147,12 @@ def test_document_reel_la_ligne_de_dates_ne_pollue_pas_la_fenetre():
     assert r["numeroPolice"] is None
 
 
+def test_un_bloc_de_chiffres_contigus_nest_pas_une_immatriculation():
+    # « …16 فيفري 1980 » / numéros administratifs : 10 chiffres contigus ne font pas une plaque.
+    r = extraire_attestation(_lignes("AUTORISATION N 1980163480 DU 24-1-1984"))
+    assert r["immatriculation"] is None
+
+
 def test_entree_vide_neutre():
     r = extraire_attestation([])
     assert r["numeroPolice"] is None

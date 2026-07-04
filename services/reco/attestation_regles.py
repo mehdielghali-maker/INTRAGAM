@@ -77,10 +77,11 @@ CONFIG = {
     #     Variantes de glyphes OCR tolerees (N°, No, N⁰, №).
     "REGEX_QUITTANCE": _env_texte("OCR_REGEX_QUITTANCE", r"\bn[°ºo⁰№]?\s*[:.]?\s*(?<!\d)(\d{8})(?!\d)"),
     "LONGUEUR_QUITTANCE": _env_entier("OCR_LONGUEUR_QUITTANCE", 8),
-    # --- Immatriculation algerienne : NNNNN(N) NNN NN — separateurs espace/tiret/point toleres
-    #     (le document reel porte « 502000-114-16 ») ; gardes (?<!\d)/(?!\d) contre les morceaux
-    #     d'un numero plus long (ex. les 11 premiers chiffres de la police)
-    "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{5,6}[ .\-]?\d{3}[ .\-]?\d{2})(?!\d)"),
+    # --- Immatriculation algerienne : NNNNN(N) NNN NN — separateurs espace/tiret/point OBLIGATOIRES
+    #     entre les groupes (le document porte « 502000-114-16 » / « 502000 114 16 ») : un bloc de
+    #     10 chiffres CONTIGUS matcherait n'importe quelle suite de chiffres du document (dates de
+    #     decrets, numeros administratifs...) — faux positif constate sur la photo reelle.
+    "REGEX_IMMAT": _env_texte("OCR_REGEX_IMMAT", r"(?<!\d)(\d{5,6}[ .\-]\d{3}[ .\-]\d{2})(?!\d)"),
     # --- Code agence : NN.AA.NNNN — espaces autour des points toleres (tampon « 40. AR.0105 »)
     "REGEX_AGENCE": _env_texte("OCR_REGEX_AGENCE", r"(?<!\d)(\d{2}\s*\.\s*[A-Z]{2}\s*\.\s*\d{4})(?!\d)"),
     # --- Periode de validite : « Effet du ... Au ... » / « صالحة من ... إلى »
